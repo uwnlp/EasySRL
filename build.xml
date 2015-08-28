@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project easyccg">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="easysrl.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="edu.uw.easysrl.main.EasySRL"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="/Users/mike/Google Drive/git/easyccg/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/guava-15.0.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/jewelcli-0.7.6.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/junit-4.11.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/lbfgsb_wrapper-1.1.3.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/mtj-1.0-snapshot.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/hppc-0.7.1.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/stanford-postagger.jar"/>
+        </jar>
+    </target>
+</project>

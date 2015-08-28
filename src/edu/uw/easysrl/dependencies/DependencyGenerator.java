@@ -1,0 +1,128 @@
+package edu.uw.easysrl.dependencies;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Stack;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
+
+import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.syntax.grammar.Category;
+import edu.uw.easysrl.syntax.grammar.Combinator;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
+import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLabelling;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeVisitor;
+import edu.uw.easysrl.syntax.parser.AbstractParser;
+import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
+
+/**
+ * Takes parses that don't have explicit dependency information, and adds it.
+ *
+ */
+public class DependencyGenerator {
+	private final Multimap<Category, UnaryRule> unaryRules;
+
+	public DependencyGenerator(final File modelFolder) throws IOException {
+		this.unaryRules = AbstractParser.loadUnaryRules(new File(modelFolder,
+				"unaryRules"));
+		DependencyStructure
+		.parseMarkedUpFile(new File(modelFolder, "markedup"));
+	}
+
+	public SyntaxTreeNode generateDependencies(final SyntaxTreeNode raw,
+			final List<UnlabelledDependency> deps) {
+		final AddDepenendenciesVisitor visitor = new AddDepenendenciesVisitor(
+				deps);
+		raw.accept(visitor);
+		final SyntaxTreeNode result = visitor.stack.pop();
+		Preconditions.checkState(visitor.stack.size() == 0);
+		return result;
+	}
+
+	private class AddDepenendenciesVisitor implements SyntaxTreeNodeVisitor {
+		private final Stack<SyntaxTreeNode> stack = new Stack<>();
+		private final List<UnlabelledDependency> deps;
+
+		public AddDepenendenciesVisitor(final List<UnlabelledDependency> deps) {
+			this.deps = deps;
+		}
+
+		@Override
+		public void visit(final SyntaxTreeNodeLabelling node) {
+			node.getChild(0).accept(this);
+			;
+			stack.push(new SyntaxTreeNodeLabelling(stack.pop(), node
+					.getAllLabelledDependencies(), node
+					.getResolvedUnlabelledDependencies()));
+		}
+
+		@Override
+		public void visit(final SyntaxTreeNodeLeaf node) {
+			stack.push(new SyntaxTreeNodeLeaf(node.getWord(), node.getPos(),
+					node.getNER(), node.getCategory(), node
+					.getSentencePosition()));
+		}
+
+		@Override
+		public void visit(final SyntaxTreeNodeUnary node) {
+			node.getChild(0).accept(this);
+			final SyntaxTreeNode child = stack.pop();
+			for (final UnaryRule unary : unaryRules.get(child.getCategory())) {
+				if (unary.getCategory().equals(node.getCategory())) {
+					final List<UnlabelledDependency> resolvedDeps = new ArrayList<>();
+					final DependencyStructure childDeps = child
+							.getDependencyStructure();
+					final DependencyStructure newDeps = unary
+							.getDependencyStructureTransformation().apply(
+									childDeps, resolvedDeps);
+
+					deps.addAll(resolvedDeps);
+					stack.push(new SyntaxTreeNodeUnary(node.getCategory(),
+							child, newDeps, unary, resolvedDeps));
+					return;
+				}
+			}
+
+			throw new IllegalStateException("Didn't find matching unary rule");
+		}
+
+		@Override
+		public void visit(final SyntaxTreeNodeBinary node) {
+			node.getChild(0).accept(this);
+			final SyntaxTreeNode left = stack.pop();
+			node.getChild(1).accept(this);
+			final SyntaxTreeNode right = stack.pop();
+			final Collection<RuleProduction> rules = Combinator.getRules(
+					left.getCategory(), right.getCategory(),
+					Combinator.STANDARD_COMBINATORS);
+			for (final RuleProduction rule : rules) {
+				if (rule.getCategory().equals(node.getCategory())) {
+					final List<UnlabelledDependency> resolvedDeps = new ArrayList<>();
+					final DependencyStructure newDeps = rule.getCombinator()
+							.apply(left.getDependencyStructure(),
+									right.getDependencyStructure(),
+									resolvedDeps);
+					final SyntaxTreeNode result = new SyntaxTreeNodeBinary(
+							node.getCategory(), left, right,
+							rule.getRuleType(), rule.isHeadIsLeft(), newDeps,
+							resolvedDeps);
+					deps.addAll(resolvedDeps);
+
+					stack.push(result);
+					return;
+				}
+			}
+			throw new IllegalStateException("Didn't find matching binary rule");
+
+		}
+	};
+
+}
