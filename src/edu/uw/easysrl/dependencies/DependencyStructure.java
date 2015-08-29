@@ -487,7 +487,7 @@ public class DependencyStructure implements Serializable {
 		return argument;
 	}
 
-	static DependencyStructure fromString(final Category category, final String markedUpCategory,
+	public static DependencyStructure fromString(final Category category, final String markedUpCategory,
 			final Integer sentencePosition) {
 		// gave ((S\NP_1)/((NP_3/PP_1)_4/PP_2))/NP_2
 		// clever N_i/N_i
@@ -652,7 +652,8 @@ public class DependencyStructure implements Serializable {
 
 		final Coindexation newArgumentLeft = substitution.applyTo(argument.left, true);
 		final Coindexation newArgumentRight = substitution.applyTo(other.argument.right, false);
-		final IDorHead idOrHead = substitution.applyTo(argument, true).idOrHead;
+		final boolean headIsLeft = !argument.left.idOrHead.equals(argument.right.idOrHead);
+		final IDorHead idOrHead = substitution.applyTo(headIsLeft ? argument : other.argument, headIsLeft).idOrHead;
 
 		final Set<UnresolvedDependency> normalizedUnresolvedDependencies = new HashSet<>(
 				newUnresolvedDependencies.size());
