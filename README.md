@@ -12,9 +12,9 @@ If you use the parser for research, please cite the following paper:
 A pre-trained model is available here: https://drive.google.com/folderview?id=0B7AY6PGZ8lc-cWhEQ3FYXzljWGc&usp=sharing
 
 Basic usage:
-    java -jar easyccg.jar --model modelFolder
+    java -jar easysrl.jar --model modelFolder
 
 For CCG (rather than SRL) output, use:
-    java -jar easyccg.jar --model modelFolder --outputFormat ccgbank
+    java -jar easysrl.jar --model modelFolder --outputFormat ccgbank
 
 Please contact Mike Lewis with any questions or feature requests (email address in the paper).
