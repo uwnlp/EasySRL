@@ -30,10 +30,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 
 	public abstract SyntaxTreeNodeLeaf getHead();
 
-	private SyntaxTreeNode(final Category category, final int headIndex,
-			final DependencyStructure dependencyStructure,
-			final List<UnlabelledDependency> resolvedUnlabelledDependencies,
-			final int length) {
+	private SyntaxTreeNode(final Category category, final int headIndex, final DependencyStructure dependencyStructure,
+			final List<UnlabelledDependency> resolvedUnlabelledDependencies, final int length) {
 		this.category = category;
 		this.headIndex = headIndex;
 		this.dependencyStructure = dependencyStructure;
@@ -51,16 +49,12 @@ public abstract class SyntaxTreeNode implements Serializable {
 		private final SyntaxTreeNode leftChild;
 		private final SyntaxTreeNode rightChild;
 
-		public SyntaxTreeNodeBinary(final Category category,
-				final SyntaxTreeNode leftChild,
-				final SyntaxTreeNode rightChild, final RuleType ruleType,
-				final boolean headIsLeft,
+		public SyntaxTreeNodeBinary(final Category category, final SyntaxTreeNode leftChild,
+				final SyntaxTreeNode rightChild, final RuleType ruleType, final boolean headIsLeft,
 				final DependencyStructure dependencyStructure,
 				final List<UnlabelledDependency> resolvedUnlabelledDependencies) {
-			super(category, headIsLeft ? leftChild.getHeadIndex() : rightChild
-					.getHeadIndex(), dependencyStructure,
-					resolvedUnlabelledDependencies, leftChild.length
-							+ rightChild.length);
+			super(category, headIsLeft ? leftChild.getHeadIndex() : rightChild.getHeadIndex(), dependencyStructure,
+					resolvedUnlabelledDependencies, leftChild.length + rightChild.length);
 			this.ruleType = ruleType;
 			this.headIsLeft = headIsLeft;
 			this.leftChild = leftChild;
@@ -84,8 +78,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 
 		@Override
 		public SyntaxTreeNodeLeaf getHead() {
-			return isHeadIsLeft() ? getLeftChild().getHead() : getRightChild()
-					.getHead();
+			return isHeadIsLeft() ? getLeftChild().getHead() : getRightChild().getHead();
 		}
 
 		@Override
@@ -96,8 +89,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 			if (index == 1) {
 				return getRightChild();
 			}
-			throw new RuntimeException("Binary Node does not have child: "
-					+ index);
+			throw new RuntimeException("Binary Node does not have child: " + index);
 		}
 
 		@Override
@@ -131,12 +123,10 @@ public abstract class SyntaxTreeNode implements Serializable {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		public SyntaxTreeNodeLeaf(final String word, final String pos,
-				final String ner, final Category category,
+		public SyntaxTreeNodeLeaf(final String word, final String pos, final String ner, final Category category,
 				final int sentencePosition) {
-			super(category, sentencePosition, DependencyStructure.make(
-					category, word, sentencePosition), Collections.emptyList(),
-					1);
+			super(category, sentencePosition, DependencyStructure.make(category, word, sentencePosition), Collections
+					.emptyList(), 1);
 			this.pos = pos;
 			this.ner = ner;
 			this.word = word;
@@ -195,8 +185,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 		@Override
 		public SyntaxTreeNode getChild(final int index) {
 
-			throw new RuntimeException("Leaf node does not have child: "
-					+ index);
+			throw new RuntimeException("Leaf node does not have child: " + index);
 
 		}
 
@@ -220,19 +209,15 @@ public abstract class SyntaxTreeNode implements Serializable {
 		private final UnaryRule unaryRule;
 		private final RuleType ruleType;
 
-		public SyntaxTreeNodeUnary(final Category category,
-				final SyntaxTreeNode child,
-				final DependencyStructure dependencyStructure,
-				final UnaryRule unaryRule,
+		public SyntaxTreeNodeUnary(final Category category, final SyntaxTreeNode child,
+				final DependencyStructure dependencyStructure, final UnaryRule unaryRule,
 				final List<UnlabelledDependency> resolvedUnlabelledDependencies) {
-			super(category, child.getHeadIndex(), dependencyStructure,
-					resolvedUnlabelledDependencies, child.length);
+			super(category, child.getHeadIndex(), dependencyStructure, resolvedUnlabelledDependencies, child.length);
 
 			this.child = child;
 			this.unaryRule = unaryRule;
-			this.ruleType = category.isForwardTypeRaised() ? RuleType.FORWARD_TYPERAISE
-					: (category.isBackwardTypeRaised() ? RuleType.BACKWARD_TYPE_RAISE
-							: RuleType.TYPE_CHANGE);
+			this.ruleType = category.isForwardTypeRaised() ? RuleType.FORWARD_TYPERAISE : (category
+					.isBackwardTypeRaised() ? RuleType.BACKWARD_TYPE_RAISE : RuleType.TYPE_CHANGE);
 		}
 
 		private final SyntaxTreeNode child;
@@ -262,8 +247,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 			if (index == 0) {
 				return child;
 			}
-			throw new RuntimeException("Unary node does not have child: "
-					+ index);
+			throw new RuntimeException("Unary node does not have child: " + index);
 		}
 
 		@Override
@@ -329,6 +313,14 @@ public abstract class SyntaxTreeNode implements Serializable {
 		return words;
 	}
 
+	public int getStartIndex() {
+		return getWords().get(0).getSentencePosition();
+	}
+
+	public int getEndIndex() {
+		return 1 + getWords().get(getWords().size() - 1).getSentencePosition();
+	}
+
 	void getWords(final List<SyntaxTreeNodeLeaf> result) {
 		for (final SyntaxTreeNode child : getChildren()) {
 			child.getWords(result);
@@ -362,11 +354,9 @@ public abstract class SyntaxTreeNode implements Serializable {
 		private final Collection<ResolvedDependency> labelled;
 		private final SyntaxTreeNode child;
 
-		public SyntaxTreeNodeLabelling(final SyntaxTreeNode child,
-				final Collection<ResolvedDependency> labelled,
+		public SyntaxTreeNodeLabelling(final SyntaxTreeNode child, final Collection<ResolvedDependency> labelled,
 				final List<UnlabelledDependency> unlabelled) {
-			super(child.category, child.getHeadIndex(), child
-					.getDependencyStructure(), unlabelled, child.length);
+			super(child.category, child.getHeadIndex(), child.getDependencyStructure(), unlabelled, child.length);
 			this.labelled = labelled;
 			this.child = child;
 		}
@@ -415,8 +405,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 		return result;
 	}
 
-	private void getAllLabelledDependencies(
-			final List<ResolvedDependency> result) {
+	private void getAllLabelledDependencies(final List<ResolvedDependency> result) {
 		result.addAll(getDependenciesLabelledAtThisNode());
 		for (final SyntaxTreeNode child : getChildren()) {
 			child.getAllLabelledDependencies(result);

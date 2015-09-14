@@ -210,8 +210,7 @@ public abstract class ParsePrinter {
 				if (dep.getSemanticRole() != SRLFrame.NONE) {
 					result.append(getPredicate(parse, dep.getPropbankPredicateIndex()));
 					result.append(" " + dep.getSemanticRole());
-					final SyntaxTreeNode argumentConstituent = getArgumentConstituent(parse,
-							dep.getPropbankArgumentIndex());
+					final SyntaxTreeNode argumentConstituent = getArgumentConstituent(parse, dep);
 					int i = 0;
 					final List<SyntaxTreeNodeLeaf> argumentWords = argumentConstituent.getWords();
 					for (final SyntaxTreeNodeLeaf child : argumentWords) {
@@ -252,13 +251,30 @@ public abstract class ParsePrinter {
 			return result;
 		}
 
-		private SyntaxTreeNode getArgumentConstituent(final SyntaxTreeNode node, final int head) {
-			if (node.getDependencyStructure().getArbitraryHead() == head) {
+		private SyntaxTreeNode getArgumentConstituent(final SyntaxTreeNode node, final ResolvedDependency dep) {
+			int excludeIndex;
+			if (dep.getSemanticRole().isCoreArgument()
+					&& Category.valueOf("S\\NP").matches(dep.getCategory().getArgument(dep.getArgNumber()))) {
+				// Exclude predicates from VP argument constituents.
+				// e.g. In "I like eating", the argument of 'like' shouldn't be 'I like eating' just because
+				// 'eating' is the head.
+				excludeIndex = dep.getPropbankPredicateIndex();
+			} else {
+				excludeIndex = -1;
+			}
+
+			return getArgumentConstituent(node, dep.getPropbankArgumentIndex(), excludeIndex);
+		}
+
+		private SyntaxTreeNode getArgumentConstituent(final SyntaxTreeNode node, final int head, final int excludeIndex) {
+			final boolean exclude = excludeIndex >= node.getStartIndex() && excludeIndex < node.getEndIndex();
+
+			if (!exclude && node.getDependencyStructure().getArbitraryHead() == head) {
 				return node;
 			}
 
 			for (final SyntaxTreeNode child : node.getChildren()) {
-				final SyntaxTreeNode result = getArgumentConstituent(child, head);
+				final SyntaxTreeNode result = getArgumentConstituent(child, head, excludeIndex);
 				if (result != null) {
 					return result;
 				}
@@ -411,7 +427,7 @@ public abstract class ParsePrinter {
 
 		/*
 		 * ccg(2, ba('S[dcl]', lf(2,1,'NP'), fa('S[dcl]\NP', lf(2,2,'(S[dcl]\NP)/NP'), lex('N','NP', lf(2,3,'N'))))).
-		 * 
+		 *
 		 * w(2, 1, 'I', 'I', 'PRP', 'I-NP', 'O', 'NP'). w(2, 2, 'like', 'like', 'VBP', 'I-VP', 'O', '(S[dcl]\NP)/NP').
 		 * w(2, 3, 'cake', 'cake', 'NN', 'I-NP', 'O', 'N').
 		 */
