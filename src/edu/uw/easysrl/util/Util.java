@@ -466,4 +466,8 @@ public class Util {
 		}
 
 	}
+
+	public static String maybeBracket(final String input, final boolean bracket) {
+		return bracket ? "(" + input + ")" : input;
+	}
 }

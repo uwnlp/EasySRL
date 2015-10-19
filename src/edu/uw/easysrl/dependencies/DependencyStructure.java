@@ -373,7 +373,7 @@ public class DependencyStructure implements Serializable {
 	/**
 	 *
 	 */
-	static class IDorHead implements Serializable {
+	public static class IDorHead implements Serializable {
 
 		private static final long serialVersionUID = -2338555345725737539L;
 		private final List<Integer> head;
@@ -383,7 +383,7 @@ public class DependencyStructure implements Serializable {
 			return head != null;
 		}
 
-		IDorHead(final List<Integer> head) {
+		public IDorHead(final List<Integer> head) {
 			this.head = head;
 			this.id = null;
 		}
@@ -495,7 +495,7 @@ public class DependencyStructure implements Serializable {
 		final int wordIndex = sentencePosition;
 
 		return new DependencyStructure(Coindexation.fromString(markedUpCategory,
-				new IDorHead(Arrays.asList(wordIndex)), new HashMap<Integer, Integer>(), wordIndex, true), category);
+				new IDorHead(Arrays.asList(wordIndex)), new HashMap<>(), wordIndex, true), category);
 	}
 
 	public static DependencyStructure make(final Category category, final String word, final int sentencePosition) {
@@ -511,6 +511,10 @@ public class DependencyStructure implements Serializable {
 			result = result.specifyPreposition(Preposition.fromString(word));
 		}
 		return result;
+	}
+
+	public static String getMarkedUp(final Category category) {
+		return categoryToMarkedUpCategory.get(category);
 	}
 
 	public static DependencyStructure makeUnaryRuleTransformation(final String from, final String to) {

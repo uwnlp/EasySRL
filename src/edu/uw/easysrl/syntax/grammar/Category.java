@@ -33,6 +33,8 @@ public abstract class Category implements Serializable {
 	public static final Category LRB = valueOf("LRB");
 	public final static Category N = valueOf("N");
 	public static final Category NP = valueOf("NP");
+	public static final Category NPthr = valueOf("NP[thr]");
+	public static final Category NPexpl = valueOf("NP[expl]");
 	public static final Category PP = valueOf("PP");
 	public static final Category PR = valueOf("PR");
 	public static final Category PREPOSITION = valueOf("PP/NP");
@@ -43,6 +45,7 @@ public abstract class Category implements Serializable {
 	public static final Category ADVERB = valueOf("(S\\NP)\\(S\\NP)");
 	public static final Category POSSESSIVE_ARGUMENT = valueOf("(NP/(N/PP))\\NP");
 	public static final Category POSSESSIVE_PRONOUN = valueOf("NP/(N/PP)");
+	public static final Category S = valueOf("S");
 
 	private Category(final String asString, final String semanticAnnotation) {
 		this.asString = asString + (semanticAnnotation == null ? "" : "{" + semanticAnnotation + "}");

@@ -3,13 +3,18 @@ package edu.uw.easysrl.main;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 
 import edu.uw.easysrl.corpora.CCGBankDependencies;
 import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.lemmatizer.MorphaStemmer;
+import edu.uw.easysrl.semantics.Logic;
+import edu.uw.easysrl.semantics.Logic2Html;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -18,14 +23,16 @@ import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLabelling;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeVisitor;
+import edu.uw.easysrl.util.Util;
 
 public abstract class ParsePrinter {
-	public final static ParsePrinter CCGBANK_PRINTER = new CCGBankPrinter();
+	public final static CCGBankPrinter CCGBANK_PRINTER = new CCGBankPrinter();
 	public final static ParsePrinter HTML_PRINTER = new HTMLPrinter();
 	public final static ParsePrinter PROLOG_PRINTER = new PrologPrinter();
 	public final static ParsePrinter EXTENDED_CCGBANK_PRINTER = new ExtendedCCGBankPrinter();
 	public final static ParsePrinter SUPERTAG_PRINTER = new SupertagPrinter();
 	public final static ParsePrinter SRL_PRINTER = new SRLprinter();
+	public final static ParsePrinter LOGIC_PRINTER = new LogicPrinter();
 
 	public String print(final List<SyntaxTreeNode> parses, final int id) {
 		final StringBuilder result = new StringBuilder();
@@ -90,7 +97,7 @@ public abstract class ParsePrinter {
 
 	}
 
-	private static class CCGBankPrinter extends ParsePrinter {
+	public static class CCGBankPrinter extends ParsePrinter {
 
 		@Override
 		void printFailure(final StringBuilder result) {
@@ -177,11 +184,26 @@ public abstract class ParsePrinter {
 
 		@Override
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
+			printParse(parse, result);
+		}
+
+		void printParse(final SyntaxTreeNode parse, final StringBuilder result) {
 			parse.accept(new CCGBankParsePrinterVisitor(result));
 		}
 
 		@Override
 		void printFileHeader(final StringBuilder result) {
+		}
+
+		public String print(final SyntaxTreeNode syntaxTreeNode) {
+			final StringBuilder result = new StringBuilder();
+			printParse(syntaxTreeNode, result);
+			return result.toString();
+		}
+
+		@Override
+		boolean outputsLogic() {
+			return false;
 		}
 	}
 
@@ -205,14 +227,15 @@ public abstract class ParsePrinter {
 
 		@Override
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
-			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
+			final List<ResolvedDependency> deps = parse.getAllLabelledDependencies();
+			for (final ResolvedDependency dep : deps) {
 				// output = output + "\n" + dep.toString();
 				if (dep.getSemanticRole() != SRLFrame.NONE) {
 					result.append(getPredicate(parse, dep.getPropbankPredicateIndex()));
 					result.append(" " + dep.getSemanticRole());
 					final SyntaxTreeNode argumentConstituent = getArgumentConstituent(parse, dep);
 					int i = 0;
-					final List<SyntaxTreeNodeLeaf> argumentWords = argumentConstituent.getWords();
+					final List<SyntaxTreeNodeLeaf> argumentWords = argumentConstituent.getLeaves();
 					for (final SyntaxTreeNodeLeaf child : argumentWords) {
 						if (i == 0 && dep.getSemanticRole().isCoreArgument()
 								&& child.getCategory().isFunctionInto(Category.PP) && argumentWords.size() > 1) {
@@ -229,10 +252,14 @@ public abstract class ParsePrinter {
 
 			}
 
+			if (deps.size() == 0) {
+				System.out.println("No SRL relations found");
+			}
+
 		}
 
 		private String getPredicate(final SyntaxTreeNode parse, final int index) {
-			final SyntaxTreeNodeLeaf node = parse.getWords().get(index);
+			final SyntaxTreeNodeLeaf node = parse.getLeaves().get(index);
 			final String result = node.getWord();
 			final Category category = node.getCategory();
 
@@ -241,7 +268,7 @@ public abstract class ParsePrinter {
 				if (category.getArgument(i) == Category.PR) {
 					for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
 						if (dep.getPredicateIndex() == index && dep.getArgNumber() == i) {
-							final String particle = parse.getWords().get(dep.getArgumentIndex()).getWord();
+							final String particle = parse.getLeaves().get(dep.getArgumentIndex()).getWord();
 							return result + "_" + particle;
 						}
 					}
@@ -282,6 +309,11 @@ public abstract class ParsePrinter {
 
 			return null;
 		}
+
+		@Override
+		boolean outputsLogic() {
+			return false;
+		}
 	}
 
 	private static class HTMLPrinter extends ParsePrinter {
@@ -293,7 +325,69 @@ public abstract class ParsePrinter {
 		@Override
 		void printHeader(final int id, final StringBuilder result) {
 
-			result.append("<html>\n" + "<body>\n");
+			result.append("<script>\n"
+					+ "function drawArrowhead(ctx, locx, locy, angle, sizex, sizey) {\n"
+					+ "    var hx = sizex / 2;\n"
+					+ "    var hy = sizey / 2;\n"
+					+ "    ctx.save();\n"
+					+ "    ctx.translate((locx ), (locy));\n"
+					+ "    ctx.rotate(angle);\n"
+					+ "    ctx.translate(-hx,-hy);\n"
+					+ "\n"
+					+ "    ctx.beginPath();\n"
+					+ "    ctx.moveTo(0,0);\n"
+					+ "    ctx.lineTo(0,1*sizey);\n"
+					+ "    ctx.lineTo(1*sizex,1*hy);\n"
+					+ "    ctx.closePath();\n"
+					+ "    ctx.fill();\n"
+					+ "    ctx.restore();\n"
+					+ "}\n"
+					+ "\n"
+					+ "\n"
+					+ "\n"
+					+ "\n"
+					+ "function draw(context, startElement, endElement, label) {\n"
+					+ "      var start  = document.getElementById('w' + startElement).getBoundingClientRect();;\n"
+					+ "      var end  = document.getElementById('w' + endElement).getBoundingClientRect();;\n"
+					+ "\n"
+					+ "      var sx = (start.left + start.right) / 2 - 0;\n"
+					+ "      var ex = (end.left + end.right) / 2  - 0;\n"
+					+ "  \n"
+					+ "      var x = (sx + ex) / 2;\n"
+					+ "\n"
+					+ "      var theta = 0.2 * Math.PI;\n"
+					+ "      var radius = Math.abs(ex - sx) / (2 * Math.sin(theta));\n"
+					+ "      var y = canvas.height - 3 + radius * Math.cos(theta);\n"
+					+ "\n"
+					+ "      var theta2 = Math.PI / 2 - theta;\n"
+					+ "      var startAngle = Math.PI + theta2;\n"
+					+ "      var endAngle = -theta2;\n"
+					+ "      var counterClockwise = false;\n"
+					+ "\n"
+					+ "\n"
+					+ "      context.beginPath();\n"
+					+ "      context.arc(x, y, radius, startAngle, endAngle, counterClockwise);\n"
+					+ "      context.lineWidth = 2;\n"
+					+ "\n"
+					+ "      // line color\n"
+					+ "      context.strokeStyle = 'black';\n"
+					+ "      context.stroke();\n"
+					+ "      context.closePath();\n"
+					+ "      context.fillText(label, x - 10, y - radius - 3)\n"
+					+ "      //alert(label);\n"
+					+ "\n"
+					+ "      var angle;\n"
+					+ "      var angle2;\n"
+					+ "      if (sx > ex) {\n"
+					+ "        angle = startAngle;\n"
+					+ "        angle2 = angle - Math.PI / 2;\n"
+					+ "      } else {\n"
+					+ "        angle = endAngle;\n"
+					+ "        angle2 = angle + Math.PI / 2;\n"
+					+ "      }\n"
+					+ "\n"
+					+ "      drawArrowhead(context, x + radius * Math.cos(angle), y + radius * Math.sin(angle), angle2, 10, 10);\n"
+					+ "}\n" + "</script>\n");
 		}
 
 		@Override
@@ -302,9 +396,43 @@ public abstract class ParsePrinter {
 			result.append("</body>\n" + "</html>");
 		}
 
+		private final static java.util.Set<String> shortChars = ImmutableSet
+				.of(".", ",", "[", "]", "(", ")", "\\", "/");
+
+		private int guessWidth(final String s) {
+			final int longChar = 5;
+			final int shortChar = 2;
+			int result = 0;
+			for (int i = 0; i < s.length(); i++) {
+				if (shortChars.contains(s.charAt(i))) {
+					result = result + shortChar;
+				} else {
+					result = result + longChar;
+				}
+			}
+
+			return result;
+		}
+
 		@Override
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
+			final int numWords = parse.getLeaves().size();
+
+			final int betweenWordSpace = 5;
+			int parseWidth = 0;
+
+			for (final SyntaxTreeNodeLeaf word : parse.getLeaves()) {
+				parseWidth += Math.max(guessWidth(word.getWord().toString()), guessWidth(word.getCategory().toString())
+						+ (word.getSemantics().isPresent() ? guessWidth(word.getSemantics().get().toString()) : 0));
+				parseWidth += betweenWordSpace;
+			}
+
 			result.append("<table>");
+			result.append("<tr><td colspan=" + (numWords + 1) + " style=\"padding-left:0px;padding-right:0px;\">\n"
+					+ "<canvas id=\"myCanvas\" width=" + (parseWidth)
+					+ " height=200 display:block vertical-align:bottom></canvas></td></tr>");
+
+			int wordIndex = 0;
 			for (final List<SyntaxTreeNode> row : getRows(parse)) {
 				result.append("<tr>");
 				int indent = 0;
@@ -315,17 +443,31 @@ public abstract class ParsePrinter {
 						result.append("<td></td>");
 						indent = indent + 1;
 					} else if (cell.isLeaf()) {
-						result.append(makeCell(((SyntaxTreeNodeLeaf) cell).getWord(), cell.getCategory()));
+						result.append(makeCell(((SyntaxTreeNodeLeaf) cell).getWord(), cell.getCategory(),
+								cell.getSemantics(), wordIndex));
 						indent = indent + 1;
+						wordIndex++;
 					} else {
 						final int width = getWidth(cell);
-						result.append(makeCell(cell.getCategory(), width));
+						result.append(makeCell(cell.getCategory(), cell.getSemantics(), width));
 						indent = indent + width;
 					}
 				}
-				result.append("</tr>\n");
+				result.append("<td width=" + "0" + " /></tr>\n");
 			}
 			result.append("</table>");
+
+			result.append("<script>");
+			result.append("      var canvas = document.getElementById('myCanvas');\n");
+			result.append("      var context = canvas.getContext('2d');\n");
+			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
+				if (dep.getSemanticRole() != SRLFrame.NONE && dep.getPredicateIndex() != dep.getArgumentIndex()) {
+					result.append("draw(context, " + dep.getPropbankPredicateIndex() + ", "
+							+ dep.getPropbankArgumentIndex() + ", '" + dep.getSemanticRole() + "');");
+				}
+
+			}
+			result.append("</script>");
 		}
 
 		List<List<SyntaxTreeNode>> getRows(final SyntaxTreeNode parse) {
@@ -354,6 +496,9 @@ public abstract class ParsePrinter {
 
 		int getRows(final SyntaxTreeNode node, final List<List<SyntaxTreeNode>> result, final int minIndentation) {
 
+			if (node.getDependenciesLabelledAtThisNode().size() > 0) {
+				return getRows(node.getChild(0), result, minIndentation);
+			}
 			int maxChildLevel = 0;
 			int i = minIndentation;
 			for (final SyntaxTreeNode child : node.getChildren()) {
@@ -379,12 +524,34 @@ public abstract class ParsePrinter {
 			return level;
 		}
 
-		private String makeCell(final Category category, final int width) {
-			return "<td colspan=" + width + "><center><hr>" + category.toString() + "</center></td>";
+		private String makeCell(final Category category, final Optional<Logic> logic, final int width) {
+			return "<td colspan=" + width + "><center><hr style=\"margin:1px\"/>" + getCategoryHTML(category)
+					+ "<br><i>" + printLogic(logic) + "</i></center></td>";
 		}
 
-		private String makeCell(final String word, final Category category) {
-			return "<td><center>" + word + "<hr>" + category + "</center></td>";
+		private String makeCell(final String word, final Category category, final Optional<Logic> logic, final int index) {
+			return "<td id=w" + index + "><center><font face=\"Arial\">" + word + "</font><hr style=\"margin:1px\" />"
+					+ getCategoryHTML(category) + "<br><i>" + printLogic(logic) + "</i></center></td>";
+		}
+
+		private String getCategoryHTML(final Category c) {
+			String asString = c.toString();
+			asString = asString.replaceAll("\\[", "<sub>");
+			asString = asString.replaceAll("\\]", "</sub>");
+			return "<font face=\"gill sans\">" + asString + "</font>";
+		}
+
+		private String printLogic(final Optional<Logic> logic) {
+			if (logic.isPresent()) {
+				return Logic2Html.getHTML(logic.get());
+			} else {
+				return "&nbsp;";
+			}
+		}
+
+		@Override
+		boolean outputsLogic() {
+			return true;
 		}
 	}
 
@@ -410,7 +577,7 @@ public abstract class ParsePrinter {
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
 			// word|pos|tag word|pos|tag word|pos|tag
 			boolean isFirst = true;
-			for (final SyntaxTreeNodeLeaf word : parse.getWords()) {
+			for (final SyntaxTreeNodeLeaf word : parse.getLeaves()) {
 				if (isFirst) {
 					isFirst = false;
 				} else {
@@ -421,13 +588,66 @@ public abstract class ParsePrinter {
 						+ word.getCategory());
 			}
 		}
+
+		@Override
+		boolean outputsLogic() {
+			return false;
+		}
+	}
+
+	private static class LogicPrinter extends ParsePrinter {
+
+		@Override
+		void printFileHeader(final StringBuilder result) {
+		}
+
+		@Override
+		void printFailure(final StringBuilder result) {
+		}
+
+		@Override
+		void printHeader(final int id, final StringBuilder result) {
+		}
+
+		@Override
+		void printFooter(final StringBuilder result) {
+		}
+
+		@Override
+		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
+			final List<List<ResolvedDependency>> labels = new ArrayList<>();
+			for (final SyntaxTreeNodeLeaf leaf : parse.getLeaves()) {
+				labels.add(new ArrayList<>(leaf.getCategory().getNumberOfArguments()));
+				for (int i = 0; i < leaf.getCategory().getNumberOfArguments(); i++) {
+					labels.get(labels.size() - 1).add(null); // TODO
+				}
+			}
+
+			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
+
+				final List<ResolvedDependency> labelsForWord = labels.get(dep.getPredicateIndex());
+				if (dep.getArgumentIndex() > -1) {
+					labelsForWord.set(dep.getArgNumber() - 1, dep);
+				}
+
+			}
+
+			Preconditions.checkState(parse.getSemantics().isPresent());
+			result.append(parse.getSemantics().get());
+			Util.debugHook();
+		}
+
+		@Override
+		boolean outputsLogic() {
+			return true;
+		}
 	}
 
 	private static class PrologPrinter extends ParsePrinter {
 
 		/*
 		 * ccg(2, ba('S[dcl]', lf(2,1,'NP'), fa('S[dcl]\NP', lf(2,2,'(S[dcl]\NP)/NP'), lex('N','NP', lf(2,3,'N'))))).
-		 *
+		 * 
 		 * w(2, 1, 'I', 'I', 'PRP', 'I-NP', 'O', 'NP'). w(2, 2, 'like', 'like', 'VBP', 'I-VP', 'O', '(S[dcl]\NP)/NP').
 		 * w(2, 3, 'cake', 'cake', 'NN', 'I-NP', 'O', 'N').
 		 */
@@ -483,7 +703,7 @@ public abstract class ParsePrinter {
 			result.append("\n");
 
 			int i = 0;
-			for (final SyntaxTreeNodeLeaf word : parse.getWords()) {
+			for (final SyntaxTreeNodeLeaf word : parse.getLeaves()) {
 				// w(2, 1, 'I', 'I', 'PRP', 'I-NP', 'I-PER', 'NP').
 				i++;
 				result.append("w(" + sentenceNumber + ", " + i + ", '" + word.getWord() + "', '"
@@ -551,6 +771,11 @@ public abstract class ParsePrinter {
 			private void printIndent(final int currentIndent) {
 				result.append(Strings.repeat(" ", currentIndent));
 			}
+		}
+
+		@Override
+		boolean outputsLogic() {
+			return false;
 		}
 
 	}
@@ -654,6 +879,11 @@ public abstract class ParsePrinter {
 		void printFileHeader(final StringBuilder result) {
 		}
 
+		@Override
+		boolean outputsLogic() {
+			return false;
+		}
+
 	}
 
 	public static class DependenciesPrinter extends ParsePrinter {
@@ -705,12 +935,19 @@ public abstract class ParsePrinter {
 				}
 			}
 			result.append("<c>");
-			for (final SyntaxTreeNodeLeaf word : parse.getWords()) {
+			for (final SyntaxTreeNodeLeaf word : parse.getLeaves()) {
 				result.append(" " + word.getWord() + "|" + (word.getPos() == null ? "" : word.getPos()) + "|"
 						+ word.getCategory());
 			}
 			result.append("\n");
 		}
 
+		@Override
+		boolean outputsLogic() {
+			return false;
+		}
+
 	}
+
+	abstract boolean outputsLogic();
 }

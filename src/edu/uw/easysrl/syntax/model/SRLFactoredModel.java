@@ -42,7 +42,7 @@ public class SRLFactoredModel extends Model {
 			final Collection<BinaryFeature> binaryFeatures, final Collection<RootCategoryFeature> rootFeatures,
 			final List<InputWord> sentence
 
-	) {
+			) {
 		super(forests.size());
 		this.forests = forests;
 		this.supertaggerBeam = supertaggerBeam;
@@ -116,7 +116,7 @@ public class SRLFactoredModel extends Model {
 				final Category category = node.getObject().getCategory();
 				final double dependenciesUpperBound = getInsideDependenciesUpperBound(forest, category, node.getScore());
 
-				queue.add(new AgendaItem(new SyntaxTreeNodeLeaf(word.word, word.ner, word.pos, category, i), node
+				queue.add(new AgendaItem(new SyntaxTreeNodeLeaf(word.word, word.pos, word.ner, category, i), node
 						.getScore(), dependenciesUpperBound + outsideScoreUpperBound, i, 1, true));
 			}
 		}

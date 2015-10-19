@@ -2,6 +2,7 @@ package edu.uw.easysrl.dependencies;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -11,7 +12,7 @@ import edu.uw.easysrl.dependencies.DependencyStructure.IDorHead;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.util.Util;
 
-class Coindexation implements Serializable {
+public class Coindexation implements Serializable {
 
 	/**
 	 *
@@ -77,6 +78,10 @@ class Coindexation implements Serializable {
 		this(left, right, head, Preposition.NONE);
 	}
 
+	public IDorHead getID() {
+		return idOrHead;
+	}
+
 	int countNumberOfArguments() {
 		if (right == null) {
 			return 0;
@@ -131,7 +136,15 @@ class Coindexation implements Serializable {
 		return idOrHead;
 	}
 
-	static Coindexation fromString(String category, final DependencyStructure.IDorHead defaultHead,
+	public static Coindexation fromString(final String category) {
+		return fromString(category, 0);
+	}
+
+	public static Coindexation fromString(final String category, final int wordIndex) {
+		return fromString(category, new IDorHead(Arrays.asList(wordIndex)), new HashMap<>(), wordIndex, true);
+	}
+
+	public static Coindexation fromString(String category, final DependencyStructure.IDorHead defaultHead,
 			final Map<Integer, Integer> usedIDs, final int headWord, final boolean isOnSpine) {
 
 		if (category.endsWith("}") && !category.endsWith("{_*}")) {
@@ -219,5 +232,13 @@ class Coindexation implements Serializable {
 
 			return new Coindexation(left, right, idOrHead, Preposition.NONE);
 		}
+	}
+
+	public Coindexation getLeft() {
+		return left;
+	}
+
+	public boolean isModifier() {
+		return left.equals(right);
 	}
 }

@@ -83,7 +83,7 @@ public class MarkedUpFileNormalizer {
 		while (sentenceIt.hasNext()) {
 			final Sentence sentence = sentenceIt.next();
 			final Collection<Category> foundInSentence = new HashSet<>();
-			for (final SyntaxTreeNodeLeaf leaf : sentence.getCcgbankParse().getWords()) {
+			for (final SyntaxTreeNodeLeaf leaf : sentence.getCcgbankParse().getLeaves()) {
 				if (categories.contains(leaf.getCategory()) && !foundInSentence.contains(leaf.getCategory())) {
 					Collection<Example> sentences = result.get(leaf.getCategory());
 
@@ -155,7 +155,7 @@ public class MarkedUpFileNormalizer {
 			}
 
 			boolean hadCategory = false;
-			for (final SyntaxTreeNodeLeaf word : example.sentence.getCcgbankParse().getWords()) {
+			for (final SyntaxTreeNodeLeaf word : example.sentence.getCcgbankParse().getLeaves()) {
 				String annotation = indexToAnnotation.get(word.getHeadIndex());
 				if (annotation == null) {
 					annotation = "";

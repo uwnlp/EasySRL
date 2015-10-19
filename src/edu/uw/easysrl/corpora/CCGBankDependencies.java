@@ -19,8 +19,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 import com.google.common.io.Files;
 
-import edu.uw.easysrl.main.ParsePrinter;
 import edu.uw.easysrl.main.InputReader.InputWord;
+import edu.uw.easysrl.main.ParsePrinter;
 import edu.uw.easysrl.rebanking.Rebanker;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -39,16 +39,12 @@ public class CCGBankDependencies implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = 1L;
-	private final static File candcFolder = new File(
-			"/disk/data2/s1049478/my_parser/candc"); // TODO
-	private final static ParsePrinter autoPrinter = ParsePrinter.CCGBANK_PRINTER;
+	private final static File candcFolder = new File("/disk/data2/s1049478/my_parser/candc"); // TODO
 
 	/**
-	 * Runs the C&C generate program on a list of parses for a sentence, and
-	 * returns the output.
+	 * Runs the C&C generate program on a list of parses for a sentence, and returns the output.
 	 */
-	public static String getDependenciesAsString(
-			final List<SyntaxTreeNode> parses, final int id) {
+	public static String getDependenciesAsString(final List<SyntaxTreeNode> parses, final int id) {
 
 		try {
 			final File candcScripts = new File(candcFolder, "/src/scripts/ccg");
@@ -59,13 +55,11 @@ public class CCGBankDependencies implements Serializable {
 			final File autoFile = File.createTempFile("parse", ".auto");
 			final File convertedFile = File.createTempFile("parse", ".auto2");
 
-			final String autoString = autoPrinter.print(parses, id);
+			final String autoString = ParsePrinter.CCGBANK_PRINTER.print(parses, id);
 			Util.writeStringToFile(autoString, autoFile);
-			final String command = "cat \"" + autoFile + "\" | " + candcScripts
-					+ "/convert_auto " + autoFile + " | sed -f " + candcScripts
-					+ "/convert_brackets > " + convertedFile;
-			final String command2 = candcFolder + "/bin/generate -j  "
-					+ catsFolder + " " + markedUpCategories + " "
+			final String command = "cat \"" + autoFile + "\" | " + candcScripts + "/convert_auto " + autoFile
+					+ " | sed -f " + candcScripts + "/convert_brackets > " + convertedFile;
+			final String command2 = candcFolder + "/bin/generate -j  " + catsFolder + " " + markedUpCategories + " "
 					+ convertedFile;
 			Util.executeCommand(command);
 			final String deps = Util.executeCommand(command2);
@@ -80,13 +74,11 @@ public class CCGBankDependencies implements Serializable {
 	}
 
 	/**
-	 * Runs the C&C generate program on a list of parses for a sentence, and
-	 * returns the output.
+	 * Runs the C&C generate program on a list of parses for a sentence, and returns the output.
 	 *
 	 * Failed parses are represented as 'null'.
 	 */
-	static List<DependencyParse> getDependencies(
-			final List<SyntaxTreeNode> parses, final int id) {
+	static List<DependencyParse> getDependencies(final List<SyntaxTreeNode> parses, final int id) {
 
 		final String output = getDependenciesAsString(parses, id);
 		final List<String> lines = Arrays.asList(output.split("\n", -1));
@@ -96,16 +88,14 @@ public class CCGBankDependencies implements Serializable {
 
 		final List<DependencyParse> result = new ArrayList<>();
 		// Skip the C&C header.
-		final Iterator<String> linesIt = lines.subList(3, lines.size())
-				.iterator();
+		final Iterator<String> linesIt = lines.subList(3, lines.size()).iterator();
 		final Iterator<SyntaxTreeNode> parseIt = parses.iterator();
 
 		while (linesIt.hasNext() && parseIt.hasNext()) {
 			if (!parseIt.hasNext()) {
 				throw new RuntimeException("More dependency parses than input");
 			}
-			result.add(getDependencyParseCandC(linesIt, parseIt.next()
-					.getWords(), id));
+			result.add(getDependencyParseCandC(linesIt, parseIt.next().getLeaves(), id));
 		}
 
 		if (result.size() != parses.size()) {
@@ -138,10 +128,8 @@ public class CCGBankDependencies implements Serializable {
 
 		private final int sentencePositionOfArgument;
 
-		private CCGBankDependency(final SyntaxTreeNodeLeaf parent,
-				final SyntaxTreeNodeLeaf child, final int index,
-				final int sentencePositionOfPredicate,
-				final int sentencePositionOfArgument) {
+		private CCGBankDependency(final SyntaxTreeNodeLeaf parent, final SyntaxTreeNodeLeaf child, final int index,
+				final int sentencePositionOfPredicate, final int sentencePositionOfArgument) {
 			this.parent = parent;
 			this.child = child;
 			this.argumentNumber = index;
@@ -189,21 +177,17 @@ public class CCGBankDependencies implements Serializable {
 		private static final long serialVersionUID = 1L;
 		private final Table<SyntaxTreeNodeLeaf, Integer, Collection<CCGBankDependency>> arguments = HashBasedTable
 				.create();
-		private final Multimap<SyntaxTreeNodeLeaf, CCGBankDependency> argumentToPredicates = HashMultimap
-				.create();
-		private final Multimap<SyntaxTreeNodeLeaf, CCGBankDependency> predicateToArguments = HashMultimap
-				.create();
+		private final Multimap<SyntaxTreeNodeLeaf, CCGBankDependency> argumentToPredicates = HashMultimap.create();
+		private final Multimap<SyntaxTreeNodeLeaf, CCGBankDependency> predicateToArguments = HashMultimap.create();
 		private final Collection<CCGBankDependency> allDependencies = new HashSet<>();
-		private final Table<Integer, Integer, CCGBankDependency> headToChildIndices = HashBasedTable
-				.create();
+		private final Table<Integer, Integer, CCGBankDependency> headToChildIndices = HashBasedTable.create();
 		private final List<InputWord> words;
 
 		private final String file;
 		private final int sentenceNumber;
 		private final int sentenceLength;
 
-		private DependencyParse(final String file, final int sentenceNumber,
-				final List<InputWord> words) {
+		private DependencyParse(final String file, final int sentenceNumber, final List<InputWord> words) {
 			this.file = file;
 			this.sentenceNumber = sentenceNumber;
 			this.sentenceLength = words.size();
@@ -211,8 +195,7 @@ public class CCGBankDependencies implements Serializable {
 		}
 
 		private void addDependency(final CCGBankDependency dep) {
-			Collection<CCGBankDependency> args = arguments.get(dep.parent,
-					dep.getArgNumber());
+			Collection<CCGBankDependency> args = arguments.get(dep.parent, dep.getArgNumber());
 			if (args == null) {
 				args = new ArrayList<>();
 				arguments.put(dep.parent, dep.getArgNumber(), args);
@@ -223,14 +206,12 @@ public class CCGBankDependencies implements Serializable {
 			argumentToPredicates.put(dep.getChild(), dep);
 			predicateToArguments.put(dep.getParent(), dep);
 			allDependencies.add(dep);
-			headToChildIndices.put(dep.parent.getSentencePosition(),
-					dep.child.getSentencePosition(), dep);
+			headToChildIndices.put(dep.parent.getSentencePosition(), dep.child.getSentencePosition(), dep);
 		}
 
-		public Collection<CCGBankDependency> getDependencies(
-				final int predicateIndex) {
-			final Collection<CCGBankDependency> result = ImmutableSet
-					.copyOf(headToChildIndices.row(predicateIndex).values());
+		public Collection<CCGBankDependency> getDependencies(final int predicateIndex) {
+			final Collection<CCGBankDependency> result = ImmutableSet.copyOf(headToChildIndices.row(predicateIndex)
+					.values());
 			return result;
 		}
 
@@ -242,8 +223,7 @@ public class CCGBankDependencies implements Serializable {
 			return headToChildIndices.contains(i, j);
 		}
 
-		CCGBankDependency getDependency(final int headIndex,
-				final int childIndex) {
+		CCGBankDependency getDependency(final int headIndex, final int childIndex) {
 			return headToChildIndices.get(headIndex, childIndex);
 		}
 
@@ -263,8 +243,7 @@ public class CCGBankDependencies implements Serializable {
 			return words;
 		}
 
-		public Collection<CCGBankDependency> getArgument(final int headIndex,
-				final int argumentNumber) {
+		public Collection<CCGBankDependency> getArgument(final int headIndex, final int argumentNumber) {
 			final Collection<CCGBankDependency> result = new ArrayList<>();
 			for (final CCGBankDependency dep : getDependencies(headIndex)) {
 				if (dep.getArgNumber() == argumentNumber) {
@@ -279,17 +258,14 @@ public class CCGBankDependencies implements Serializable {
 	/**
 	 * Builds a DependencyParse, from C&C 'deps' output.
 	 *
-	 * 'lines' is an iterator over input lines. The function reads one parse
-	 * from this iterator.
+	 * 'lines' is an iterator over input lines. The function reads one parse from this iterator.
 	 *
 	 * @param id
 	 */
-	private static DependencyParse getDependencyParseCandC(
-			final Iterator<String> lines,
+	private static DependencyParse getDependencyParseCandC(final Iterator<String> lines,
 			final List<SyntaxTreeNodeLeaf> supertags, final int id) {
 		// Pierre_1 N/N 1 Vinken_2
-		final DependencyParse result = new DependencyParse("", id,
-				InputWord.fromLeaves(supertags));
+		final DependencyParse result = new DependencyParse("", id, InputWord.fromLeaves(supertags));
 
 		while (lines.hasNext()) {
 			final String line = lines.next();
@@ -302,30 +278,23 @@ public class CCGBankDependencies implements Serializable {
 			}
 
 			final String[] fields = line.split(" ");
-			final int predicate = Integer.valueOf(fields[0].substring(fields[0]
-					.indexOf('_') + 1));
+			final int predicate = Integer.valueOf(fields[0].substring(fields[0].indexOf('_') + 1));
 			final int argIndex = Integer.valueOf(fields[2].trim());
-			final int argument = Integer.valueOf(fields[3].substring(fields[3]
-					.indexOf('_') + 1));
-			result.addDependency(new CCGBankDependency(supertags
-					.get(predicate - 1), supertags.get(argument - 1), argIndex,
-					predicate, argument));
+			final int argument = Integer.valueOf(fields[3].substring(fields[3].indexOf('_') + 1));
+			result.addDependency(new CCGBankDependency(supertags.get(predicate - 1), supertags.get(argument - 1),
+					argIndex, predicate, argument));
 		}
 
 		return result;
 	}
 
-	public static List<DependencyParse> loadCorpus(final File folder,
-			final Partition partition) throws IOException {
+	public static List<DependencyParse> loadCorpus(final File folder, final Partition partition) throws IOException {
 		final String regex = partition == Partition.DEV ? CCGBankParseReader.devRegex
-				: partition == Partition.TRAIN ? CCGBankParseReader.trainRegex
-						: CCGBankParseReader.testRegex;
-		final List<File> autoFiles = Util.findAllFiles(folder, regex
-				+ ".*.auto");
+				: partition == Partition.TRAIN ? CCGBankParseReader.trainRegex : CCGBankParseReader.testRegex;
+		final List<File> autoFiles = Util.findAllFiles(folder, regex + ".*.auto");
 		Collections.sort(autoFiles);
 
-		final List<File> pargFiles = Util.findAllFiles(folder, regex
-				+ ".*.parg");
+		final List<File> pargFiles = Util.findAllFiles(folder, regex + ".*.parg");
 		Collections.sort(pargFiles);
 
 		if (pargFiles.size() == 0) {
@@ -350,8 +319,8 @@ public class CCGBankDependencies implements Serializable {
 		return result;
 	}
 
-	private static List<DependencyParse> getDependencyParses(
-			final File autoFile, final File pargFile) throws IOException {
+	private static List<DependencyParse> getDependencyParses(final File autoFile, final File pargFile)
+			throws IOException {
 		final Iterator<String> autoLines = Util.readFileLineByLine(autoFile);
 		final Iterator<String> pargLines = Util.readFileLineByLine(pargFile);
 		final List<DependencyParse> result = new ArrayList<>();
@@ -359,8 +328,8 @@ public class CCGBankDependencies implements Serializable {
 		while (autoLines.hasNext()) {
 
 			final SyntaxTreeNode autoParse = Rebanker.getParse(autoLines);
-			final DependencyParse depParse = CCGBankDependencies
-					.getDependencyParseCCGBank(pargLines, autoParse.getWords());
+			final DependencyParse depParse = CCGBankDependencies.getDependencyParseCCGBank(pargLines,
+					autoParse.getLeaves());
 			result.add(depParse);
 		}
 
@@ -370,11 +339,10 @@ public class CCGBankDependencies implements Serializable {
 	/**
 	 * Builds a DependencyParse, from CCGBank PARG format.
 	 *
-	 * 'lines' is an iterator over input lines. The function reads one parse
-	 * from this iterator.
+	 * 'lines' is an iterator over input lines. The function reads one parse from this iterator.
 	 */
-	private static DependencyParse getDependencyParseCCGBank(
-			final Iterator<String> lines, final List<SyntaxTreeNodeLeaf> words) {
+	private static DependencyParse getDependencyParseCCGBank(final Iterator<String> lines,
+			final List<SyntaxTreeNodeLeaf> words) {
 
 		// Header line
 		String line = lines.next();
@@ -383,10 +351,8 @@ public class CCGBankDependencies implements Serializable {
 		final int quote2 = line.indexOf("\"", quote1 + 1);
 		final int period = line.indexOf(".");
 		final String file = line.substring(quote1 + 1, period);
-		final int sentenceNumber = Integer.valueOf(line.substring(period + 1,
-				quote2)) - 1;
-		final DependencyParse result = new DependencyParse(file,
-				sentenceNumber, InputWord.fromLeaves(words));
+		final int sentenceNumber = Integer.valueOf(line.substring(period + 1, quote2)) - 1;
+		final DependencyParse result = new DependencyParse(file, sentenceNumber, InputWord.fromLeaves(words));
 
 		while (lines.hasNext()) {
 			line = lines.next();
@@ -399,8 +365,8 @@ public class CCGBankDependencies implements Serializable {
 			final int argument = Integer.valueOf(fields[0].trim());
 			final int predicate = Integer.valueOf(fields[1].trim());
 			final int argIndex = Integer.valueOf(fields[3].trim());
-			result.addDependency(new CCGBankDependency(words.get(predicate),
-					words.get(argument), argIndex, predicate, argument));
+			result.addDependency(new CCGBankDependency(words.get(predicate), words.get(argument), argIndex, predicate,
+					argument));
 		}
 
 		return result;

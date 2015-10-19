@@ -31,9 +31,9 @@ public class VPadjunctRebanker extends Rebanker {
 
 				) {
 
-			if (node.getChild(1).getWords().get(0).getCategory().equals(Category.valueOf("(S[to]\\NP)/(S[b]\\NP)"))) {
+			if (node.getChild(1).getLeaves().get(0).getCategory().equals(Category.valueOf("(S[to]\\NP)/(S[b]\\NP)"))) {
 				// He retired (to spend time with family)
-				setCategory(result, node.getChild(1).getWords().get(0).getHeadIndex(),
+				setCategory(result, node.getChild(1).getLeaves().get(0).getHeadIndex(),
 						Category.valueOf("((S\\NP)\\(S\\NP))/(S[b]\\NP)"));
 				change = true;
 

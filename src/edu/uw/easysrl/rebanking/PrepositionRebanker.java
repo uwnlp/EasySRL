@@ -32,7 +32,7 @@ public class PrepositionRebanker extends Rebanker {
 		final Map<SRLDependency, CCGBankDependency> deps = sentence
 				.getCorrespondingCCGBankDependencies();
 		for (final SyntaxTreeNodeLeaf word : sentence.getCcgbankParse()
-				.getWords()) {
+				.getLeaves()) {
 
 			if (word.getCategory().toString().equals("((S\\NP)\\(S\\NP))/NP")) {
 

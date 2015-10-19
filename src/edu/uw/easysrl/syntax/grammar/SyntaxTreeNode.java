@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 
@@ -13,8 +14,11 @@ import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
 import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.main.ParsePrinter;
+import edu.uw.easysrl.semantics.Lexicon;
+import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
+import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
 
 public abstract class SyntaxTreeNode implements Serializable {
 
@@ -27,16 +31,28 @@ public abstract class SyntaxTreeNode implements Serializable {
 	private final DependencyStructure dependencyStructure;
 	private final List<UnlabelledDependency> resolvedUnlabelledDependencies;
 	private final int length;
+	private final Optional<Logic> semantics;
 
 	public abstract SyntaxTreeNodeLeaf getHead();
 
 	private SyntaxTreeNode(final Category category, final int headIndex, final DependencyStructure dependencyStructure,
-			final List<UnlabelledDependency> resolvedUnlabelledDependencies, final int length) {
+			final List<UnlabelledDependency> resolvedUnlabelledDependencies, final int length, final String word,
+			final Optional<Logic> semantics) {
 		this.category = category;
 		this.headIndex = headIndex;
 		this.dependencyStructure = dependencyStructure;
 		this.resolvedUnlabelledDependencies = resolvedUnlabelledDependencies;
 		this.length = length;
+		this.semantics = semantics;
+		this.word = word;
+	}
+
+	public abstract SyntaxTreeNode addSemantics(Lexicon lexicon, CCGandSRLparse parse2);
+
+	private final String word;
+
+	public String getWord() {
+		return word;
 	}
 
 	public static class SyntaxTreeNodeBinary extends SyntaxTreeNode {
@@ -53,8 +69,17 @@ public abstract class SyntaxTreeNode implements Serializable {
 				final SyntaxTreeNode rightChild, final RuleType ruleType, final boolean headIsLeft,
 				final DependencyStructure dependencyStructure,
 				final List<UnlabelledDependency> resolvedUnlabelledDependencies) {
+			this(category, leftChild, rightChild, ruleType, headIsLeft, dependencyStructure,
+					resolvedUnlabelledDependencies, Optional.empty());
+		}
+
+		private SyntaxTreeNodeBinary(final Category category, final SyntaxTreeNode leftChild,
+				final SyntaxTreeNode rightChild, final RuleType ruleType, final boolean headIsLeft,
+				final DependencyStructure dependencyStructure,
+				final List<UnlabelledDependency> resolvedUnlabelledDependencies, final Optional<Logic> semantics) {
 			super(category, headIsLeft ? leftChild.getHeadIndex() : rightChild.getHeadIndex(), dependencyStructure,
-					resolvedUnlabelledDependencies, leftChild.length + rightChild.length);
+					resolvedUnlabelledDependencies, leftChild.length + rightChild.length, leftChild.getWord() + " "
+							+ rightChild.getWord(), semantics);
 			this.ruleType = ruleType;
 			this.headIsLeft = headIsLeft;
 			this.leftChild = leftChild;
@@ -115,6 +140,26 @@ public abstract class SyntaxTreeNode implements Serializable {
 			return headIsLeft;
 		}
 
+		@Override
+		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
+			Logic semantics;
+			final SyntaxTreeNode newLeft;
+			final SyntaxTreeNode newRight;
+			if (lexicon.isMultiWordExpression(this)) {
+				newLeft = leftChild;
+				newRight = rightChild;
+				semantics = lexicon.getEntry(getWord(), "MW", super.category,
+						super.dependencyStructure.getCoindexation());
+			} else {
+				newLeft = leftChild.addSemantics(lexicon, semanticDependencies);
+				newRight = rightChild.addSemantics(lexicon, semanticDependencies);
+				semantics = Combinator.fromRule(ruleType).apply(newLeft.semantics.get(), newRight.semantics.get());
+
+			}
+			return new SyntaxTreeNodeBinary(super.category, newLeft, newRight, ruleType, headIsLeft,
+					super.dependencyStructure, super.resolvedUnlabelledDependencies, Optional.of(semantics));
+		}
+
 	}
 
 	public static class SyntaxTreeNodeLeaf extends SyntaxTreeNode {
@@ -125,8 +170,13 @@ public abstract class SyntaxTreeNode implements Serializable {
 
 		public SyntaxTreeNodeLeaf(final String word, final String pos, final String ner, final Category category,
 				final int sentencePosition) {
+			this(word, pos, ner, category, sentencePosition, Optional.empty());
+		}
+
+		private SyntaxTreeNodeLeaf(final String word, final String pos, final String ner, final Category category,
+				final int sentencePosition, final Optional<Logic> semantics) {
 			super(category, sentencePosition, DependencyStructure.make(category, word, sentencePosition), Collections
-					.emptyList(), 1);
+					.emptyList(), 1, word, semantics);
 			this.pos = pos;
 			this.ner = ner;
 			this.word = word;
@@ -157,7 +207,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 		}
 
 		@Override
-		void getWords(final List<SyntaxTreeNodeLeaf> result) {
+		void getLeaves(final List<SyntaxTreeNodeLeaf> result) {
 			result.add(this);
 		}
 
@@ -169,6 +219,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 			return ner;
 		}
 
+		@Override
 		public String getWord() {
 			return word;
 		}
@@ -199,6 +250,13 @@ public abstract class SyntaxTreeNode implements Serializable {
 			return Collections.emptyList();
 
 		}
+
+		@Override
+		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
+
+			final Logic semantics = lexicon.getEntry(semanticDependencies, super.headIndex);
+			return new SyntaxTreeNodeLeaf(word, pos, ner, super.category, super.headIndex, Optional.of(semantics));
+		}
 	}
 
 	public static class SyntaxTreeNodeUnary extends SyntaxTreeNode {
@@ -212,7 +270,14 @@ public abstract class SyntaxTreeNode implements Serializable {
 		public SyntaxTreeNodeUnary(final Category category, final SyntaxTreeNode child,
 				final DependencyStructure dependencyStructure, final UnaryRule unaryRule,
 				final List<UnlabelledDependency> resolvedUnlabelledDependencies) {
-			super(category, child.getHeadIndex(), dependencyStructure, resolvedUnlabelledDependencies, child.length);
+			this(category, child, dependencyStructure, unaryRule, resolvedUnlabelledDependencies, Optional.empty());
+		}
+
+		private SyntaxTreeNodeUnary(final Category category, final SyntaxTreeNode child,
+				final DependencyStructure dependencyStructure, final UnaryRule unaryRule,
+				final List<UnlabelledDependency> resolvedUnlabelledDependencies, final Optional<Logic> semantics) {
+			super(category, child.getHeadIndex(), dependencyStructure, resolvedUnlabelledDependencies, child.length,
+					child.getWord(), semantics);
 
 			this.child = child;
 			this.unaryRule = unaryRule;
@@ -267,11 +332,28 @@ public abstract class SyntaxTreeNode implements Serializable {
 		public SyntaxTreeNode getChild() {
 			return child;
 		}
+
+		@Override
+		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
+			final SyntaxTreeNode newChild;
+			final Logic semantics;
+			if (lexicon.isMultiWordExpression(this)) {
+				newChild = child;
+				semantics = lexicon.getEntry(getWord(), "MW", super.category,
+						super.dependencyStructure.getCoindexation());
+			} else {
+				newChild = child.addSemantics(lexicon, semanticDependencies);
+				semantics = unaryRule.apply(newChild.semantics.get());
+			}
+
+			return new SyntaxTreeNodeUnary(super.category, newChild, super.dependencyStructure, unaryRule,
+					super.resolvedUnlabelledDependencies, Optional.of(semantics));
+		}
 	}
 
 	@Override
 	public String toString() {
-		return ParsePrinter.CCGBANK_PRINTER.print(this, -1);
+		return ParsePrinter.CCGBANK_PRINTER.print(this);
 	}
 
 	public int getHeadIndex() {
@@ -298,32 +380,32 @@ public abstract class SyntaxTreeNode implements Serializable {
 		return false;
 	}
 
-	private List<SyntaxTreeNodeLeaf> words = null;
+	private List<SyntaxTreeNodeLeaf> leaves = null;
 
 	/**
 	 * Returns all the terminal nodes in the sentence, from left to right.
 	 */
-	public List<SyntaxTreeNodeLeaf> getWords() {
-		if (words == null) {
+	public List<SyntaxTreeNodeLeaf> getLeaves() {
+		if (leaves == null) {
 			final List<SyntaxTreeNodeLeaf> result = new ArrayList<>();
-			getWords(result);
-			words = result;
+			getLeaves(result);
+			leaves = result;
 		}
 
-		return words;
+		return leaves;
 	}
 
 	public int getStartIndex() {
-		return getWords().get(0).getSentencePosition();
+		return getLeaves().get(0).getSentencePosition();
 	}
 
 	public int getEndIndex() {
-		return 1 + getWords().get(getWords().size() - 1).getSentencePosition();
+		return 1 + getLeaves().get(getLeaves().size() - 1).getSentencePosition();
 	}
 
-	void getWords(final List<SyntaxTreeNodeLeaf> result) {
+	void getLeaves(final List<SyntaxTreeNodeLeaf> result) {
 		for (final SyntaxTreeNode child : getChildren()) {
-			child.getWords(result);
+			child.getLeaves(result);
 		}
 	}
 
@@ -356,7 +438,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 
 		public SyntaxTreeNodeLabelling(final SyntaxTreeNode child, final Collection<ResolvedDependency> labelled,
 				final List<UnlabelledDependency> unlabelled) {
-			super(child.category, child.getHeadIndex(), child.getDependencyStructure(), unlabelled, child.length);
+			super(child.category, child.getHeadIndex(), child.getDependencyStructure(), unlabelled, child.length, child
+					.getWord(), child.semantics);
 			this.labelled = labelled;
 			this.child = child;
 		}
@@ -397,6 +480,12 @@ public abstract class SyntaxTreeNode implements Serializable {
 			return labelled;
 		}
 
+		@Override
+		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
+			final SyntaxTreeNode newChild = child.addSemantics(lexicon, semanticDependencies);
+			return new SyntaxTreeNodeLabelling(newChild, labelled, super.resolvedUnlabelledDependencies);
+		}
+
 	}
 
 	public List<ResolvedDependency> getAllLabelledDependencies() {
@@ -414,6 +503,10 @@ public abstract class SyntaxTreeNode implements Serializable {
 
 	public int getLength() {
 		return length;
+	}
+
+	public Optional<Logic> getSemantics() {
+		return semantics;
 	}
 
 }

@@ -18,16 +18,20 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
+import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.main.InputReader;
 import edu.uw.easysrl.main.EasySRL.InputFormat;
+import edu.uw.easysrl.main.InputReader;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
+import edu.uw.easysrl.semantics.Lexicon;
+import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.syntax.grammar.Category;
+import edu.uw.easysrl.syntax.grammar.Category.Slash;
 import edu.uw.easysrl.syntax.grammar.Combinator;
+import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
 import edu.uw.easysrl.syntax.grammar.SeenRules;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
-import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLabelling;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
@@ -99,16 +103,19 @@ public abstract class AbstractParser implements Parser {
 		 * Updates the dependencies of the child node.
 		 */
 		private final DependencyStructure dependencyStructureTransformation;
+		private final Logic semantics;
 		private final int id;
 
-		private UnaryRule(final int id, final Category result, final DependencyStructure dependencyStructure) {
+		private UnaryRule(final int id, final Category result, final DependencyStructure dependencyStructure,
+				final Logic semantics) {
 			this.result = result;
 			this.dependencyStructureTransformation = dependencyStructure;
 			this.id = id;
+			this.semantics = semantics;
 		}
 
-		public UnaryRule(final int id, final String from, final String to) {
-			this(id, Category.valueOf(to), DependencyStructure.makeUnaryRuleTransformation(from, to));
+		public UnaryRule(final int id, final String from, final String to, final Logic semantics) {
+			this(id, Category.valueOf(to), DependencyStructure.makeUnaryRuleTransformation(from, to), semantics);
 		}
 
 		public int getID() {
@@ -126,6 +133,10 @@ public abstract class AbstractParser implements Parser {
 		public Category getResult() {
 			return result;
 		}
+
+		public Logic apply(final Logic logic) {
+			return semantics.alphaReduce().apply(logic);
+		}
 	}
 
 	/**
@@ -133,6 +144,7 @@ public abstract class AbstractParser implements Parser {
 	 */
 	public static Multimap<Category, UnaryRule> loadUnaryRules(final File file) throws IOException {
 		final Multimap<Category, UnaryRule> result = HashMultimap.create();
+		final Lexicon lexicon = new Lexicon();
 		for (String line : Util.readFile(file)) {
 			// Allow comments.
 			if (line.indexOf("#") > -1) {
@@ -144,11 +156,20 @@ public abstract class AbstractParser implements Parser {
 			}
 
 			final String[] fields = line.split("\\s+");
-			if (fields.length != 2) {
-				throw new Error("Expected 2 categories on line in UnaryRule file: " + line);
+			if (fields.length < 2) {
+				throw new Error("Expected 2 categories and logical form line in UnaryRule file: " + line);
 			}
 
-			result.put(Category.valueOf(fields[0]), new UnaryRule(result.size(), fields[0], fields[1]));
+			final String from = fields[0];
+			final String to = fields[1];
+			// final String logic = fields[2];
+			final Category cat = Category.make(Category.valueOf(to), Slash.FWD, Category.valueOf(from));
+			result.put(
+					Category.valueOf(from),
+					new UnaryRule(result.size(), from, to, lexicon.getEntry(null, "NULL", cat,
+							Coindexation.fromString(to + "/" + from))));
+			// LogicParser.fromString(logic,Category.make(Category.valueOf(to), Slash.FWD,
+			// Category.valueOf(from)))
 		}
 
 		return ImmutableMultimap.copyOf(result);

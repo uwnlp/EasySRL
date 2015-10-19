@@ -5,22 +5,30 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.semantics.AtomicSentence;
+import edu.uw.easysrl.semantics.ConnectiveSentence;
+import edu.uw.easysrl.semantics.LambdaExpression;
+import edu.uw.easysrl.semantics.Logic;
+import edu.uw.easysrl.semantics.Sentence;
+import edu.uw.easysrl.semantics.Set;
+import edu.uw.easysrl.semantics.Variable;
+import edu.uw.easysrl.semantics.ConnectiveSentence.Connective;
 import edu.uw.easysrl.syntax.grammar.Category.Slash;
 import edu.uw.easysrl.util.Util;
 
 public abstract class Combinator {
 	public enum RuleType {
-		FA(RuleClass.OTHER), BA(RuleClass.OTHER), FC(RuleClass.FC), BX(
-				RuleClass.BX), GFC(RuleClass.GFC), GBX(RuleClass.GBX), CONJ(
-				RuleClass.CONJ), RP(RuleClass.RP), LP(RuleClass.LP), NOISE(
-				RuleClass.OTHER), FORWARD_TYPERAISE(RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(
-				RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(RuleClass.OTHER), LEXICON(
-				RuleClass.LEXICON);
+		FA(RuleClass.OTHER), BA(RuleClass.OTHER), FC(RuleClass.FC), BX(RuleClass.BX), GFC(RuleClass.GFC), GBX(
+				RuleClass.GBX), CONJ(RuleClass.CONJ), RP(RuleClass.RP), LP(RuleClass.LP), NOISE(RuleClass.OTHER), FORWARD_TYPERAISE(
+				RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(
+				RuleClass.OTHER), LEXICON(RuleClass.LEXICON);
 		private final RuleClass ruleClass;
 
 		RuleType(final RuleClass ruleClass) {
@@ -30,19 +38,28 @@ public abstract class Combinator {
 		public RuleClass getNormalFormClassForRule() {
 			return ruleClass;
 		}
+
 	}
 
 	public enum RuleClass {
 		FC, BX, GFC, GBX, FORWARD_TYPERAISE, BACKWARD_TYPE_RAISE, CONJ, LEXICON, OTHER, LP, RP
 	}
 
+	// TODO Can we get rid of RuleType altogether?
+	private final static Map<RuleType, Combinator> typeToCombinator = new HashMap<>();
+
 	private Combinator(final RuleType ruleType) {
 		this.ruleType = ruleType;
+		typeToCombinator.put(ruleType, this);
+	}
+
+	public static Combinator fromRule(final RuleType ruleType) {
+		return typeToCombinator.get(ruleType);
 	}
 
 	public static class RuleProduction {
-		private RuleProduction(final RuleType ruleType, final Category result,
-				final boolean headIsLeft, final Combinator combinator) {
+		private RuleProduction(final RuleType ruleType, final Category result, final boolean headIsLeft,
+				final Combinator combinator) {
 			this.ruleType = ruleType;
 			this.category = result;
 			this.headIsLeft = headIsLeft;
@@ -73,20 +90,16 @@ public abstract class Combinator {
 
 	public abstract boolean headIsLeft(Category left, Category right);
 
-	public final static Collection<Combinator> STANDARD_COMBINATORS = new ArrayList<>(
-			Arrays.asList(new ForwardApplication(), new BackwardApplication(),
-					new ForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD),
-					new BackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD),
-					new GeneralizedForwardComposition(Slash.FWD, Slash.FWD,
-							Slash.FWD), new GeneralizedBackwardComposition(
-							Slash.FWD, Slash.BWD, Slash.FWD),
-					new Conjunction(), new RemovePunctuation(false),
-					new RemovePunctuation(true), new CommaAndVPtoNPmodifier() // TODO
-					, new CommaAndVerbPhrasetoAdverb() // TODO
+	public final static Collection<Combinator> STANDARD_COMBINATORS = new ArrayList<>(Arrays.asList(
+			new ForwardApplication(), new BackwardApplication(),
+			new ForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD), new BackwardComposition(Slash.FWD, Slash.BWD,
+					Slash.FWD), new GeneralizedForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD),
+			new GeneralizedBackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD), new Conjunction(),
+			new RemovePunctuation(false), new RemovePunctuation(true), new CommaAndVPtoNPmodifier() // TODO
+			, new CommaAndVerbPhrasetoAdverb() // TODO
 			));
 
-	public static Collection<Combinator> loadSpecialCombinators(final File file)
-			throws IOException {
+	public static Collection<Combinator> loadSpecialCombinators(final File file) throws IOException {
 		final Collection<Combinator> newCombinators = new ArrayList<>();
 		for (String line : Util.readFile(file)) {
 			// l , S[to]\NP NP\NP
@@ -104,8 +117,7 @@ public abstract class Combinator {
 			final Category left = Category.valueOf(fields[1]);
 			final Category right = Category.valueOf(fields[2]);
 			final Category result = Category.valueOf(fields[3]);
-			newCombinators.add(new SpecialCombinator(left, right, result,
-					headIsLeft));
+			newCombinators.add(new SpecialCombinator(left, right, result, headIsLeft));
 		}
 		return newCombinators;
 	}
@@ -116,28 +128,28 @@ public abstract class Combinator {
 
 	public abstract Category apply(Category left, Category right);
 
+	public abstract Logic apply(Logic left, Logic right);
+
 	/**
 	 * Makes sure wildcard features are correctly instantiated.
 	 *
-	 * We want: S[X]/(S[X]\NP) and S[dcl]\NP to combine to S[dcl]. This is done
-	 * by finding any wildcards that need to be matched between S[X]\NP and
-	 * S[dcl]\NP, and applying the substitution to S[dcl].
+	 * We want: S[X]/(S[X]\NP) and S[dcl]\NP to combine to S[dcl]. This is done by finding any wildcards that need to be
+	 * matched between S[X]\NP and S[dcl]\NP, and applying the substitution to S[dcl].
 	 */
-	private static Category correctWildCardFeatures(final Category toCorrect,
-			final Category match1, final Category match2) {
+	private static Category correctWildCardFeatures(final Category toCorrect, final Category match1,
+			final Category match2) {
 		return toCorrect.doSubstitution(match1.getSubstitution(match2));
 	}
 
 	/**
 	 * Returns a set of rules that can be applied to a pair of categories.
 	 */
-	public static Collection<RuleProduction> getRules(final Category left,
-			final Category right, final Collection<Combinator> rules) {
+	public static Collection<RuleProduction> getRules(final Category left, final Category right,
+			final Collection<Combinator> rules) {
 		final Collection<RuleProduction> result = new ArrayList<>(2);
 		for (final Combinator c : rules) {
 			if (c.canApply(left, right)) {
-				result.add(new RuleProduction(c.ruleType, c.apply(left, right),
-						c.headIsLeft(left, right), c));
+				result.add(new RuleProduction(c.ruleType, c.apply(left, right), c.headIsLeft(left, right), c));
 			}
 		}
 
@@ -145,16 +157,18 @@ public abstract class Combinator {
 	}
 
 	private static class CommaAndVPtoNPmodifier extends Combinator {
-		private final Collection<Category> verbPhrases = new HashSet<>(
-				Arrays.asList(Category.valueOf("S[ng]\\NP"), // PV , whistling ,
-						// walked home
-						Category.valueOf("S[pss]\\NP"),// PV , tired, went to
-						// bed ???
-						Category.valueOf("S[adj]\\NP") // PV, 59 years old,
-						, Category.valueOf("S[to]\\NP")));
+		private final Collection<Category> verbPhrases = new HashSet<>(Arrays.asList(Category.valueOf("S[ng]\\NP"), // PV
+				// ,
+				// whistling
+				// ,
+				// walked home
+				Category.valueOf("S[pss]\\NP"),// PV , tired, went to
+				// bed ???
+				Category.valueOf("S[adj]\\NP") // PV, 59 years old,
+				, Category.valueOf("S[to]\\NP")));
 		private final Category result = Category.valueOf("NP\\NP");
-		private final DependencyStructure dependencyStructure = DependencyStructure
-				.makeUnaryRuleTransformation("S\\NP_1", "NP_1\\NP_1");
+		private final DependencyStructure dependencyStructure = DependencyStructure.makeUnaryRuleTransformation(
+				"S\\NP_1", "NP_1\\NP_1");
 
 		private CommaAndVPtoNPmodifier() {
 			super(RuleType.NOISE);
@@ -176,10 +190,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return dependencyStructure.apply(right, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			throw new RuntimeException("TODO");
 		}
 	}
 
@@ -226,10 +244,31 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return right.conjunction();
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			if (right.getArguments().size() == 0) {
+				// NP conjunctions
+				final Variable x = new Variable(right.getType());
+				return LambdaExpression.make(new Set(x, right), x);
+			} else {
+				// Other conjunctions
+				// conj + S\NP
+				// conj + #x#e.foo(x,e) --> #p#x#e . foo(x,e) & p(x,e)
+				final Variable p = new Variable(right.getType());
+				final List<Variable> vars = new ArrayList<>();
+				// TODO very hacky. Move this to the lexicon.
+				final Connective connective = left.toString().equals("or") ? Connective.OR : Connective.AND;
+				vars.add(p);
+				vars.addAll(right.getArguments());
+				return LambdaExpression.make(ConnectiveSentence.make(connective,
+						new AtomicSentence(p, right.getArguments()),
+						(Sentence) ((LambdaExpression) right).getStatement()), vars);
+			}
 		}
 	}
 
@@ -243,8 +282,8 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return punctuationIsLeft ? left.isPunctuation() : right
-					.isPunctuation(); // && !StandardCategories.N.matches(left);
+			return punctuationIsLeft ? left.isPunctuation() : right.isPunctuation(); // &&
+			// !StandardCategories.N.matches(left);
 			// // Disallow punctuation combining
 			// with nouns, to avoid getting NPs like
 			// "Barack Obama ."
@@ -261,9 +300,13 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
+			return punctuationIsLeft ? right : left;
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
 			return punctuationIsLeft ? right : left;
 		}
 	}
@@ -274,8 +317,8 @@ public abstract class Combinator {
 		private final Category result;
 		private final boolean headIsLeft;
 
-		private SpecialCombinator(final Category left, final Category right,
-				final Category result, final boolean headIsLeft) {
+		private SpecialCombinator(final Category left, final Category right, final Category result,
+				final boolean headIsLeft) {
 			super(RuleType.NOISE);
 			this.left = left;
 			this.right = right;
@@ -299,11 +342,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
-			// TODO
-			return null;
+			throw new UnsupportedOperationException("TODO?");
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			throw new RuntimeException("TODO");
 		}
 	}
 
@@ -314,8 +360,7 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return left.isFunctor() && left.getSlash() == Slash.FWD
-					&& left.getRight().matches(right);
+			return left.isFunctor() && left.getSlash() == Slash.FWD && left.getRight().matches(right);
 		}
 
 		@Override
@@ -340,10 +385,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return left.apply(right, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return left.apply(right);
 		}
 	}
 
@@ -354,8 +403,7 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return right.isFunctor() && right.getSlash() == Slash.BWD
-					&& right.getRight().matches(left);
+			return right.isFunctor() && right.getSlash() == Slash.BWD && right.getRight().matches(left);
 		}
 
 		@Override
@@ -379,10 +427,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return right.apply(left, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return right.apply(left);
 		}
 	}
 
@@ -391,8 +443,7 @@ public abstract class Combinator {
 		private final Slash rightSlash;
 		private final Slash resultSlash;
 
-		private ForwardComposition(final Slash left, final Slash right,
-				final Slash result) {
+		private ForwardComposition(final Slash left, final Slash right, final Slash result) {
 			super(RuleType.FC);
 			this.leftSlash = left;
 			this.rightSlash = right;
@@ -401,10 +452,8 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return left.isFunctor() && right.isFunctor()
-					&& left.getRight().matches(right.getLeft())
-					&& left.getSlash() == leftSlash
-					&& right.getSlash() == rightSlash;
+			return left.isFunctor() && right.isFunctor() && left.getRight().matches(right.getLeft())
+					&& left.getSlash() == leftSlash && right.getSlash() == rightSlash;
 		}
 
 		@Override
@@ -413,12 +462,10 @@ public abstract class Combinator {
 			if (left.isModifier()) {
 				result = right;
 			} else {
-				result = Category.make(left.getLeft(), resultSlash,
-						right.getRight());
+				result = Category.make(left.getLeft(), resultSlash, right.getRight());
 			}
 
-			return correctWildCardFeatures(result, right.getLeft(),
-					left.getRight());
+			return correctWildCardFeatures(result, right.getLeft(), left.getRight());
 		}
 
 		@Override
@@ -430,10 +477,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return left.compose(right, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return left.compose(right);
 		}
 	}
 
@@ -442,8 +493,7 @@ public abstract class Combinator {
 		private final Slash rightSlash;
 		private final Slash resultSlash;
 
-		private GeneralizedForwardComposition(final Slash left,
-				final Slash right, final Slash result) {
+		private GeneralizedForwardComposition(final Slash left, final Slash right, final Slash result) {
 			super(RuleType.GFC);
 			this.leftSlash = left;
 			this.rightSlash = right;
@@ -452,11 +502,9 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			if (left.isFunctor() && right.isFunctor()
-					&& right.getLeft().isFunctor()) {
+			if (left.isFunctor() && right.isFunctor() && right.getLeft().isFunctor()) {
 				final Category rightLeft = right.getLeft();
-				return left.getRight().matches(rightLeft.getLeft())
-						&& left.getSlash() == leftSlash
+				return left.getRight().matches(rightLeft.getLeft()) && left.getSlash() == leftSlash
 						&& rightLeft.getSlash() == rightSlash;
 			} else {
 				return false;
@@ -471,13 +519,10 @@ public abstract class Combinator {
 
 			final Category rightLeft = right.getLeft();
 
-			Category result = Category.make(
-					Category.make(left.getLeft(), resultSlash,
-							rightLeft.getRight()), right.getSlash(),
-					right.getRight());
+			Category result = Category.make(Category.make(left.getLeft(), resultSlash, rightLeft.getRight()),
+					right.getSlash(), right.getRight());
 
-			result = correctWildCardFeatures(result, rightLeft.getLeft(),
-					left.getRight());
+			result = correctWildCardFeatures(result, rightLeft.getLeft(), left.getRight());
 			return result;
 		}
 
@@ -490,10 +535,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return left.compose2(right, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return left.compose2(right);
 		}
 	}
 
@@ -502,8 +551,7 @@ public abstract class Combinator {
 		private final Slash rightSlash;
 		private final Slash resultSlash;
 
-		private GeneralizedBackwardComposition(final Slash left,
-				final Slash right, final Slash result) {
+		private GeneralizedBackwardComposition(final Slash left, final Slash right, final Slash result) {
 			super(RuleType.GBX);
 			this.leftSlash = left;
 			this.rightSlash = right;
@@ -512,13 +560,10 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			if (left.isFunctor() && right.isFunctor()
-					&& left.getLeft().isFunctor()) {
+			if (left.isFunctor() && right.isFunctor() && left.getLeft().isFunctor()) {
 				final Category leftLeft = left.getLeft();
-				return right.getRight().matches(leftLeft.getLeft())
-						&& leftLeft.getSlash() == leftSlash
-						&& right.getSlash() == rightSlash
-						&& !(left.getLeft().isNounOrNP()); // Additional
+				return right.getRight().matches(leftLeft.getLeft()) && leftLeft.getSlash() == leftSlash
+						&& right.getSlash() == rightSlash && !(left.getLeft().isNounOrNP()); // Additional
 				// constraint from
 				// Steedman (2000)
 			} else {
@@ -534,13 +579,10 @@ public abstract class Combinator {
 
 			final Category leftLeft = left.getLeft();
 
-			Category result = Category.make(
-					Category.make(right.getLeft(), resultSlash,
-							leftLeft.getRight()), left.getSlash(),
-					left.getRight());
+			Category result = Category.make(Category.make(right.getLeft(), resultSlash, leftLeft.getRight()),
+					left.getSlash(), left.getRight());
 
-			result = correctWildCardFeatures(result, leftLeft.getLeft(),
-					right.getRight());
+			result = correctWildCardFeatures(result, leftLeft.getLeft(), right.getRight());
 			return result;
 		}
 
@@ -553,10 +595,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return right.compose2(left, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return right.compose2(left);
 		}
 	}
 
@@ -591,10 +637,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return right.conjunction();
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			throw new RuntimeException("TODO");
 		}
 	}
 
@@ -603,8 +653,7 @@ public abstract class Combinator {
 		private final Slash rightSlash;
 		private final Slash resultSlash;
 
-		private BackwardComposition(final Slash left, final Slash right,
-				final Slash result) {
+		private BackwardComposition(final Slash left, final Slash right, final Slash result) {
 			super(RuleType.BX);
 			this.leftSlash = left;
 			this.rightSlash = right;
@@ -613,11 +662,9 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return left.isFunctor() && right.isFunctor()
-					&& right.getRight().matches(left.getLeft())
-					&& left.getSlash() == leftSlash
-					&& right.getSlash() == rightSlash
-					&& !(left.getLeft().isNounOrNP()); // Additional constraint
+			return left.isFunctor() && right.isFunctor() && right.getRight().matches(left.getLeft())
+					&& left.getSlash() == leftSlash && right.getSlash() == rightSlash && !(left.getLeft().isNounOrNP()); // Additional
+			// constraint
 			// from Steedman (2000)
 		}
 
@@ -627,12 +674,10 @@ public abstract class Combinator {
 			if (right.isModifier()) {
 				result = left;
 			} else {
-				result = Category.make(right.getLeft(), resultSlash,
-						left.getRight());
+				result = Category.make(right.getLeft(), resultSlash, left.getRight());
 			}
 
-			return result.doSubstitution(left.getLeft().getSubstitution(
-					right.getRight()));
+			return result.doSubstitution(left.getLeft().getSubstitution(right.getRight()));
 		}
 
 		@Override
@@ -644,10 +689,14 @@ public abstract class Combinator {
 		}
 
 		@Override
-		public DependencyStructure apply(final DependencyStructure left,
-				final DependencyStructure right,
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
 			return right.compose(left, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return right.compose(left);
 		}
 	}
 
@@ -655,7 +704,6 @@ public abstract class Combinator {
 		return ruleType;
 	}
 
-	public abstract DependencyStructure apply(DependencyStructure left,
-			DependencyStructure right,
+	public abstract DependencyStructure apply(DependencyStructure left, DependencyStructure right,
 			List<UnlabelledDependency> resolvedDependencies);
 }

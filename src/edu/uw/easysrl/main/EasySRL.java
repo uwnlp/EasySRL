@@ -24,6 +24,7 @@ import com.google.common.collect.Multimap;
 
 import edu.uw.easysrl.corpora.CCGBankParseReader;
 import edu.uw.easysrl.dependencies.DependencyStructure;
+import edu.uw.easysrl.semantics.Lexicon;
 import edu.uw.easysrl.syntax.evaluation.Results;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
@@ -40,6 +41,7 @@ import edu.uw.easysrl.syntax.parser.SRLParser.BackoffSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
 import edu.uw.easysrl.syntax.parser.SRLParser.JointSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.PipelineSRLParser;
+import edu.uw.easysrl.syntax.parser.SRLParser.SemanticParser;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
 import edu.uw.easysrl.syntax.tagger.TagDict;
 import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
@@ -61,7 +63,7 @@ public class EasySRL {
 		@Option(shortName = "i", defaultValue = "tokenized", description = "(Optional) Input Format: one of \"tokenized\", \"POStagged\", \"POSandNERtagged\", \"gold\", \"deps\" or \"supertagged\"")
 		String getInputFormat();
 
-		@Option(shortName = "o", description = "Output Format: one of \"srl\", \"ccgbank\", \"html\", or \"prolog\"", defaultValue = "srl")
+		@Option(shortName = "o", description = "Output Format: one of \"logic\" \"srl\", \"ccgbank\", \"html\", or \"prolog\"", defaultValue = "logic")
 		String getOutputFormat();
 
 		@Option(shortName = "a", description = "Parsing algorithm: one of \"astar\" or \"cky\"", defaultValue = "astar")
@@ -109,7 +111,8 @@ public class EasySRL {
 	public enum OutputFormat {
 		CCGBANK(ParsePrinter.CCGBANK_PRINTER), HTML(ParsePrinter.HTML_PRINTER), SUPERTAGS(ParsePrinter.SUPERTAG_PRINTER), PROLOG(
 				ParsePrinter.PROLOG_PRINTER), EXTENDED(ParsePrinter.EXTENDED_CCGBANK_PRINTER), DEPS(
-				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER);
+				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
+								ParsePrinter.LOGIC_PRINTER);
 
 		public final ParsePrinter printer;
 
@@ -149,13 +152,23 @@ public class EasySRL {
 					ParsingAlgorithm.ASTAR, 200000, false),
 					Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
 
-			final SRLParser parser = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
+			final SRLParser parser2 = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
 					ParsingAlgorithm.valueOf(commandLineOptions.getParsingAlgorithm().toUpperCase()),
 					commandLineOptions.getParsingAlgorithm().equals("astar") ? 20000 : 400000, true), posTagger),
 					pipeline);
 
 			final OutputFormat outputFormat = OutputFormat.valueOf(commandLineOptions.getOutputFormat().toUpperCase());
 			final ParsePrinter printer = outputFormat.printer;
+
+			final SRLParser parser;
+			if (printer.outputsLogic()) {
+				// If we're outputing logic, load a lexicon
+				final File lexiconFile = new File(commandLineOptions.getModel(), "lexicon");
+				final Lexicon lexicon = lexiconFile.exists() ? new Lexicon(lexiconFile) : new Lexicon();
+				parser = new SemanticParser(parser2, lexicon);
+			} else {
+				parser = parser2;
+			}
 
 			final InputReader reader = InputReader.make(InputFormat.valueOf(commandLineOptions.getInputFormat()
 					.toUpperCase()));

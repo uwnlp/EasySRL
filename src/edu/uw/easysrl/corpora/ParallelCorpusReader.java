@@ -79,7 +79,7 @@ public class ParallelCorpusReader {
 		private final DependencyParse ccgbankDependencyParse;
 
 		public boolean isConsistent() {
-			return ccgbankParse.getWords().size() == srlParse
+			return ccgbankParse.getLeaves().size() == srlParse
 					.getSentenceLength();
 		}
 
@@ -89,7 +89,7 @@ public class ParallelCorpusReader {
 
 		public List<String> getWords() {
 			final List<String> result = new ArrayList<>();
-			for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getWords()) {
+			for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getLeaves()) {
 				result.add(leaf.getWord());
 			}
 
@@ -98,7 +98,7 @@ public class ParallelCorpusReader {
 
 		public List<Category> getLexicalCategories() {
 			final List<Category> result = new ArrayList<>();
-			for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getWords()) {
+			for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getLeaves()) {
 				result.add(leaf.getCategory());
 			}
 
@@ -109,8 +109,8 @@ public class ParallelCorpusReader {
 
 		public List<InputWord> getInputWords() {
 			if (inputWords == null) {
-				inputWords = new ArrayList<>(ccgbankParse.getWords().size());
-				for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getWords()) {
+				inputWords = new ArrayList<>(ccgbankParse.getLeaves().size());
+				for (final SyntaxTreeNodeLeaf leaf : ccgbankParse.getLeaves()) {
 					inputWords.add(new InputWord(leaf.getWord(), leaf.getPos(),
 							leaf.getNER()));
 				}
@@ -120,7 +120,7 @@ public class ParallelCorpusReader {
 		}
 
 		public int getLength() {
-			return ccgbankParse.getWords().size();
+			return ccgbankParse.getLeaves().size();
 		}
 
 		public Map<SRLDependency, CCGBankDependency> getCorrespondingCCGBankDependencies() {
@@ -287,7 +287,7 @@ public class ParallelCorpusReader {
 
 			private List<String> getWords(final SyntaxTreeNode parse) {
 				final List<String> words = new ArrayList<>();
-				for (final SyntaxTreeNodeLeaf leaf : parse.getWords()) {
+				for (final SyntaxTreeNodeLeaf leaf : parse.getLeaves()) {
 					words.add(leaf.getWord());
 				}
 				return words;

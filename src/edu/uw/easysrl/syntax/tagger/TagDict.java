@@ -177,7 +177,7 @@ public class TagDict {
 		// First, count how many times each word occurs with each category
 		while (input.hasNext()) {
 			final SyntaxTreeNode sentence = input.next();
-			final List<SyntaxTreeNodeLeaf> leaves = sentence.getWords();
+			final List<SyntaxTreeNodeLeaf> leaves = sentence.getLeaves();
 			for (int i = 0; i < leaves.size(); i++) {
 				final String word = leaves.get(i).getWord();
 				final Category cat = leaves.get(i).getCategory();

@@ -79,7 +79,7 @@ public abstract class Rebanker {
 		int changed = 0;
 		while (corpus.hasNext()) {
 			final Sentence sentence = corpus.next();
-			final List<SyntaxTreeNodeLeaf> rebanked = new ArrayList<>(sentence.getCcgbankParse().getWords());
+			final List<SyntaxTreeNodeLeaf> rebanked = new ArrayList<>(sentence.getCcgbankParse().getLeaves());
 			boolean change = false;
 			for (final Rebanker rebanker : rebankers) {
 				change = change || rebanker.doRebanking(rebanked, sentence);
@@ -91,7 +91,7 @@ public abstract class Rebanker {
 					System.out.print(word + " ");
 				}
 				System.out.println();
-				System.out.println(sentence.getCcgbankParse().getWords());
+				System.out.println(sentence.getCcgbankParse().getLeaves());
 				System.out.println(rebanked);
 				System.out.println();
 			}
