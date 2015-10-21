@@ -96,7 +96,7 @@ public abstract class LogicParser {
 			} else {
 				Preconditions.checkState(semanticType == null || !semanticType.getTo().isComplex(),
 						"Mismatch between type of category and logical form");
-				argument = fromString(afterVar, nameToVar);
+				argument = parse(afterVar, nameToVar);
 			}
 
 			unbindVar(name, nameToVar);
@@ -131,7 +131,7 @@ public abstract class LogicParser {
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
 			final Operator op = getOp(input);
-			return new OperatorSentence(op, (Sentence) fromString(input.substring(op.toString().length() + 1),
+			return new OperatorSentence(op, (Sentence) parse(input.substring(op.toString().length() + 1),
 					nameToVar));
 		}
 
@@ -164,7 +164,7 @@ public abstract class LogicParser {
 			final String name = afterQuantifier.substring(0, bracket);
 			final Variable var = bindVar(name, null, nameToVar);
 
-			final Logic result = new QuantifierSentence(quantifier, var, (Sentence) fromString(
+			final Logic result = new QuantifierSentence(quantifier, var, (Sentence) parse(
 					afterQuantifier.substring(bracket + 1, afterQuantifier.length() - 1), nameToVar));
 			unbindVar(name, nameToVar);
 			return result;
@@ -198,8 +198,8 @@ public abstract class LogicParser {
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
 			final int i = Util.findNonNestedChar(input, "&|");
 			final Connective c = Connective.fromString(input.substring(i, i + 1));
-			final Logic left = fromString(input.substring(0, i), nameToVar);
-			final Logic right = fromString(input.substring(i + 1), nameToVar);
+			final Logic left = parse(input.substring(0, i), nameToVar);
+			final Logic right = parse(input.substring(i + 1), nameToVar);
 
 			return ConnectiveSentence.make(c, (Sentence) left, (Sentence) right);
 		}
@@ -220,12 +220,12 @@ public abstract class LogicParser {
 			final List<Logic> arguments = new ArrayList<>();
 			int comma = Util.findNonNestedChar(argumentString, ",");
 			while (comma != -1) {
-				arguments.add(fromString(argumentString.substring(0, comma), nameToVar));
+				arguments.add(parse(argumentString.substring(0, comma), nameToVar));
 				argumentString = argumentString.substring(comma + 1);
 				comma = Util.findNonNestedChar(argumentString, ",");
 			}
 
-			arguments.add(fromString(argumentString, nameToVar));
+			arguments.add(parse(argumentString, nameToVar));
 
 			if (VARIABLE_PARSER.canApply(predicateString, nameToVar)) {
 				return new AtomicSentence(VARIABLE_PARSER.fromString2(predicateString, nameToVar), arguments);
@@ -251,7 +251,7 @@ public abstract class LogicParser {
 
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
-			return fromString(input.substring(1, input.length() - 1), nameToVar);
+			return parse(input.substring(1, input.length() - 1), nameToVar);
 		}
 
 		@Override
@@ -265,7 +265,7 @@ public abstract class LogicParser {
 
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
-			final Logic child = fromString(input.substring("sk".length()), nameToVar);
+			final Logic child = parse(input.substring("sk".length()), nameToVar);
 			// Check child is a lambda expression
 			Preconditions.checkArgument(child.getArguments().size() > 0,
 					"Skolem terms should take lambda expression argument: " + input);
@@ -292,11 +292,11 @@ public abstract class LogicParser {
 			// If we have a category and this is lambda expression, we can sort out the semantic types of the variables.
 			return LAMBDA_EXPRESSION_PARSER.fromString2(input, SemanticType.makeFromCategory(category), nameToVar);
 		} else {
-			return fromString(input, nameToVar);
+			return parse(input, nameToVar);
 		}
 	}
 
-	private static Logic fromString(String input, final Map<String, Variable> nameToVar) {
+	private static Logic parse(String input, final Map<String, Variable> nameToVar) {
 		input = input.trim();
 		for (final LogicParser parser : parsers) {
 			if (parser.canApply(input, nameToVar)) {
