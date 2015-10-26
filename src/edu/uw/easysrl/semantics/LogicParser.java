@@ -91,7 +91,7 @@ public abstract class LogicParser {
 			final Logic argument;
 			if (canApply(afterVar, nameToVar)) {
 				Preconditions
-						.checkState(semanticType.isComplex(), "Mismatch between type of category and logical form");
+				.checkState(semanticType.isComplex(), "Mismatch between type of category and logical form");
 				argument = fromString2(afterVar, semanticType.getTo(), nameToVar);
 			} else {
 				Preconditions.checkState(semanticType == null || !semanticType.getTo().isComplex(),
@@ -132,6 +132,7 @@ public abstract class LogicParser {
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
 			final Operator op = getOp(input);
 			return new OperatorSentence(op, (Sentence) parse(input.substring(op.toString().length() + 1), nameToVar));
+
 		}
 
 		@Override
@@ -181,8 +182,8 @@ public abstract class LogicParser {
 			}
 			for (final Quantifier op : Quantifier.values()) {
 				if (// \exists
-				(input.startsWith("\\") && input.length() > op.toString().length() && input
-						.substring(1, op.toString().length() + 1).toUpperCase().equals(op.toString()))) {
+						(input.startsWith("\\") && input.length() > op.toString().length() && input
+								.substring(1, op.toString().length() + 1).toUpperCase().equals(op.toString()))) {
 					return op;
 				}
 			}
@@ -291,7 +292,7 @@ public abstract class LogicParser {
 		}
 	};
 
-	// This list defines precedenceß
+	// This list defines precedence
 	private final static List<LogicParser> parsers = Arrays.asList(BRACKETS_PARSER, LAMBDA_EXPRESSION_PARSER,
 			CONNECTIVE_SENTENCE_PARSER, SKOLEM_PARSER, QUANTIFIER_SENTENCE_PARSER, OPERATOR_SENTENCE_PARSER,
 			ATOMIC_SENTENCE_PARSER, VARIABLE_PARSER, CONSTANT_PARSER);
