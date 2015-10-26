@@ -241,4 +241,12 @@ public class Coindexation implements Serializable {
 	public boolean isModifier() {
 		return left.equals(right);
 	}
+
+	public Coindexation getLeftMost() {
+		if (left == null) {
+			return this;
+		} else {
+			return left.getLeftMost();
+		}
+	}
 }

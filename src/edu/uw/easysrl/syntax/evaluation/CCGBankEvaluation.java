@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,7 +58,7 @@ public class CCGBankEvaluation {
 			"which:((N\\N)/S[dcl])\\((N\\N)/NP).3", "((S\\NP)\\(S\\NP))\\NP.1", "(N\\N)/(N\\N).1",
 			"((N/PP)\\(N/PP))/NP.1"
 
-			));
+	));
 
 	public static Results evaluate(final SRLParser parser, final boolean isDev) throws IOException {
 
@@ -72,13 +73,13 @@ public class CCGBankEvaluation {
 
 			System.err.println(gold.getWords());
 
-			final CCGandSRLparse parse = parser.parseTokens(gold.getWords());
+			final List<CCGandSRLparse> parses = parser.parseTokens(gold.getWords());
 
 			Set<ResolvedDependency> evalDeps;
 
-			if (parse != null) {
+			if (parses != null && parses.size() > 0) {
 				final Set<UnlabelledDependency> deps = new HashSet<>();
-				extractDependencies(parse.getCcgParse(), deps);
+				extractDependencies(parses.get(0).getCcgParse(), deps);
 				evalDeps = new HashSet<>();
 
 				for (final UnlabelledDependency dep : deps) {

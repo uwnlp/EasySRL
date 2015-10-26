@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -19,25 +18,20 @@ import no.uib.cipr.matrix.DenseVector;
 import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.Vector;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.PatternFilenameFilter;
-import com.google.common.primitives.Doubles;
 
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
 import edu.uw.easysrl.util.Util;
 
-public class TaggerEmbeddings implements Tagger {
-	private static final String ALL_CATEGORIES = "ALL_CATEGORIES";
+public class TaggerEmbeddings extends Tagger {
 	private final Matrix weightMatrix;
 	private final Vector bias;
 
 	private final Map<String, double[]> discreteFeatures;
 	private final Map<String, double[]> embeddingsFeatures;
-
-	private final List<Category> lexicalCategories;
 
 	private final int totalFeatures;
 
@@ -70,24 +64,11 @@ public class TaggerEmbeddings implements Tagger {
 	private final Map<String, Integer> lexicalFeatures;
 
 	private final List<Vector> weightMatrixRows;
-
-	/**
-	 * Number of supertags to consider for each word. Choosing 50 means it's effectively unpruned, but saves us having
-	 * to sort the complete list of categories.
-	 */
-	private final int maxTagsPerWord;
-
-	/**
-	 * Pruning parameter. Supertags whose probability is less than beta times the highest-probability supertag are
-	 * ignored.
-	 */
-	private final double beta;
-
-	private final Map<String, Collection<Integer>> tagDict;
 	private final Map<Category, Integer> categoryToIndex;
 
 	public TaggerEmbeddings(final File modelFolder, final double beta, final int maxTagsPerWord,
-			final CutoffsDictionary cutoffs) {
+			final CutoffsDictionary cutoffs) throws IOException {
+		super(cutoffs, beta, loadCategories(new File(modelFolder, "categories")), maxTagsPerWord);
 		try {
 			final FilenameFilter embeddingsFileFilter = new PatternFilenameFilter("embeddings.*");
 
@@ -107,7 +88,6 @@ public class TaggerEmbeddings implements Tagger {
 					* (2 * contextWindow + 1);
 
 			// Load the list of categories used by the model.
-			lexicalCategories = loadCategories(new File(modelFolder, "categories"));
 			categoryToIndex = new HashMap<>();
 			for (int i = 0; i < lexicalCategories.size(); i++) {
 				categoryToIndex.put(lexicalCategories.get(i), i);
@@ -127,53 +107,12 @@ public class TaggerEmbeddings implements Tagger {
 			}
 
 			bias = new DenseVector(lexicalCategories.size());
-			this.beta = beta;
-			this.maxTagsPerWord = maxTagsPerWord;
-
-			int maxCategoryID = 0;
-			for (final Category c : lexicalCategories) {
-				maxCategoryID = Math.max(maxCategoryID, c.getID());
-			}
-
-			this.tagDict = ImmutableMap.copyOf(loadTagDictionary(cutoffs));
 
 			loadVector(bias, new File(modelFolder, "bias"));
 
 		} catch (final Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private Map<String, Collection<Integer>> loadTagDictionary(final CutoffsDictionary cutoffs) throws IOException {
-		final Map<Category, Integer> catToIndex = new HashMap<>();
-
-		final List<Integer> allIndices = new ArrayList<>(lexicalCategories.size());
-		int index = 0;
-		for (final Category c : lexicalCategories) {
-			catToIndex.put(c, index);
-			allIndices.add(index);
-			index++;
-		}
-
-		// Load a tag dictionary
-		Map<String, Collection<Category>> dict = cutoffs == null ? null : cutoffs.getTagDict();
-
-		final Map<String, Collection<Integer>> tagDict = new HashMap<>();
-		if (dict == null) {
-			dict = new HashMap<>();
-			dict.put(TagDict.OTHER_WORDS, lexicalCategories);
-		}
-		for (final Entry<String, Collection<Category>> entry : dict.entrySet()) {
-			final List<Integer> catIndices = new ArrayList<>(entry.getValue().size());
-			for (final Category cat : entry.getValue()) {
-				catIndices.add(catToIndex.get(cat));
-			}
-			tagDict.put(entry.getKey(), ImmutableList.copyOf(catIndices));
-		}
-
-		tagDict.put(ALL_CATEGORIES, allIndices);
-
-		return tagDict;
 	}
 
 	private Map<String, Integer> loadSparseFeatures(final File posTagFeaturesFile) throws IOException {
@@ -243,30 +182,6 @@ public class TaggerEmbeddings implements Tagger {
 		}
 
 		return result;
-	}
-
-	public static class ScoredCategory implements Comparable<ScoredCategory> {
-		private final Category category;
-		private final double score;
-
-		public ScoredCategory(final Category category, final double score) {
-			super();
-			this.category = category;
-			this.score = score;
-		}
-
-		@Override
-		public int compareTo(final ScoredCategory o) {
-			return Doubles.compare(o.score, score);
-		}
-
-		public double getScore() {
-			return score;
-		}
-
-		public Category getCategory() {
-			return category;
-		}
 	}
 
 	private Vector getVectorForWord(final List<InputWord> words, final int wordIndex) {
@@ -404,16 +319,6 @@ public class TaggerEmbeddings implements Tagger {
 		return result;
 	}
 
-	private String translateBrackets(String word) {
-		if (word.equalsIgnoreCase("-LRB-")) {
-			word = "(";
-		}
-		if (word.equalsIgnoreCase("-RRB-")) {
-			word = ")";
-		}
-		return word;
-	}
-
 	/**
 	 * Loads the embedding for a word's 2-character suffix. The index is allowed to be outside the sentence range, in
 	 * which case the appropriate 'padding' embedding is returned.
@@ -510,7 +415,7 @@ public class TaggerEmbeddings implements Tagger {
 
 	}
 
-	public List<ScoredCategory> getTagsForWord(final Vector vector, final Collection<Integer> possibleCategories) {
+	private List<ScoredCategory> getTagsForWord(final Vector vector, final Collection<Integer> possibleCategories) {
 		final int size = Math.min(maxTagsPerWord, possibleCategories.size());
 
 		double bestScore = 0.0;
@@ -530,7 +435,7 @@ public class TaggerEmbeddings implements Tagger {
 		final double threshold = beta * Math.exp(bestScore);
 		for (int i = 2; i < result.size(); i++) {
 			// TODO binary search
-			if (Math.exp(result.get(i).score) < threshold) {
+			if (Math.exp(result.get(i).getScore()) < threshold) {
 				result = result.subList(0, i);
 				break;
 			}
@@ -539,6 +444,7 @@ public class TaggerEmbeddings implements Tagger {
 		return result;
 	}
 
+	@Override
 	public Map<Category, Double> getCategoryScores(final List<InputWord> sentence, final int wordIndex,
 			final double weight, final Collection<Category> categories) {
 
@@ -547,8 +453,4 @@ public class TaggerEmbeddings implements Tagger {
 		return scoredCats.stream().collect(Collectors.toMap(ScoredCategory::getCategory, x -> x.getScore() * weight));
 	}
 
-	@Override
-	public Collection<Category> getLexicalCategories() {
-		return Collections.unmodifiableList(lexicalCategories);
-	}
 }

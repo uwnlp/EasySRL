@@ -281,10 +281,21 @@ class FeatureForest {
 			return index;
 		}
 
+		// Supertagger output never changes (in the current model...), so we can cache it.
+		// This also saves running the LSTM for each word in the sentence.
+		private final static Map<List<InputWord>, List<Map<Category, Double>>> cache = Collections
+				.synchronizedMap(new HashMap<>());
+
 		private double getPretrainedValue(final List<InputWord> words, final FeatureSet featureSet) {
 			if (cachedValue == null) {
-				cachedValue = featureSet.lexicalCategoryFeatures.getValue(words, index, category);
 
+				List<Map<Category, Double>> tags = cache.get(words);
+				if (tags == null) {
+					tags = featureSet.lexicalCategoryFeatures.getCategoryScores(words, 1.0);
+					cache.put(words, tags);
+				}
+
+				cachedValue = tags.get(index).get(category);
 			}
 
 			return cachedValue;

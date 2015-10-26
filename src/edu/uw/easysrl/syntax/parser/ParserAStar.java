@@ -49,8 +49,8 @@ public class ParserAStar extends AbstractParser {
 		int chartSize = 0;
 
 		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-				// TODO && agenda.peek() != null && agenda.peek().getCost() >
-				// result.get(0).getProbability() + nbestBeam
+		// TODO && agenda.peek() != null && agenda.peek().getCost() >
+		// result.get(0).getProbability() + nbestBeam
 				))) {
 			// Add items from the agenda, until we have enough parses.
 
@@ -62,8 +62,7 @@ public class ParserAStar extends AbstractParser {
 			// Try to put an entry in the chart.
 			ChartCell cell = chart[agendaItem.getStartOfSpan()][agendaItem.getSpanLength() - 1];
 			if (cell == null) {
-				cell = // nbest > 1 ? new CellNBest() :
-						new Cell1Best();
+				cell = nbest > 1 ? new CellNBest() : new Cell1Best();
 				chart[agendaItem.getStartOfSpan()][agendaItem.getSpanLength() - 1] = cell;
 			}
 
@@ -88,7 +87,7 @@ public class ParserAStar extends AbstractParser {
 							new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
 									.getDependencyStructureTransformation().apply(
 											agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-									unaryRule, resolvedDependencies), unaryRule));
+											unaryRule, resolvedDependencies), unaryRule));
 				}
 				// }
 
@@ -98,7 +97,7 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-					                                                                                            - agendaItem.getSpanLength() - 1];
+							- agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}
@@ -135,13 +134,6 @@ public class ParserAStar extends AbstractParser {
 			// Parse failure.
 			return null;
 		}
-
-		// Read the parses out of the final cell.
-		// List<SyntaxTreeNode> parses = new
-		// ArrayList<SyntaxTreeNode>(chart[0][sentenceLength - 1].getEntries());
-
-		// Sort the parses by probability.
-		// Collections.sort(parses, SORT_BY_PROBABILITY);
 
 		return result;
 

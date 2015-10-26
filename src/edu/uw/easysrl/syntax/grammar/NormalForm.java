@@ -67,16 +67,9 @@ public class NormalForm {
 			return false;
 		}
 
-		if ((ruleType == RuleType.RP && leftRuleClass != RuleClass.LEXICON && leftRuleClass != RuleClass.LP // Allow
-				// LP, for cases like $ 10 .
-				)
-				|| (ruleType == RuleType.LP && rightRuleClass != RuleClass.LEXICON)) {
-			// Force punctuation to go ASAP.
-			return false;
-		}
-
 		if ((leftRuleClass == RuleClass.LP && ruleType != RuleType.RP) || rightRuleClass == RuleClass.RP) {
-			// return false;
+			// Remove punctuation as late as possible.
+			return false;
 		}
 
 		// Constraints to stop you coordinating and composing.

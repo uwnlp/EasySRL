@@ -7,10 +7,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.uw.easysrl.semantics.Variable.VariableNames;
+import edu.uw.easysrl.util.Util;
 
 public class LambdaExpression extends Logic {
+	private static final long serialVersionUID = 1L;
 
 	private final List<Variable> vars;
 	private final Logic statement;
@@ -26,7 +29,8 @@ public class LambdaExpression extends Logic {
 			Preconditions.checkArgument(v != null);
 		}
 		this.statement = statement;
-		this.vars = vars;
+		// Because subList isn't serializable.
+		this.vars = ImmutableList.copyOf(vars);
 	}
 
 	@Override
@@ -73,6 +77,9 @@ public class LambdaExpression extends Logic {
 
 	@Override
 	public Logic doSubstitution(final Substitution substitution) {
+		if (substitution.containsAny(vars)) {
+			Util.debugHook();
+		}
 		Preconditions.checkArgument(!substitution.containsAny(vars));
 		return new LambdaExpression(statement.doSubstitution(substitution), vars);
 	}

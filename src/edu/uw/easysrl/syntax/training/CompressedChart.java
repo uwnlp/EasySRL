@@ -16,9 +16,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
-import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
 import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
@@ -29,11 +29,9 @@ import edu.uw.easysrl.syntax.training.CKY.EquivalenceClassKey;
 import edu.uw.easysrl.syntax.training.CKY.EquivalenceClassValue;
 
 /**
- * Alternative representation of a parse chart, that allows us to collapse
- * various distinctions that are needed for parsing, but not modelling. For
- * example, parsing needs to keep track of rule types for normal-form
- * constraints, but we don't use that for features. TODO merge this with
- * FeatureForest
+ * Alternative representation of a parse chart, that allows us to collapse various distinctions that are needed for
+ * parsing, but not modelling. For example, parsing needs to keep track of rule types for normal-form constraints, but
+ * we don't use that for features. TODO merge this with FeatureForest
  *
  */
 class CompressedChart {
@@ -55,8 +53,8 @@ class CompressedChart {
 		final int lastIndex;
 		final Set<Value> values;
 
-		Key(final Category category, final int startIndex, final int lastIndex,
-				final RuleType ruleClass, final Set<Value> values) {
+		Key(final Category category, final int startIndex, final int lastIndex, final RuleType ruleClass,
+				final Set<Value> values) {
 			super();
 			this.values = values;
 			this.category = category;
@@ -77,8 +75,7 @@ class CompressedChart {
 		}
 
 		private int hashCode2() {
-			return Objects.hash(values, category, ruleClass, startIndex,
-					lastIndex);
+			return Objects.hash(values, category, ruleClass, startIndex, lastIndex);
 		}
 
 		@Override
@@ -87,9 +84,7 @@ class CompressedChart {
 			final Key other = (Key) obj;
 
 			return this == other
-					|| (values.equals(other.values)
-							&& category == other.category
-							&& ruleClass.equals(other.ruleClass)
+					|| (values.equals(other.values) && category == other.category && ruleClass.equals(other.ruleClass)
 							&& startIndex == other.startIndex && lastIndex == other.lastIndex);
 
 		}
@@ -141,15 +136,13 @@ class CompressedChart {
 		public int getStartIndex() {
 			final List<Key> children = getChildren();
 
-			return children.size() == 0 ? getIndex() : children.get(0)
-					.getStartIndex();
+			return children.size() == 0 ? getIndex() : children.get(0).getStartIndex();
 		}
 
 		public int getLastIndex() {
 			final List<Key> children = getChildren();
 
-			return (children.size() == 0 ? getIndex() : children.get(
-					children.size() - 1).getLastIndex());
+			return (children.size() == 0 ? getIndex() : children.get(children.size() - 1).getLastIndex());
 
 		}
 
@@ -210,8 +203,7 @@ class CompressedChart {
 		private final Key left;
 		private final Key right;
 
-		TreeValueBinary(final Key left, final Key right,
-				final Set<ResolvedDependency> deps) {
+		TreeValueBinary(final Key left, final Key right, final Set<ResolvedDependency> deps) {
 			super(deps);
 			this.left = left;
 			this.right = right;
@@ -241,8 +233,7 @@ class CompressedChart {
 
 			final TreeValueBinary other = (TreeValueBinary) obj;
 
-			return left.equals(other.left) && right.equals(other.right)
-					&& super.equals(other);
+			return left.equals(other.left) && right.equals(other.right) && super.equals(other);
 
 		}
 
@@ -252,8 +243,7 @@ class CompressedChart {
 		private final Key child;
 		private final int ruleID;
 
-		TreeValueUnary(final Key child, final int ruleID,
-				final Set<ResolvedDependency> deps) {
+		TreeValueUnary(final Key child, final int ruleID, final Set<ResolvedDependency> deps) {
 			super(deps);
 			this.child = child;
 			this.ruleID = ruleID;
@@ -286,8 +276,7 @@ class CompressedChart {
 			}
 
 			final TreeValueUnary other = (TreeValueUnary) obj;
-			return ruleID == other.ruleID && child.equals(other.child)
-					&& super.equals(other);
+			return ruleID == other.ruleID && child.equals(other.child) && super.equals(other);
 		}
 
 	}
@@ -343,8 +332,7 @@ class CompressedChart {
 		return result;
 	}
 
-	private void getAllDependencies(final Key key,
-			final Set<ResolvedDependency> result, final Set<Key> visited) {
+	private void getAllDependencies(final Key key, final Set<ResolvedDependency> result, final Set<Key> visited) {
 		if (visited.contains(key)) {
 			return;
 		}
@@ -363,50 +351,37 @@ class CompressedChart {
 
 	}
 
-	private static Key make(final ChartCell[][] chart, final int spanStart,
-			final int spanLength, final EquivalenceClassKey key,
-			final Map<Object, Key> cache, final Map<Object, Value> valueCache,
-			final CutoffsDictionary cutoffs,
-			final Multimap<Category, UnaryRule> unaryRules) {
+	private static Key make(final ChartCell[][] chart, final int spanStart, final int spanLength,
+			final EquivalenceClassKey key, final Map<Object, Key> cache, final Map<Object, Value> valueCache,
+			final CutoffsDictionary cutoffs, final Multimap<Category, UnaryRule> unaryRules) {
 
 		final ChartCell cell = chart[spanStart][spanLength - 1];
 
 		Key result = cache.get(key);
 		if (result == null) {
 
-			final Collection<EquivalenceClassValue> entries = cell
-					.getEntries(key);
+			final Collection<EquivalenceClassValue> entries = cell.getEntries(key);
 			final Set<Value> values = new HashSet<>(entries.size());
 
 			for (final EquivalenceClassValue value : entries) {
-				final Set<ResolvedDependency> deps = new HashSet<>(value
-						.getResolvedDependencies().size());
-				for (final UnlabelledDependency dependency : value
-						.getResolvedDependencies()) {
+				final Set<ResolvedDependency> deps = new HashSet<>(value.getResolvedDependencies().size());
+				for (final UnlabelledDependency dependency : value.getResolvedDependencies()) {
 					if (cutoffs != null
-							&& !cutoffs.isFrequentWithAnySRLLabel(
-									dependency.getCategory(),
-									dependency.getArgNumber())) {
+							&& !cutoffs.isFrequentWithAnySRLLabel(dependency.getCategory(), dependency.getArgNumber())) {
 						continue;
 					}
 
 					// Because we only model
-					deps.add(new ResolvedDependency(dependency.getHead(),
-							dependency.getCategory(),
-							dependency.getArgNumber(), dependency
-									.getArguments().get(0),
-							SRLFrame.UNLABELLED_ARGUMENT, dependency
-									.getPreposition()));
+					deps.add(new ResolvedDependency(dependency.getHead(), dependency.getCategory(), dependency
+							.getArgNumber(), dependency.getArguments().get(0), SRLFrame.UNLABELLED_ARGUMENT, dependency
+							.getPreposition()));
 				}
 
 				int start = spanStart;
-				final List<EquivalenceClassKey> uncompressedChildren = value
-						.getChildren();
-				final List<Key> children = new ArrayList<>(
-						uncompressedChildren.size());
+				final List<EquivalenceClassKey> uncompressedChildren = value.getChildren();
+				final List<Key> children = new ArrayList<>(uncompressedChildren.size());
 				for (final EquivalenceClassKey child : uncompressedChildren) {
-					children.add(make(chart, start, child.length(), child,
-							cache, valueCache, cutoffs, unaryRules));
+					children.add(make(chart, start, child.length(), child, cache, valueCache, cutoffs, unaryRules));
 					start += child.length();
 				}
 
@@ -416,8 +391,7 @@ class CompressedChart {
 
 				} else if (children.size() == 1) {
 					Preconditions.checkState(uncompressedChildren.size() == 1);
-					final Category from = uncompressedChildren.get(0)
-							.getCategory();
+					final Category from = uncompressedChildren.get(0).getCategory();
 
 					final Category to = key.getCategory();
 					Integer ruleID = null;
@@ -430,8 +404,7 @@ class CompressedChart {
 					newVal = new TreeValueUnary(children.get(0), ruleID, deps);
 
 				} else {
-					newVal = new TreeValueBinary(children.get(0),
-							children.get(1), deps);
+					newVal = new TreeValueBinary(children.get(0), children.get(1), deps);
 				}
 
 				final Value existing = valueCache.get(newVal);
@@ -445,17 +418,15 @@ class CompressedChart {
 
 			}
 
-			result = new Key(key.getCategory(), spanStart, spanStart
-					+ spanLength - 1, key.getRuleType(), values);
+			result = new Key(key.getCategory(), spanStart, spanStart + spanLength - 1, key.getRuleType(), values);
 			cache.put(key, result);
 		}
 
 		return result;
 	}
 
-	static CompressedChart make(final List<InputWord> words,
-			final ChartCell[][] chart, final CutoffsDictionary cutoffs,
-			final Multimap<Category, UnaryRule> unaryRules,
+	static CompressedChart make(final List<InputWord> words, final ChartCell[][] chart,
+			final CutoffsDictionary cutoffs, final Multimap<Category, UnaryRule> unaryRules,
 			final Collection<Category> rootCategories) {
 		final ChartCell cell = chart[0][chart.length - 1];
 		final Collection<Key> roots = new HashSet<>();
@@ -465,8 +436,7 @@ class CompressedChart {
 		for (final EquivalenceClassKey entry : cell.getKeys()) {
 
 			if (rootCategories.contains(entry.getCategory())) {
-				roots.add(make(chart, 0, chart.length, entry, keyCache,
-						valueCache, cutoffs, unaryRules));
+				roots.add(make(chart, 0, chart.length, entry, keyCache, valueCache, cutoffs, unaryRules));
 			}
 		}
 
@@ -497,16 +467,14 @@ class CompressedChart {
 		return result;
 	}
 
-	private int getNumberOfPossibleParses(final Key key,
-			final Map<Key, Integer> cache) {
+	private int getNumberOfPossibleParses(final Key key, final Map<Key, Integer> cache) {
 		Integer result = cache.get(key);
 		if (result == null) {
 			result = 0;
 			for (final Value value : key.getChildren()) {
 				int resultForValue = 1;
 				for (final Key child : value.getChildren()) {
-					resultForValue = resultForValue
-							* getNumberOfPossibleParses(child, cache);
+					resultForValue = resultForValue * getNumberOfPossibleParses(child, cache);
 				}
 
 				result += resultForValue;

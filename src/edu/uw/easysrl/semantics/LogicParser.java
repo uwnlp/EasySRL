@@ -131,8 +131,7 @@ public abstract class LogicParser {
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
 			final Operator op = getOp(input);
-			return new OperatorSentence(op, (Sentence) parse(input.substring(op.toString().length() + 1),
-					nameToVar));
+			return new OperatorSentence(op, (Sentence) parse(input.substring(op.toString().length() + 1), nameToVar));
 		}
 
 		@Override
@@ -182,8 +181,8 @@ public abstract class LogicParser {
 			}
 			for (final Quantifier op : Quantifier.values()) {
 				if (// \exists
-						(input.startsWith("\\") && input.length() > op.toString().length() && input
-								.substring(1, op.toString().length() + 1).toUpperCase().equals(op.toString()))) {
+				(input.startsWith("\\") && input.length() > op.toString().length() && input
+						.substring(1, op.toString().length() + 1).toUpperCase().equals(op.toString()))) {
 					return op;
 				}
 			}
@@ -216,16 +215,18 @@ public abstract class LogicParser {
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
 			final int i = input.indexOf("(");
 			final String predicateString = input.substring(0, i);
-			String argumentString = input.substring(i + 1, input.length() - 1);
+			String argumentsString = input.substring(i + 1, input.length() - 1);
 			final List<Logic> arguments = new ArrayList<>();
-			int comma = Util.findNonNestedChar(argumentString, ",");
+			int comma = Util.findNonNestedChar(argumentsString, ",");
 			while (comma != -1) {
-				arguments.add(parse(argumentString.substring(0, comma), nameToVar));
-				argumentString = argumentString.substring(comma + 1);
-				comma = Util.findNonNestedChar(argumentString, ",");
+				final String argumentString = argumentsString.substring(0, comma);
+				parseArgument(predicateString, argumentString, arguments, nameToVar);
+
+				argumentsString = argumentsString.substring(comma + 1);
+				comma = Util.findNonNestedChar(argumentsString, ",");
 			}
 
-			arguments.add(parse(argumentString, nameToVar));
+			parseArgument(predicateString, argumentsString, arguments, nameToVar);
 
 			if (VARIABLE_PARSER.canApply(predicateString, nameToVar)) {
 				return new AtomicSentence(VARIABLE_PARSER.fromString2(predicateString, nameToVar), arguments);
@@ -233,6 +234,18 @@ public abstract class LogicParser {
 				return new AtomicSentence(predicateString, arguments);
 			} else {
 				throw new IllegalArgumentException("Expected predicate: " + predicateString);
+			}
+		}
+
+		private void parseArgument(final String predicateString, final String argumentString,
+				final List<Logic> arguments, final Map<String, Variable> nameToVar) {
+			if (LAMBDA_EXPRESSION_PARSER.canApply(argumentString, nameToVar) && arguments.size() == 0) {
+				// Allow nested lambda expressions: p(#x#e. sk(#z.foo(x,z,e),y,z))
+				// Useful for really weird categories taking higher-order arguments.
+				final Logic p = VARIABLE_PARSER.fromString2(predicateString, nameToVar);
+				arguments.add(LAMBDA_EXPRESSION_PARSER.fromString2(argumentString, p.getType().getFrom(), nameToVar));
+			} else {
+				arguments.add(parse(argumentString, nameToVar));
 			}
 		}
 

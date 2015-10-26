@@ -29,8 +29,7 @@ public class SeenRules {
 		makeFromCorpus(ParallelCorpusReader.READER);
 	}
 
-	private static void makeFromCorpus(final ParallelCorpusReader corpus)
-			throws IOException {
+	private static void makeFromCorpus(final ParallelCorpusReader corpus) throws IOException {
 		final Iterator<Sentence> sentences = corpus.readCorpus(false);
 		final Multiset<String> result = HashMultiset.create();
 		while (sentences.hasNext()) {
@@ -38,17 +37,14 @@ public class SeenRules {
 			getRulesFromParse(sentence.getCcgbankParse(), result);
 		}
 
-		for (final String rule : Multisets.copyHighestCountFirst(result)
-				.elementSet()) {
+		for (final String rule : Multisets.copyHighestCountFirst(result).elementSet()) {
 			System.out.println(rule);
 		}
 	}
 
-	private static void getRulesFromParse(final SyntaxTreeNode parse,
-			final Multiset<String> result) {
+	private static void getRulesFromParse(final SyntaxTreeNode parse, final Multiset<String> result) {
 		if (parse.getChildren().size() == 2) {
-			result.add(parse.getChild(0).getCategory().toString() + " "
-					+ parse.getChild(1).getCategory().toString());
+			result.add(parse.getChild(0).getCategory().toString() + " " + parse.getChild(1).getCategory().toString());
 
 		}
 
@@ -63,8 +59,7 @@ public class SeenRules {
 		Category result = simplify.get(input);
 		if (result == null) {
 			// Simplify categories for compatibility with the C&C rules file.
-			result = Category.valueOf(input.toString()
-					.replaceAll("\\[X\\]", "").replaceAll("\\[nb\\]", ""));
+			result = Category.valueOf(input.toString().replaceAll("\\[X\\]", "").replaceAll("\\[nb\\]", ""));
 			result = result.dropPPandPRfeatures();
 			simplify.put(input, result);
 		}
@@ -81,25 +76,25 @@ public class SeenRules {
 		}
 		left = simplify(left);
 		right = simplify(right);
-		return left.getID() < numberOfSeenCategories
-				&& right.getID() < numberOfSeenCategories
+		return left.getID() < numberOfSeenCategories && right.getID() < numberOfSeenCategories
 				&& seen[left.getID()][right.getID()];
 	}
 
-	public SeenRules(final File file,
-			final Collection<Category> lexicalCategories) throws IOException {
+	public SeenRules(final File file, final Collection<Category> lexicalCategories) throws IOException {
 		if (file == null) {
 			seen = null;
 			numberOfSeenCategories = 0;
 		} else if (!file.exists()) {
-			System.err
-					.println("No 'seenRules' file available for model. Allowing all CCG-legal rules.");
+			System.err.println("No 'seenRules' file available for model. Allowing all CCG-legal rules.");
 			seen = null;
 			numberOfSeenCategories = 0;
 		} else {
-			final Table<Category, Category, Boolean> tab = HashBasedTable
-					.create();
+			final Table<Category, Category, Boolean> tab = HashBasedTable.create();
+
 			int maxID = 0;
+			// Hack way of dealing with conjunctions of declarative and embedded sentences:
+			// "He said he'll win and that she'll lose"
+			maxID = addToTable(tab, maxID, Category.Sdcl, Category.valueOf("S[em]\\S[em]"));
 			for (final String line : Util.readFile(file)) {
 				// Assumes the file has the format:
 				// cat1 cat2
@@ -131,11 +126,9 @@ public class SeenRules {
 
 				if (category.isFunctor()) {
 					if (category.getSlash() == Slash.FWD) {
-						maxID = addToTable(tab, maxID, category,
-								category.getRight());
+						maxID = addToTable(tab, maxID, category, category.getRight());
 					} else if (category.getSlash() == Slash.BWD) {
-						maxID = addToTable(tab, maxID, category.getRight(),
-								category);
+						maxID = addToTable(tab, maxID, category.getRight(), category);
 					}
 				}
 
@@ -149,8 +142,8 @@ public class SeenRules {
 		}
 	}
 
-	private int addToTable(final Table<Category, Category, Boolean> tab,
-			int maxID, final Category left, final Category right) {
+	private int addToTable(final Table<Category, Category, Boolean> tab, int maxID, final Category left,
+			final Category right) {
 		maxID = Math.max(left.getID(), maxID);
 		maxID = Math.max(right.getID(), maxID);
 		tab.put(left, right, true);

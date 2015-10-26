@@ -7,6 +7,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
 public class Variable extends Logic {
+	private static final long serialVersionUID = 1L;
 
 	private final SemanticType type;
 

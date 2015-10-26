@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
 public class Constant extends Logic {
+	private static final long serialVersionUID = 1L;
 
 	private final String name;
 	private final SemanticType type;

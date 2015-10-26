@@ -3,6 +3,8 @@ package edu.uw.easysrl.semantics;
 import java.util.Map;
 
 public abstract class Sentence extends Logic {
+	private static final long serialVersionUID = 1L;
+
 	@Override
 	public abstract Sentence doSubstitution(final Substitution substitution);
 

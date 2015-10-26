@@ -46,6 +46,7 @@ public abstract class Category implements Serializable {
 	public static final Category POSSESSIVE_ARGUMENT = valueOf("(NP/(N/PP))\\NP");
 	public static final Category POSSESSIVE_PRONOUN = valueOf("NP/(N/PP)");
 	public static final Category S = valueOf("S");
+	public static final Category ADJECTIVE = valueOf("N/N");
 
 	private Category(final String asString, final String semanticAnnotation) {
 		this.asString = asString + (semanticAnnotation == null ? "" : "{" + semanticAnnotation + "}");

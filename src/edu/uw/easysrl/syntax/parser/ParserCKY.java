@@ -85,7 +85,7 @@ public class ParserCKY extends AbstractParser {
 
 		final List<Scored<SyntaxTreeNode>> result = parses.stream()
 				.filter(a -> super.possibleRootCategories.contains(a.getParse().getCategory()))
-						.map(a -> new Scored<>(a.getParse(), a.getInsideScore())).collect(Collectors.toList());
+				.map(a -> new Scored<>(a.getParse(), a.getInsideScore())).collect(Collectors.toList());
 		return result.size() == 0 ? null : result;
 	}
 

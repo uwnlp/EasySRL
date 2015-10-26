@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
 public class ConnectiveSentence extends Sentence {
+	private static final long serialVersionUID = 1L;
 	private final Connective connective;
 	private final List<Sentence> children;
 

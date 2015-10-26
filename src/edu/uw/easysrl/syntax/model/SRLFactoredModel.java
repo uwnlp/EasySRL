@@ -27,7 +27,6 @@ import edu.uw.easysrl.syntax.model.feature.FeatureCache;
 import edu.uw.easysrl.syntax.model.feature.FeatureCache.SlotFeatureCache;
 import edu.uw.easysrl.syntax.model.feature.FeatureSet;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
-import edu.uw.easysrl.util.Util;
 import edu.uw.easysrl.util.Util.Scored;
 
 public class SRLFactoredModel extends Model {
@@ -153,7 +152,6 @@ public class SRLFactoredModel extends Model {
 			for (final RootCategoryFeature feature : rootFeatures) {
 				rootScore += feature.getFeatureScore(sentence, node.getCategory(), featureToScore);
 			}
-			Util.debugHook();
 		}
 
 		final double newInsideScore = leftChild.getInsideScore() + rightChild.getInsideScore() + binaryRuleScore
@@ -161,11 +159,13 @@ public class SRLFactoredModel extends Model {
 
 		final AgendaItem result = new AgendaItem(node, newInsideScore, leftChild.outsideScoreUpperbound
 				+ rightChild.outsideScoreUpperbound - globalUpperBound, leftChild.getStartOfSpan(), length, true);
-		final AgendaItem withLabelledDependencieds = labelDependencies(result, node);
 
-		return withLabelledDependencieds;
+		return labelDependencies(result, node);
 	}
 
+	/**
+	 * Creates a new AgendaItem by labelling the dependencies in the old one
+	 */
 	private AgendaItem labelDependencies(AgendaItem result, final SyntaxTreeNode node) {
 
 		final List<UnlabelledDependency> resolvedUnlabelledDependencies = node.getResolvedUnlabelledDependencies();
@@ -173,11 +173,10 @@ public class SRLFactoredModel extends Model {
 		for (final UnlabelledDependency dep : resolvedUnlabelledDependencies) {
 
 			final ExtendedLexicalEntry forest = forests.get(dep.getPredicateIndex());
-			final Scored<SRLLabel> scoredLabel = forest.getBestLabel(dep);
+			final Scored<SRLLabel> scoredLabel = forest.getBestLabels(dep);
 
 			final double newInsideScore = result.getInsideScore() + scoredLabel.getScore();
 
-			// System.out.println(dep.setLabel(scoredLabel.getObject()));
 			final SyntaxTreeNode labelling = new SyntaxTreeNodeLabelling(result.getParse(), dep.setLabel(scoredLabel
 					.getObject()), resolvedUnlabelledDependencies.subList(i + 1, resolvedUnlabelledDependencies.size()));
 
@@ -216,6 +215,7 @@ public class SRLFactoredModel extends Model {
 		return agendaItem;
 	}
 
+	// Worst class name EVER.
 	public static class SRLFactoredModelFactory extends ModelFactory {
 		private final CutoffsDictionary cutoffsDictionary;
 		private final Map<String, Forest> frequentWordToForestMap = new HashMap<>();
@@ -223,7 +223,6 @@ public class SRLFactoredModel extends Model {
 		private final Collection<Category> lexicalCategories;
 		private final boolean usingDependencyFeatures;
 		private final boolean usingSlotFeatures;
-		// private final double[] unaryRuleScores;
 		private final double supertaggerBeam;
 		private final SlotFeatureCache slotFeatureCache;
 		private final double supertaggingFeatureScore;

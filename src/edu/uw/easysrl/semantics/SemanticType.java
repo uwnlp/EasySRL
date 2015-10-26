@@ -1,5 +1,7 @@
 package edu.uw.easysrl.semantics;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,9 +13,12 @@ import edu.uw.easysrl.util.Util;
 
 /**
  * Represents the semantic type of logical expressions, using entities (E), booleans (T) and events (Ev).
- *
  */
-public abstract class SemanticType {
+public abstract class SemanticType implements Serializable {
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 	private final static Table<SemanticType, SemanticType, SemanticType> cache = HashBasedTable.create();
 	public final static SemanticType E = new AtomicSemanticType("E");
 	public final static SemanticType T = new AtomicSemanticType("T");
@@ -23,9 +28,10 @@ public abstract class SemanticType {
 	private final static Map<Category, SemanticType> categoryToTypeCache = new HashMap<>();
 
 	static class AtomicSemanticType extends SemanticType {
+		private static final long serialVersionUID = 1L;
 		private final String type;
 
-		public AtomicSemanticType(final String type) {
+		private AtomicSemanticType(final String type) {
 			super();
 			this.type = type;
 		}
@@ -49,9 +55,26 @@ public abstract class SemanticType {
 		public String toString() {
 			return type;
 		}
+
+		@Override
+		public boolean isFunctionInto(final SemanticType t) {
+			return this == t;
+		}
+
+		private Object readResolve() {
+			// Avoid duplicates when de-serializing
+			for (final SemanticType t : Arrays.asList(E, Ev, T)) {
+				if (t.toString().equals(this.toString())) {
+					return t;
+				}
+			}
+
+			throw new RuntimeException("Unexpected semantic type: " + this);
+		}
 	}
 
 	static class ComplexSemanticType extends SemanticType {
+		private static final long serialVersionUID = 1L;
 		private final SemanticType from;
 		private final SemanticType to;
 
@@ -83,6 +106,16 @@ public abstract class SemanticType {
 			result.append("->");
 			result.append(Util.maybeBracket(to.toString(), to.isComplex()));
 			return result.toString();
+		}
+
+		@Override
+		public boolean isFunctionInto(final SemanticType t) {
+			return this == t || to.isFunctionInto(t);
+		}
+
+		private Object readResolve() {
+			// Avoid duplicates when de-serializing
+			return make(from, to);
 		}
 	}
 
@@ -128,5 +161,7 @@ public abstract class SemanticType {
 	public abstract SemanticType getTo();
 
 	public abstract boolean isComplex();
+
+	public abstract boolean isFunctionInto(SemanticType t);
 
 }

@@ -27,14 +27,11 @@ public abstract class Model {
 
 	abstract double getUpperBoundForWord(int index);
 
-	public abstract void buildAgenda(PriorityQueue<AgendaItem> queue,
-			List<InputWord> words);
+	public abstract void buildAgenda(PriorityQueue<AgendaItem> queue, List<InputWord> words);
 
-	public abstract AgendaItem combineNodes(AgendaItem leftChild,
-			AgendaItem rightChild, SyntaxTreeNode node);
+	public abstract AgendaItem combineNodes(AgendaItem leftChild, AgendaItem rightChild, SyntaxTreeNode node);
 
-	public abstract AgendaItem unary(AgendaItem child, SyntaxTreeNode result,
-			UnaryRule rule);
+	public abstract AgendaItem unary(AgendaItem child, SyntaxTreeNode result, UnaryRule rule);
 
 	public double getOutsideUpperBound(final int start, final int end) {
 		return outsideScoresUpperBound[start][end];

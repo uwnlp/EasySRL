@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -23,6 +25,7 @@ import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLabelling;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeVisitor;
+import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
 import edu.uw.easysrl.util.Util;
 
 public abstract class ParsePrinter {
@@ -346,13 +349,15 @@ public abstract class ParsePrinter {
 					+ "\n"
 					+ "\n"
 					+ "\n"
-					+ "function draw(context, startElement, endElement, label) {\n"
-					+ "      var start  = document.getElementById('w' + startElement).getBoundingClientRect();;\n"
-					+ "      var end  = document.getElementById('w' + endElement).getBoundingClientRect();;\n"
+					+ "function draw(context, startElement, endElement, label, id) {\n"
+					+ "      var start  = document.getElementById('w' + startElement + '.' + id).getBoundingClientRect();;\n"
+					+ "      var end  = document.getElementById('w' + endElement + '.' + id).getBoundingClientRect();;\n"
 					+ "\n"
 					+ "      var sx = (start.left + start.right) / 2 - 0;\n"
 					+ "      var ex = (end.left + end.right) / 2  - 0;\n"
-					+ "  \n"
+					+ "      if (ex < sx) { ex = ex + 8; } else { ex = ex - 8; }"
+					+ ""
+					+ "\n"
 					+ "      var x = (sx + ex) / 2;\n"
 					+ "\n"
 					+ "      var theta = 0.2 * Math.PI;\n"
@@ -414,9 +419,12 @@ public abstract class ParsePrinter {
 			return result;
 		}
 
+		private final AtomicInteger parseID = new AtomicInteger();
+
 		@Override
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
 			final int numWords = parse.getLeaves().size();
+			final int id = parseID.getAndIncrement();
 
 			final int betweenWordSpace = 5;
 			int parseWidth = 0;
@@ -429,7 +437,7 @@ public abstract class ParsePrinter {
 
 			result.append("<table>");
 			result.append("<tr><td colspan=" + (numWords + 1) + " style=\"padding-left:0px;padding-right:0px;\">\n"
-					+ "<canvas id=\"myCanvas\" width=" + (parseWidth)
+					+ "<canvas id=\"myCanvas" + id + "\" width=" + (parseWidth)
 					+ " height=200 display:block vertical-align:bottom></canvas></td></tr>");
 
 			int wordIndex = 0;
@@ -444,7 +452,7 @@ public abstract class ParsePrinter {
 						indent = indent + 1;
 					} else if (cell.isLeaf()) {
 						result.append(makeCell(((SyntaxTreeNodeLeaf) cell).getWord(), cell.getCategory(),
-								cell.getSemantics(), wordIndex));
+								cell.getSemantics(), wordIndex, id));
 						indent = indent + 1;
 						wordIndex++;
 					} else {
@@ -458,16 +466,58 @@ public abstract class ParsePrinter {
 			result.append("</table>");
 
 			result.append("<script>");
-			result.append("      var canvas = document.getElementById('myCanvas');\n");
+			result.append("      var canvas = document.getElementById('myCanvas" + id + "');\n");
 			result.append("      var context = canvas.getContext('2d');\n");
 			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
-				if (dep.getSemanticRole() != SRLFrame.NONE && dep.getPredicateIndex() != dep.getArgumentIndex()) {
-					result.append("draw(context, " + dep.getPropbankPredicateIndex() + ", "
-							+ dep.getPropbankArgumentIndex() + ", '" + dep.getSemanticRole() + "');");
+				if (showDependency(dep, parse)) {
+
+					final String label;
+					final int from;
+					final int to;
+					if (dep.getSemanticRole() != SRLFrame.NONE) {
+						// Draw adjuncts PropBank-style, from the predicate to the modifier.
+						label = dep.getSemanticRole().toString();
+						from = dep.getPropbankPredicateIndex();
+						to = dep.getPropbankArgumentIndex();
+					} else {
+						// Draw in some extra CCG dependencies for nouns and adjectives.
+						label = "";
+						from = dep.getPredicateIndex();
+						to = dep.getArgumentIndex();
+					}
+
+					result.append("draw(context, " + from + ", " + to + ", '" + label + "', " + id + ");");
 				}
 
 			}
 			result.append("</script>");
+		}
+
+		/**
+		 * Decide which dependencies are worth showing.
+		 */
+		private boolean showDependency(final ResolvedDependency dep, final SyntaxTreeNode parse) {
+			final SyntaxTreeNodeLeaf predicateNode = parse.getLeaves().get(dep.getPredicateIndex());
+			if (dep.getPredicateIndex() == dep.getArgumentIndex()) {
+				return false;
+			} else if (dep.getSemanticRole() != SRLFrame.NONE) {
+				return true;
+			} else if (predicateNode.getPos().startsWith("JJ") && dep.getCategory() != Category.valueOf("NP/N")) {
+				// Adjectives, excluding determiners
+				return true;
+			} else if (Category.valueOf("(S\\NP)/(S\\NP)") == dep.getCategory()) {
+				// Exclude auxiliary verbs. Hopefully the SRL will have already identified the times this category isn't
+				// an auxiliary.
+				return false;
+			} else if (predicateNode.getPos().startsWith("NN") && dep.getCategory().isFunctionInto(Category.N)) {
+				// Checking category to avoid annoying getting a "subject" dep on yesterday|NN|(S\NP)\(S\NP)
+				return true;
+			} else if (predicateNode.getPos().startsWith("VB")) {
+				// Other verb arguments, e.g. particles
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 		List<List<SyntaxTreeNode>> getRows(final SyntaxTreeNode parse) {
@@ -529,9 +579,11 @@ public abstract class ParsePrinter {
 					+ "<br><i>" + printLogic(logic) + "</i></center></td>";
 		}
 
-		private String makeCell(final String word, final Category category, final Optional<Logic> logic, final int index) {
-			return "<td id=w" + index + "><center><font face=\"Arial\">" + word + "</font><hr style=\"margin:1px\" />"
-					+ getCategoryHTML(category) + "<br><i>" + printLogic(logic) + "</i></center></td>";
+		private String makeCell(final String word, final Category category, final Optional<Logic> logic,
+				final int index, final int parseNumber) {
+			return "<td id=w" + index + "." + parseNumber + "><center><font face=\"Arial\">" + word
+					+ "</font><hr style=\"margin:1px\" />" + getCategoryHTML(category) + "<br><i>" + printLogic(logic)
+					+ "</i></center></td>";
 		}
 
 		private String getCategoryHTML(final Category c) {
@@ -950,4 +1002,9 @@ public abstract class ParsePrinter {
 	}
 
 	abstract boolean outputsLogic();
+
+	public String printJointParses(final List<CCGandSRLparse> parses, final int id) {
+		return print(parses.stream().map(x -> x.getCcgParse()).collect(Collectors.toList()), id);
+	}
+
 }

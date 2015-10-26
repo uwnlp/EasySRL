@@ -10,6 +10,7 @@ import edu.uw.easysrl.semantics.Variable.VariableNames;
  *
  */
 public class SkolemTerm extends Logic {
+	private static final long serialVersionUID = 1L;
 
 	private final String quantifier;
 	private final LambdaExpression property;

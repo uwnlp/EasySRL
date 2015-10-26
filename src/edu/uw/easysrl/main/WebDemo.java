@@ -3,6 +3,8 @@ package edu.uw.easysrl.main;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,22 +47,23 @@ public class WebDemo extends AbstractHandler {
 	}
 
 	private SRLParser makeParser() throws IOException {
-		final String folder = Util.getHomeFolder() + "/Downloads/model";
+		final int nbest = 10;
+		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/joint_q";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
-				ParsingAlgorithm.ASTAR, 200000, false), Util.deserialize(new File(pipelineFolder, "labelClassifier")),
-				posTagger);
+				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest), Util.deserialize(new File(
+						pipelineFolder, "labelClassifier")), posTagger);
 
 		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(
-				folder, 0.01, ParsingAlgorithm.ASTAR, 20000, true), posTagger), pipeline), new Lexicon(new File(folder,
-						"lexicon")));
+				folder, 0.005, ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), nbest), posTagger), pipeline),
+				new Lexicon(new File(folder, "lexicon")));
 
 		return jointAstar;
 	}
 
 	public static void main(final String[] args) throws Exception {
-		final Server server = new Server(8080);
+		final Server server = new Server(8081);
 		server.setHandler(new WebDemo());
 		server.start();
 		server.join();
@@ -69,10 +72,12 @@ public class WebDemo extends AbstractHandler {
 	// @formatter:off
 
 	private void doParse(String sentence, final PrintWriter response) {
+
 		if (sentence == null) {
 			sentence = "";
 		}
-		response.println("<html><head><title>EasySRL Parser Demo</title></head>\n" + "<body>\n");
+		response.println("<html><head><title>EasySRL Parser Demo</title></head><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script>\n"
+				+ "<body>\n");
 		response.println("<h1><font face=\"arial\">EasySRL Parser Demo</font></h1>");
 		response.println("      <div><a href=https://github.com/mikelewis0/EasySRL>Download here!</a></div>      \n"
 				+ "        <br><form action=\"\" method=\"get\">\n"
@@ -93,8 +98,8 @@ public class WebDemo extends AbstractHandler {
 
 		if (!sentence.isEmpty()) {
 			System.out.println(sentence);
-			final CCGandSRLparse parse = parser.parseTokens(InputWord.listOf(sentence.split(" ")));
-			response.println(printer.print(parse.getCcgParse(), 0));
+			final List<CCGandSRLparse> parses = parser.parseTokens(InputWord.listOf(sentence.split(" ")));
+			response.println(printer.printJointParses(parses, 0));
 		}
 
 	}

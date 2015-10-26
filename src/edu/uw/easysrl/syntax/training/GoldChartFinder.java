@@ -12,11 +12,9 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
+import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
-import edu.uw.easysrl.main.InputReader.InputWord;
-import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
 import edu.uw.easysrl.syntax.training.CompressedChart.Key;
@@ -25,9 +23,8 @@ import edu.uw.easysrl.syntax.training.CompressedChart.TreeValueUnary;
 import edu.uw.easysrl.syntax.training.CompressedChart.Value;
 
 /**
- * Given a complete chart for a sentence, and a set of gold-standard
- * dependencies, this finds a sub-chart of that maximizes agreement with the
- * dependencies
+ * Given a complete chart for a sentence, and a set of gold-standard dependencies, this finds a sub-chart of that
+ * maximizes agreement with the dependencies
  *
  */
 public class GoldChartFinder {
@@ -54,7 +51,7 @@ public class GoldChartFinder {
 
 		final Set<SRLDependency> goldDeps = getTrainingDependencies(sentence);
 
-		return goldChart(sentence, goldDeps, cutoffs);
+		return goldChart(goldDeps, cutoffs);
 	}
 
 	/**
@@ -83,8 +80,7 @@ public class GoldChartFinder {
 		return goldDeps;
 	}
 
-	private CompressedChart goldChart(final Sentence sentence, final Set<SRLDependency> goldDeps,
-			final CutoffsDictionary cutoffs) {
+	private CompressedChart goldChart(final Set<SRLDependency> goldDeps, final CutoffsDictionary cutoffs) {
 		final Table<Key, Set<SRLDependency>, Scored<Key>> cache = HashBasedTable.create();
 
 		int bestScore = -1;
@@ -108,21 +104,6 @@ public class GoldChartFinder {
 
 		if (bestScore > goldDeps.size()) {
 			throw new IllegalStateException();
-		}
-
-		synchronized (this) {
-			System.out.println();
-			for (final InputWord word : sentence.getInputWords()) {
-				System.out.print(word.word + " ");
-			}
-			System.out.println();
-			final List<Category> goldCategories = sentence.getLexicalCategories();
-			for (final Category category : goldCategories) {
-				System.out.print(category + " ");
-			}
-			System.out.println();
-			System.out.println(bestScore + "/" + goldDeps.size());
-
 		}
 
 		if (bestScore == 0) {
@@ -240,8 +221,7 @@ public class GoldChartFinder {
 	}
 
 	/**
-	 * Finds the set of SRL dependencies that match dependencies resolved at
-	 * this node
+	 * Finds the set of SRL dependencies that match dependencies resolved at this node
 	 */
 	private Set<SRLDependency> getMatchedDeps(final Set<SRLDependency> goldDeps,
 			final Collection<ResolvedDependency> dependencies, final CutoffsDictionary cutoffs,
@@ -257,7 +237,7 @@ public class GoldChartFinder {
 						&& cutoffs.isFrequent(dep.getCategory(), dep.getArgNumber(), srl.getLabel())
 						&& cutoffs.getRoles(completeChart.getWords().get(dep.getPredicateIndex()).word,
 								dep.getCategory(), dep.getPreposition(), dep.getArgNumber()).contains(srl.getLabel())
-						&& matches(predicateIndex, argumentIndex, srl, dep.getPreposition())) {
+								&& matches(predicateIndex, argumentIndex, srl, dep.getPreposition())) {
 
 					matchedDeps.add(srl);
 					newDeps.add(dep.overwriteLabel(srl.getLabel()));
@@ -279,6 +259,6 @@ public class GoldChartFinder {
 		return ((srl.isCoreArgument() && srl.getPredicateIndex() == predicateIndex && srl.getArgumentPositions()
 				.contains(argumentIndex)) || (!srl.isCoreArgument() && srl.getPredicateIndex() == argumentIndex && srl
 				.getArgumentPositions().contains(predicateIndex)))
-						&& Preposition.fromString(srl.getPreposition()) == preposition;
+				&& Preposition.fromString(srl.getPreposition()) == preposition;
 	}
 }

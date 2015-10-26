@@ -5,24 +5,22 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.DecimalFormat;
-import java.util.Collection;
 import java.util.InputMismatchException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import uk.co.flamingpenguin.jewel.cli.ArgumentValidationException;
 import uk.co.flamingpenguin.jewel.cli.CliFactory;
 import uk.co.flamingpenguin.jewel.cli.Option;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Multimap;
 
-import edu.uw.easysrl.corpora.CCGBankParseReader;
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.semantics.Lexicon;
 import edu.uw.easysrl.syntax.evaluation.Results;
@@ -32,7 +30,6 @@ import edu.uw.easysrl.syntax.model.Model.ModelFactory;
 import edu.uw.easysrl.syntax.model.SRLFactoredModel.SRLFactoredModelFactory;
 import edu.uw.easysrl.syntax.model.SupertagFactoredModel.SupertagFactoredModelFactory;
 import edu.uw.easysrl.syntax.model.feature.FeatureSet;
-import edu.uw.easysrl.syntax.parser.AbstractParser.SuperTaggingResults;
 import edu.uw.easysrl.syntax.parser.Parser;
 import edu.uw.easysrl.syntax.parser.ParserAStar;
 import edu.uw.easysrl.syntax.parser.ParserCKY;
@@ -43,7 +40,7 @@ import edu.uw.easysrl.syntax.parser.SRLParser.JointSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.PipelineSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.SemanticParser;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
-import edu.uw.easysrl.syntax.tagger.TagDict;
+import edu.uw.easysrl.syntax.tagger.Tagger;
 import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
 import edu.uw.easysrl.syntax.training.Training;
 import edu.uw.easysrl.util.Util;
@@ -91,14 +88,15 @@ public class EasySRL {
 		@Option(defaultValue = "0.0", description = "(Optional) If using N-best parsing, filter parses whose probability is lower than this fraction of the probability of the best parse. Defaults to 0.0")
 		double getNbestbeam();
 
-		@Option(defaultValue = "1", description = "(Optional) Number of threads to use. If greater than 1, the output order may differ from the input.")
-		int getThreads();
+		// @Option(defaultValue = "1", description =
+		// "(Optional) Number of threads to use. If greater than 1, the output order may differ from the input.")
+		// int getThreads();
 
 		@Option(helpRequest = true, description = "Display this message", shortName = "h")
 		boolean getHelp();
 
-		@Option(description = "(Optional) Make a tag dictionary")
-		boolean getMakeTagDict();
+		// @Option(description = "(Optional) Make a tag dictionary")
+		// boolean getMakeTagDict();
 
 	}
 
@@ -111,8 +109,8 @@ public class EasySRL {
 	public enum OutputFormat {
 		CCGBANK(ParsePrinter.CCGBANK_PRINTER), HTML(ParsePrinter.HTML_PRINTER), SUPERTAGS(ParsePrinter.SUPERTAG_PRINTER), PROLOG(
 				ParsePrinter.PROLOG_PRINTER), EXTENDED(ParsePrinter.EXTENDED_CCGBANK_PRINTER), DEPS(
-				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
-								ParsePrinter.LOGIC_PRINTER);
+						new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
+				ParsePrinter.LOGIC_PRINTER);
 
 		public final ParsePrinter printer;
 
@@ -128,18 +126,6 @@ public class EasySRL {
 			final CommandLineArguments commandLineOptions = CliFactory.parseArguments(CommandLineArguments.class, args);
 			final InputFormat input = InputFormat.valueOf(commandLineOptions.getInputFormat().toUpperCase());
 
-			if (commandLineOptions.getMakeTagDict()) {
-				// InputReader reader = InputReader.make(input, new
-				// SyntaxTreeNodeFactory(commandLineOptions.getMaxLength(), 0, 0));
-				// Map<String, Collection<Category>> tagDict =
-				// TagDict.makeDict(reader.readFile(commandLineOptions.getInputFile()));
-
-				final Map<String, Collection<Category>> tagDict = TagDict.makeDictFromParses(CCGBankParseReader
-						.loadCorpus(commandLineOptions.getInputFile(), ".*.parsed.gz"));
-				TagDict.writeTagDict(tagDict, new File(commandLineOptions.getModel(), "tagdict"));
-				System.exit(0);
-			}
-
 			if (!commandLineOptions.getModel().exists()) {
 				throw new InputMismatchException("Couldn't load model from from: " + commandLineOptions.getModel());
 			}
@@ -149,13 +135,11 @@ public class EasySRL {
 			final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 			System.err.println("Loading model...");
 			final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
-					ParsingAlgorithm.ASTAR, 200000, false),
-					Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
+					ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), commandLineOptions.getNbest()), Util.deserialize(new File(pipelineFolder,
+							"labelClassifier")), posTagger);
 
-			final SRLParser parser2 = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-					ParsingAlgorithm.valueOf(commandLineOptions.getParsingAlgorithm().toUpperCase()),
-					commandLineOptions.getParsingAlgorithm().equals("astar") ? 20000 : 400000, true), posTagger),
-					pipeline);
+			final SRLParser parser2 = new BackoffSRLParser(new JointSRLParser(makeParser(commandLineOptions, 20000,
+					true, Optional.empty()), posTagger), pipeline);
 
 			final OutputFormat outputFormat = OutputFormat.valueOf(commandLineOptions.getOutputFormat().toUpperCase());
 			final ParsePrinter printer = outputFormat.printer;
@@ -192,9 +176,10 @@ public class EasySRL {
 			System.err.println("Parsing...");
 
 			final Stopwatch timer = Stopwatch.createStarted();
-			final SuperTaggingResults supertaggingResults = new SuperTaggingResults();
+			final AtomicInteger parsedSentences = new AtomicInteger();
 			final Results dependencyResults = new Results();
-			final ExecutorService executorService = Executors.newFixedThreadPool(commandLineOptions.getThreads());
+			final ExecutorService executorService = Executors.newFixedThreadPool(1// commandLineOptions.getThreads()
+					);
 
 			final BufferedWriter sysout = new BufferedWriter(new OutputStreamWriter(System.out));
 
@@ -212,10 +197,9 @@ public class EasySRL {
 						@Override
 						public void run() {
 
-							final CCGandSRLparse parse = parser.parseTokens(reader.readInput(line).getInputWords());
-							String output;
-
-							output = printer.print(parse.getCcgParse(), id2);
+							final List<CCGandSRLparse> parses = parser.parseTokens(reader.readInput(line)
+									.getInputWords());
+							final String output = printer.printJointParses(parses, id2);
 
 							synchronized (printer) {
 								try {
@@ -240,23 +224,15 @@ public class EasySRL {
 			sysout.close();
 
 			final DecimalFormat twoDP = new DecimalFormat("#.##");
-			System.err.println("Coverage: "
-					+ twoDP.format(100.0 * supertaggingResults.parsedSentences.get()
-							/ supertaggingResults.totalSentences.get()) + "%");
-			if (supertaggingResults.totalCats.get() > 0) {
-				System.err.println("Accuracy: "
-						+ twoDP.format(100.0 * supertaggingResults.rightCats.get()
-								/ supertaggingResults.totalCats.get()) + "%");
-			}
 
 			if (!dependencyResults.isEmpty()) {
 				System.out.println("F1=" + dependencyResults.getF1());
 			}
 
-			System.err.println("Sentences parsed: " + supertaggingResults.parsedSentences);
+			System.err.println("Sentences parsed: " + parsedSentences.get());
 			System.err.println("Speed: "
-					+ twoDP.format(1000.0 * supertaggingResults.parsedSentences.get()
-							/ timer.elapsed(TimeUnit.MILLISECONDS)) + " sentences per second");
+					+ twoDP.format(1000.0 * parsedSentences.get() / timer.elapsed(TimeUnit.MILLISECONDS))
+					+ " sentences per second");
 
 		} catch (final ArgumentValidationException e) {
 			System.err.println(e.getMessage());
@@ -264,7 +240,8 @@ public class EasySRL {
 		}
 	}
 
-	public static Parser makeParser(final File modelFolder) throws IOException {
+	public static Parser makeParser(final File modelFolder, final Optional<Double> supertaggerWeight)
+			throws IOException {
 		CommandLineArguments commandLineOptions;
 		try {
 			// Meh.
@@ -279,7 +256,7 @@ public class EasySRL {
 			throw new RuntimeException(e);
 		}
 		return makeParser(commandLineOptions,
-				commandLineOptions.getParsingAlgorithm().equals("astar") ? 20000 : 400000, true);
+				commandLineOptions.getParsingAlgorithm().equals("astar") ? 20000 : 400000, true, supertaggerWeight);
 
 	}
 
@@ -288,21 +265,23 @@ public class EasySRL {
 	}
 
 	public static Parser makeParser(final String modelFolder, final double supertaggerBeam,
-			final ParsingAlgorithm parsingAlgorithm, final int maxChartSize, final boolean joint) throws IOException {
+			final ParsingAlgorithm parsingAlgorithm, final int maxChartSize, final boolean joint,
+			final Optional<Double> supertaggerWeight, final int nbest) throws IOException {
 		CommandLineArguments commandLineOptions;
 		try {
 			commandLineOptions = CliFactory.parseArguments(CommandLineArguments.class, new String[] { "-m",
-				modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString() });
+					modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString(),
+					"--nbest", "" + nbest });
 
 		} catch (final ArgumentValidationException e) {
 			throw new RuntimeException(e);
 		}
-		return makeParser(commandLineOptions, maxChartSize, joint);
+		return makeParser(commandLineOptions, maxChartSize, joint, supertaggerWeight);
 
 	}
 
 	private static Parser makeParser(final CommandLineArguments commandLineOptions, final int maxChartSize,
-			final boolean joint) throws IOException {
+			final boolean joint, final Optional<Double> supertaggerWeight) throws IOException {
 		DependencyStructure.parseMarkedUpFile(new File(commandLineOptions.getModel(), "markedup"));
 		final File cutoffsFile = new File(commandLineOptions.getModel(), "cutoffs");
 		final CutoffsDictionary cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
@@ -312,74 +291,42 @@ public class EasySRL {
 				.toUpperCase());
 
 		if (joint) {
-			modelFactory = new SRLFactoredModelFactory(Util.deserialize(new File(commandLineOptions.getModel(),
-					"weights")),
-					((FeatureSet) Util.deserialize(new File(commandLineOptions.getModel(), "features")))
-					.setSupertaggingFeature(new File(commandLineOptions.getModel(), "/pipeline")),
-					TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(), "categories")), cutoffs,
-					Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")),
-					commandLineOptions.getSupertaggerbeam());
+			final double[] weights = Util.deserialize(new File(commandLineOptions.getModel(), "weights"));
+			if (supertaggerWeight.isPresent()) {
+				weights[0] = supertaggerWeight.get();
+			}
+
+			modelFactory = new SRLFactoredModelFactory(weights, ((FeatureSet) Util.deserialize(new File(
+					commandLineOptions.getModel(), "features"))).setSupertaggingFeature(new File(commandLineOptions
+							.getModel(), "/pipeline")), TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(),
+									"categories")), cutoffs,
+									Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")),
+									commandLineOptions.getSupertaggerbeam());
 
 		} else {
-			modelFactory = new SupertagFactoredModelFactory(new TaggerEmbeddings(commandLineOptions.getModel(),
+			modelFactory = new SupertagFactoredModelFactory(Tagger.make(commandLineOptions.getModel(),
 					commandLineOptions.getSupertaggerbeam(), commandLineOptions.getMaxTagsPerWord(), cutoffs));
 
 		}
 
 		final Parser parser;
+		final double nBestBeam = commandLineOptions.getNbestbeam();
+		final int nBest = commandLineOptions.getNbest();
 		if (algorithm == ParsingAlgorithm.CKY) {
 			parser = new ParserCKY(
 
-			modelFactory, commandLineOptions.getMaxLength(), commandLineOptions.getNbest(),
-					commandLineOptions.getNbestbeam(), InputFormat.valueOf(commandLineOptions.getInputFormat()
-							.toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
-					commandLineOptions.getModel(), maxChartSize);
+					modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
+					.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
+							commandLineOptions.getModel(), maxChartSize);
 		} else {
 			parser = new ParserAStar(
 
-			modelFactory, commandLineOptions.getMaxLength(), commandLineOptions.getNbest(),
-					commandLineOptions.getNbestbeam(), InputFormat.valueOf(commandLineOptions.getInputFormat()
-							.toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
-					commandLineOptions.getModel(), maxChartSize);
+					modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
+					.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
+							commandLineOptions.getModel(), maxChartSize);
 		}
 
 		return parser;
 	}
 
-	public static void printDetailedTiming(final Parser parser, final DecimalFormat format) {
-		// Prints some statistic about how long each length sentence took to
-		// parse.
-		int sentencesCovered = 0;
-		final Multimap<Integer, Long> sentenceLengthToParseTimeInNanos = parser.getSentenceLengthToParseTimeInNanos();
-		int binNumber = 0;
-		final int binSize = 10;
-		while (sentencesCovered < sentenceLengthToParseTimeInNanos.size()) {
-			double totalTimeForBinInMillis = 0;
-			int totalSentencesInBin = 0;
-			for (int sentenceLength = binNumber * binSize + 1; sentenceLength < 1 + (binNumber + 1) * binSize; sentenceLength = sentenceLength + 1) {
-				for (final long time : sentenceLengthToParseTimeInNanos.get(sentenceLength)) {
-					totalTimeForBinInMillis += ((double) time / 1000000);
-					totalSentencesInBin++;
-				}
-			}
-			sentencesCovered += totalSentencesInBin;
-			final double averageTimeInMillis = totalTimeForBinInMillis / (totalSentencesInBin);
-			if (totalSentencesInBin > 0) {
-				System.err.println("Average time for sentences of length " + (1 + binNumber * binSize) + "-"
-						+ (binNumber + 1) * binSize + " (" + totalSentencesInBin + "): "
-						+ format.format(averageTimeInMillis) + "ms");
-			}
-
-			binNumber++;
-		}
-
-		final int totalSentencesTimes1000 = sentenceLengthToParseTimeInNanos.size() * 1000;
-		final long totalMillis = parser.getParsingTimeOnlyInMillis() + parser.getTaggingTimeOnlyInMillis();
-		System.err.println("Just Parsing Time: " + parser.getParsingTimeOnlyInMillis() + "ms "
-				+ (totalSentencesTimes1000 / parser.getParsingTimeOnlyInMillis()) + " per second");
-		System.err.println("Just Tagging Time: " + parser.getTaggingTimeOnlyInMillis() + "ms "
-				+ (totalSentencesTimes1000 / parser.getTaggingTimeOnlyInMillis()) + " per second");
-		System.err.println("Total Time:        " + totalMillis + "ms " + (totalSentencesTimes1000 / totalMillis)
-				+ " per second");
-	}
 }

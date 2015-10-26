@@ -86,6 +86,10 @@ public class TagDict {
 	private static void loadTagDict(final Set<Category> lexicalCategories,
 			final Map<String, Collection<Category>> result, final File file, final boolean skipIfNotPresent,
 			final Multimap<Category, Category> categoryToAnnotatedCategories) throws IOException {
+		if (!file.exists()) {
+			return;
+		}
+
 		for (final String line : Util.readFile(file)) {
 			final String[] fields = line.split("\t");
 			Collection<Category> cats = result.get(fields[0]);

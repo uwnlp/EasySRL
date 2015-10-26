@@ -26,6 +26,7 @@ import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.semantics.Lexicon;
 import edu.uw.easysrl.semantics.Logic;
+import edu.uw.easysrl.semantics.LogicParser;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Category.Slash;
 import edu.uw.easysrl.syntax.grammar.Combinator;
@@ -147,8 +148,8 @@ public abstract class AbstractParser implements Parser {
 		final Lexicon lexicon = new Lexicon();
 		for (String line : Util.readFile(file)) {
 			// Allow comments.
-			if (line.indexOf("#") > -1) {
-				line = line.substring(0, line.indexOf("#"));
+			if (line.startsWith("#")) {
+				continue;
 			}
 			line = line.trim();
 			if (line.isEmpty()) {
@@ -156,18 +157,20 @@ public abstract class AbstractParser implements Parser {
 			}
 
 			final String[] fields = line.split("\\s+");
-			if (fields.length < 2) {
-				throw new Error("Expected 2 categories and logical form line in UnaryRule file: " + line);
+			if (fields.length != 2 && fields.length != 3) {
+				throw new Error("Expected 2 categories (and optional logical form) on line in UnaryRule file: " + line);
 			}
 
 			final String from = fields[0];
 			final String to = fields[1];
-			// final String logic = fields[2];
 			final Category cat = Category.make(Category.valueOf(to), Slash.FWD, Category.valueOf(from));
-			result.put(
-					Category.valueOf(from),
-					new UnaryRule(result.size(), from, to, lexicon.getEntry(null, "NULL", cat,
-							Coindexation.fromString(to + "/" + from))));
+			Logic logic;
+			if (fields.length == 3) {
+				logic = LogicParser.fromString(fields[2], cat);
+			} else {
+				logic = lexicon.getEntry(null, "NULL", cat, Coindexation.fromString(to + "/" + from));
+			}
+			result.put(Category.valueOf(from), new UnaryRule(result.size(), from, to, logic));
 			// LogicParser.fromString(logic,Category.make(Category.valueOf(to), Slash.FWD,
 			// Category.valueOf(from)))
 		}
@@ -177,7 +180,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parse(java.lang.String)
 	 */
 	@Override
@@ -189,7 +192,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parseTokens(java.util.List)
 	 */
 	@Override
@@ -212,7 +215,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parseSentence(uk.ac.ed.easyccg .syntax.Parser.SuperTaggingResults,
 	 * uk.ac.ed.easyccg.syntax.InputReader.InputToParser)
 	 */
@@ -259,7 +262,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override
@@ -269,9 +272,7 @@ public abstract class AbstractParser implements Parser {
 			return null;
 		}
 
-		final List<Scored<SyntaxTreeNode>> parses = parseAstar(input.getInputWords());
-		return parses;
-
+		return parseAstar(input.getInputWords());
 	}
 
 	private int countCorrect(final List<Category> gold, final List<Category> predicted) {
@@ -361,16 +362,29 @@ public abstract class AbstractParser implements Parser {
 	 * Chart Cell used for N-best parsing. It allows multiple entries with the same category, if they are not
 	 * equivalent.
 	 */
-	/*
-	 * protected class CellNBest extends ChartCell { private final Multimap<Object, AgendaItem> keyToProbability=
-	 * HashMultimap.create(); public Collection<AgendaItem> getEntries() { return keyToProbability.values(); }
-	 * 
-	 * @Override void addEntry(Object hash, AgendaItem newEntry) { keyToProbability.put(hash, newEntry); }
-	 * 
-	 * @Override boolean isFull(Object hash) { return keyToProbability.get(hash).size() == nbest; }
-	 * 
-	 * @Override int size() { return keyToProbability.size(); } }
-	 */
+	protected class CellNBest extends ChartCell {
+		private final Multimap<Object, AgendaItem> keyToEntries = HashMultimap.create();
+
+		@Override
+		public Collection<AgendaItem> getEntries() {
+			return keyToEntries.values();
+		}
+
+		@Override
+		void addEntry(final Object equivalenceClassKey, final AgendaItem newEntry) {
+			keyToEntries.put(equivalenceClassKey, newEntry);
+		}
+
+		@Override
+		int size() {
+			return keyToEntries.size();
+		}
+
+		@Override
+		boolean isFull(final AgendaItem entry) {
+			return keyToEntries.get(entry.getEquivalenceClassKey()).size() > nbest;
+		}
+	}
 
 	/**
 	 * Chart Cell used for 1-best parsing.

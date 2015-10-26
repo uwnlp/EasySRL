@@ -42,6 +42,16 @@ public class Logic2Html {
 			result.append(")");
 		}
 
+		@Override
+		public void visit(final Function s) {
+
+			s.getPredicate().accept(this);
+			result.append("(");
+			printList(s.getChildren(), ",");
+
+			result.append(")");
+		}
+
 		private void printList(final Collection<? extends Logic> list, final String separator) {
 			boolean isFirst = true;
 			for (final Logic child : list) {

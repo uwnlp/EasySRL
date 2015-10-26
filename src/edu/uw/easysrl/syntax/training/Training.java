@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -75,10 +76,10 @@ import edu.uw.easysrl.util.Util.Logger;
 public class Training {
 
 	public static final List<Category> ROOT_CATEGORIES = Arrays.asList(Category.valueOf("S[dcl]"),
-			Category.valueOf("S[q]"), Category.valueOf("S[wq]"), Category.valueOf("NP"), Category.valueOf("S[qem]")// ,
-			// Category.valueOf("S[b]\\NP")
+			Category.valueOf("S[q]"), Category.valueOf("S[wq]"), Category.valueOf("NP"), Category.valueOf("S[qem]"),
+			Category.valueOf("S[b]\\NP")
 
-			);
+	);
 
 	private final Logger trainingLogger;
 
@@ -122,6 +123,11 @@ public class Training {
 										"supertagging_model_folder").replaceAll("~",
 										Util.getHomeFolder().getAbsolutePath()));
 
+								if (!baseModel.exists()) {
+									throw new IllegalArgumentException("Supertagging model not found: "
+											+ baseModel.getAbsolutePath());
+								}
+
 								final File pipeline = new File(modelFolder, "pipeline");
 								pipeline.mkdir();
 								for (final File f : baseModel.listFiles()) {
@@ -157,7 +163,14 @@ public class Training {
 											.add("cost_function_weight", costFunctionWeight)
 											.add("beta_for_positive_charts", goldBeam)
 											.add("beta_for_training_charts", beta).toString());
-									training.evaluate(beam);
+
+									for (final Double supertaggerWeight : Arrays.asList(null, 0.5, 0.6, 0.7, 0.8, 0.9,
+											1.0)) {
+										training.evaluate(
+												beam,
+												supertaggerWeight == null ? Optional.empty() : Optional
+														.of(supertaggerWeight));
+									}
 								}
 							}
 						}
@@ -519,17 +532,19 @@ public class Training {
 
 	}
 
-	private void evaluate(final double testingSupertaggerBeam) throws IOException {
+	private void evaluate(final double testingSupertaggerBeam, final Optional<Double> supertaggerWeight)
+			throws IOException {
 		final int maxSentenceLength = 70;
 		final POSTagger posTagger = POSTagger
 				.getStanfordTagger(new File(dataParameters.getExistingModel(), "posTagger"));
 
 		final SRLParser parser = new JointSRLParser(EasySRL.makeParser(trainingParameters.getModelFolder()
-				.getAbsolutePath(), testingSupertaggerBeam, ParsingAlgorithm.ASTAR, 20000, true), posTagger);
+				.getAbsolutePath(), testingSupertaggerBeam, ParsingAlgorithm.ASTAR, 20000, true, supertaggerWeight, 1),
+				posTagger);
 
 		final SRLParser backoff = new BackoffSRLParser(parser, new PipelineSRLParser(EasySRL.makeParser(dataParameters
-				.getExistingModel().getAbsolutePath(), 0.0001, ParsingAlgorithm.ASTAR, 100000, false),
-				Util.deserialize(new File(dataParameters.getExistingModel(), "labelClassifier")), posTagger));
+				.getExistingModel().getAbsolutePath(), 0.0001, ParsingAlgorithm.ASTAR, 100000, false, Optional.empty(),
+				1), Util.deserialize(new File(dataParameters.getExistingModel(), "labelClassifier")), posTagger));
 
 		final Results results = SRLEvaluation
 				.evaluate(backoff, ParallelCorpusReader.getPropBank00(), maxSentenceLength);

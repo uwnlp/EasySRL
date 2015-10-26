@@ -5,6 +5,8 @@ import java.util.Map;
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
 public class QuantifierSentence extends Sentence {
+	private static final long serialVersionUID = 1L;
+
 	enum Quantifier {
 
 		EXISTS("\u2203", "&exist;"), FORALL("\u2200", "&forall;");

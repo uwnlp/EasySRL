@@ -12,6 +12,7 @@ import edu.uw.easysrl.semantics.Variable.VariableNames;
  *
  */
 public class Set extends Logic {
+	private static final long serialVersionUID = 1L;
 	private final Collection<Logic> children;
 
 	public Set(final Logic... children) {

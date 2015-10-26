@@ -40,16 +40,18 @@ public class FeatureCache {
 			final Collection<Category> lexicalCategories, final SlotFeatureCache slotFeatureCache) {
 
 		this.slotFeatureCache = slotFeatureCache;
-		this.wordToCategoryToScore = new ArrayList<>(words.size());
+		this.wordToCategoryToScore = featureSet.lexicalCategoryFeatures.getCategoryScores(words, supertaggerWeight);
 
-		for (int i = 0; i < words.size(); i++) {
-			Collection<Category> categoriesForWord = cutoffs.getCategoriesForWord(words.get(i).word);
-			if (categoriesForWord.size() == 0) {
-				categoriesForWord = lexicalCategories;
-			}
-			wordToCategoryToScore.add(featureSet.lexicalCategoryFeatures.getCategoryScores(words, i, categoriesForWord,
-					supertaggerWeight));
-		}
+		// new ArrayList<>(words.size());
+		//
+		// for (int i = 0; i < words.size(); i++) {
+		// Collection<Category> categoriesForWord = cutoffs.getCategoriesForWord(words.get(i).word);
+		// if (categoriesForWord.size() == 0) {
+		// categoriesForWord = lexicalCategories;
+		// }
+		// wordToCategoryToScore.add(featureSet.lexicalCategoryFeatures.getCategoryScores(words, i, categoriesForWord,
+		// supertaggerWeight));
+		// }
 
 		this.predicateToLabelToScore = new ObjectDoubleHashMap[words.size()];
 		this.argumentToLabelToScore = new ObjectDoubleHashMap[words.size()];

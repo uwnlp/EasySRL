@@ -23,8 +23,7 @@ import edu.uw.easysrl.syntax.parser.AbstractParser;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
 import edu.uw.easysrl.syntax.tagger.Tagger;
-import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
-import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings.ScoredCategory;
+import edu.uw.easysrl.syntax.tagger.Tagger.ScoredCategory;
 import edu.uw.easysrl.syntax.training.CKY.ChartCell;
 import edu.uw.easysrl.syntax.training.Optimization.TrainingExample;
 
@@ -57,9 +56,9 @@ class TrainingDataLoader {
 			// Build set of possible parses
 			this.parser = new CKY(dataParameters.getExistingModel(), dataParameters.maxTrainingSentenceLength,
 					dataParameters.maxChartSize);
-			this.tagger = new TaggerEmbeddings(dataParameters.getExistingModel(), dataParameters.supertaggerBeam, 50,
+			this.tagger = Tagger.make(dataParameters.getExistingModel(), dataParameters.supertaggerBeam, 50,
 					cutoffsDictionary// null
-			);
+					);
 			this.posTagger = POSTagger.getStanfordTagger(new File(dataParameters.getExistingModel(), "posTagger"));
 
 		} catch (final IOException e) {
@@ -157,7 +156,7 @@ class TrainingDataLoader {
 				for (final Category supertag : sentence.getLexicalCategories()) {
 					message.append(supertag + " ");
 				}
-				System.err.println(message.toString());
+				// System.err.println(message.toString());
 
 				return null;
 			}

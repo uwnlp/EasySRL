@@ -8,6 +8,7 @@ import edu.uw.easysrl.semantics.Variable.VariableNames;
  * Negation, modality, etc.
  */
 public class OperatorSentence extends Sentence {
+	private static final long serialVersionUID = 1L;
 	private final Sentence child;
 	private final Operator operator;
 
@@ -18,6 +19,11 @@ public class OperatorSentence extends Sentence {
 		private Operator(final String asString) {
 			this.asString = asString;
 		}
+
+		public String asString() {
+			return asString;
+		}
+
 	}
 
 	OperatorSentence(final Operator operator, final Sentence child) {

@@ -1,5 +1,6 @@
 package edu.uw.easysrl.semantics;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -7,7 +8,9 @@ import java.util.Map;
 
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
-public abstract class Logic {
+public abstract class Logic implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public abstract Logic doSubstitution(Substitution substitution);
 
@@ -73,6 +76,8 @@ public abstract class Logic {
 		void visit(Variable s);
 
 		void visit(LambdaExpression lambdaExpression);
+
+		void visit(Function function);
 	}
 
 }

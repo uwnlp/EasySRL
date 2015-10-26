@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -26,11 +27,11 @@ public abstract class SRLParser {
 		this.tagger = tagger;
 	}
 
-	public final CCGandSRLparse parseTokens(final List<InputWord> tokens) {
+	public final List<CCGandSRLparse> parseTokens(final List<InputWord> tokens) {
 		return parseTokens2(tagger.tag(tokens));
 	}
 
-	protected abstract CCGandSRLparse parseTokens2(List<InputWord> tokens);
+	protected abstract List<CCGandSRLparse> parseTokens2(List<InputWord> tokens);
 
 	public static class BackoffSRLParser extends SRLParser {
 		private final SRLParser[] parsers;
@@ -42,9 +43,9 @@ public abstract class SRLParser {
 		}
 
 		@Override
-		protected CCGandSRLparse parseTokens2(final List<InputWord> tokens) {
+		protected List<CCGandSRLparse> parseTokens2(final List<InputWord> tokens) {
 			for (final SRLParser parser : parsers) {
-				final CCGandSRLparse parses = parser.parseTokens(tokens);
+				final List<CCGandSRLparse> parses = parser.parseTokens(tokens);
 				if (parses != null) {
 					return parses;
 				} else {
@@ -68,12 +69,12 @@ public abstract class SRLParser {
 		}
 
 		@Override
-		protected CCGandSRLparse parseTokens2(final List<InputWord> tokens) {
+		protected List<CCGandSRLparse> parseTokens2(final List<InputWord> tokens) {
 
-			CCGandSRLparse parse = parser.parseTokens(tokens);
+			List<CCGandSRLparse> parse = parser.parseTokens(tokens);
 
 			if (parse != null) {
-				parse = parse.addSemantics(lexicon);
+				parse = parse.stream().map(x -> x.addSemantics(lexicon)).collect(Collectors.toList());
 			}
 
 			return parse;
@@ -89,16 +90,17 @@ public abstract class SRLParser {
 		}
 
 		@Override
-		protected CCGandSRLparse parseTokens2(final List<InputWord> tokens) {
+		protected List<CCGandSRLparse> parseTokens2(final List<InputWord> tokens) {
 			final List<Scored<SyntaxTreeNode>> parses = parser.doParsing(new InputToParser(tokens, null, null, false));
-			if (parses == null || parses.size() == 0) {
+			if (parses == null) {
 				return null;
 			} else {
-				return new CCGandSRLparse(parses.get(0).getObject(), parses.get(0).getObject()
-						.getAllLabelledDependencies(), tokens);
+				return parses
+						.stream()
+						.map(x -> new CCGandSRLparse(x.getObject(), x.getObject().getAllLabelledDependencies(), tokens))
+						.collect(Collectors.toList());
 			}
 		}
-
 	}
 
 	public static class CCGandSRLparse {
@@ -157,20 +159,23 @@ public abstract class SRLParser {
 		private final LabelClassifier classifier;
 
 		@Override
-		public CCGandSRLparse parseTokens2(final List<InputWord> tokens) {
-			// final List<InputWord> inputWords = InputWord.listOf(tokens
-			// .toArray(new String[0]));
-			final Collection<ResolvedDependency> result = new ArrayList<>();
-			final CCGandSRLparse parse = super.parseTokens2(tokens);
+		public List<CCGandSRLparse> parseTokens2(final List<InputWord> tokens) {
+
+			final List<CCGandSRLparse> parse = super.parseTokens2(tokens);
 			if (parse == null) {
 				return null;
 			}
+
+			return parse.stream().map(x -> addDependencies(tokens, x)).collect(Collectors.toList());
+		}
+
+		private CCGandSRLparse addDependencies(final List<InputWord> tokens, final CCGandSRLparse parse) {
+			final Collection<ResolvedDependency> result = new ArrayList<>();
 			for (final ResolvedDependency dep : parse.getDependencyParse()) {
 				if (dep.getArgumentIndex() != dep.getPredicateIndex()) {
 					result.add(dep.overwriteLabel(classifier.classify(dep.dropLabel(), tokens)));
 				}
 			}
-
 			return new CCGandSRLparse(parse.getCcgParse(), result, tokens);
 		}
 

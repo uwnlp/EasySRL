@@ -77,7 +77,7 @@ class CKY {
 			}
 		}
 
-		System.out.println("Chart size=" + size);
+		// System.out.println("Chart size=" + size);
 		return chart;
 
 	}
@@ -138,7 +138,7 @@ class CKY {
 		nodes.put(key, newNode);
 
 		if (length != sentenceLength // && (ruleType != RuleType.LP && ruleType != RuleType.RP)
-		) {
+				) {
 			// Don't allow unary rules that span sentence.
 			for (final UnaryRule unary : unaryRules.get(category)) {
 				final List<UnlabelledDependency> resolvedDependencies = new ArrayList<>();
@@ -147,8 +147,8 @@ class CKY {
 
 				addEntry(nodes, EquivalenceClassValue.make(resolvedDependencies, key), unary.getCategory(), unary
 						.getCategory().isForwardTypeRaised() ? RuleType.FORWARD_TYPERAISE : (unary.getCategory()
-								.isBackwardTypeRaised() ? RuleType.BACKWARD_TYPE_RAISE : RuleType.TYPE_CHANGE), length,
-								sentenceLength, newDeps);
+						.isBackwardTypeRaised() ? RuleType.BACKWARD_TYPE_RAISE : RuleType.TYPE_CHANGE), length,
+						sentenceLength, newDeps);
 			}
 		}
 

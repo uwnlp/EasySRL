@@ -2,8 +2,6 @@ package edu.uw.easysrl.syntax.model.feature;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -11,11 +9,11 @@ import java.util.regex.Pattern;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.feature.Feature.LexicalCategoryFeature;
-import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
+import edu.uw.easysrl.syntax.tagger.Tagger;
 
 public class DenseLexicalFeature extends LexicalCategoryFeature {
 
-	private final transient TaggerEmbeddings tagger;
+	private final transient Tagger tagger;
 
 	/**
 	 *
@@ -26,7 +24,7 @@ public class DenseLexicalFeature extends LexicalCategoryFeature {
 
 	public DenseLexicalFeature(final File modelFolder) throws IOException {
 
-		this.tagger = new TaggerEmbeddings(modelFolder, 0.0, 50, null);
+		this.tagger = Tagger.make(modelFolder, 0.0, 50, null);
 
 	}
 
@@ -40,16 +38,12 @@ public class DenseLexicalFeature extends LexicalCategoryFeature {
 		return word;
 	}
 
+	/**
+	 * This will be really slow if using the LSTM...
+	 */
 	@Override
 	public double getValue(final List<InputWord> sentence, final int word, final Category category) {
-		return tagger.getCategoryScores(sentence, word, 1.0, Collections.singleton(category)).getOrDefault(category,
-				Double.NEGATIVE_INFINITY);
-
-	}
-
-	Map<Category, Double> getCategoryScores(final List<InputWord> sentence, final int word,
-			final Collection<Category> categories, final double weight) {
-		return tagger.getCategoryScores(sentence, word, weight, categories);
+		return tagger.getCategoryScores(sentence, 1.0).get(word).get(category);
 	}
 
 	@Override
@@ -62,6 +56,10 @@ public class DenseLexicalFeature extends LexicalCategoryFeature {
 	@Override
 	public FeatureKey getDefault() {
 		return defaultKey;
+	}
+
+	public List<Map<Category, Double>> getCategoryScores(final List<InputWord> words, final double supertaggerWeight) {
+		return tagger.getCategoryScores(words, supertaggerWeight);
 	}
 
 }

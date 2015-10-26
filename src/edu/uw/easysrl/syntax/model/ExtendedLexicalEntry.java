@@ -637,21 +637,25 @@ class ExtendedLexicalEntry {
 	/**
 	 * Finds the best label for a dependency.
 	 */
-	Scored<SRLLabel> getBestLabel(final UnlabelledDependency dep) {
+	Scored<SRLLabel> getBestLabels(final UnlabelledDependency dep) {
 
 		final DisjunctiveNode roleChoice = forest.getNode(dep.getCategory(), dep.getArgNumber(), dep.getPreposition());
 
 		final double prepScore = getLogScoreOfFeaturesAtNode(dep.getCategory(), dep.getArgNumber(),
 				dep.getPreposition());
 
-		SRLLabel bestLabel = null;
-		double bestScore = Double.NEGATIVE_INFINITY;
-
 		if (roleChoice == null// || dep.getOffset() == 0
 		) {
 			// Slots that are never SRL.
 			return new Scored<>(SRLFrame.NONE, 0.0);
 		}
+
+		SRLLabel bestLabel = null;
+		double bestScore = Double.NEGATIVE_INFINITY;
+
+		// final int size = Math.min(numLabels, roleChoice.children.size());
+		// final MinMaxPriorityQueue<Scored<SRLLabel>> result = MinMaxPriorityQueue.expectedSize(size).maximumSize(size)
+		// .create();
 
 		for (final ConjunctiveNode child : roleChoice.children) {
 			final ConjunctiveArgumentSlotNode slotNode = (ConjunctiveArgumentSlotNode) child;
@@ -676,8 +680,13 @@ class ExtendedLexicalEntry {
 				bestLabel = slotNode.getLabel();
 			}
 
+			// if (score > result.peekLast().getScore()) {
+			// result.add(new Scored<>(slotNode.getLabel(), score));
+			// }
+
 		}
 
+		// return result;
 		return new Scored<>(bestLabel, bestScore);
 	}
 }

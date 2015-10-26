@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
 public class AtomicSentence extends Sentence {
 
+	private static final long serialVersionUID = 1L;
 	private final List<? extends Logic> children;
 	private final Logic predicate;
 
@@ -63,7 +65,7 @@ public class AtomicSentence extends Sentence {
 	public AtomicSentence(final Logic predicate, final List<? extends Logic> children) {
 
 		this.predicate = predicate;
-		this.children = children;
+		this.children = ImmutableList.copyOf(children);
 
 		Preconditions.checkArgument(children.size() > 0);
 		for (final Logic child : children) {
