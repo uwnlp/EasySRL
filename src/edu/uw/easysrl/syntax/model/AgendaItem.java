@@ -8,8 +8,8 @@ import java.util.Set;
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleClass;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 
 public class AgendaItem implements Comparable<AgendaItem> {
 	final SyntaxTreeNode parse;
@@ -69,9 +69,10 @@ public class AgendaItem implements Comparable<AgendaItem> {
 		// Same unused SRL labels
 		// Same depenency structure
 		// Same rule
-		return includeDeps ? new KeyWithDeps(parse.getCategory(), parse.getRuleType().getNormalFormClassForRule(),
-				parse.getDependencyStructure(), parse.getResolvedUnlabelledDependencies()) : new KeyNoDeps(
-						parse.getCategory(), parse.getRuleType().getNormalFormClassForRule());
+		final RuleClass ruleClass = parse.getRuleClass();
+
+		return includeDeps ? new KeyWithDeps(parse.getCategory(), ruleClass, parse.getDependencyStructure(),
+				parse.getResolvedUnlabelledDependencies()) : new KeyNoDeps(parse.getCategory(), ruleClass);
 	}
 
 	private static class KeyWithDeps {

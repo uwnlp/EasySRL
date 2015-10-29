@@ -7,7 +7,8 @@ public class NormalForm {
 
 	public static boolean isOk(final RuleClass leftRuleClass, final RuleClass rightRuleClass, final RuleType ruleType,
 			@SuppressWarnings("unused") final Category leftCategory,
-			@SuppressWarnings("unused") final Category rightCategory) {
+			@SuppressWarnings("unused") final Category rightCategory, final Category result,
+			final boolean isPrefixOfSentence) {
 		if ((leftRuleClass == RuleClass.FC || leftRuleClass == RuleClass.GFC)
 				&& (ruleType == RuleType.FA || ruleType == RuleType.FC || ruleType == RuleType.GFC)) {
 			// Eisner normal form constraint.
@@ -67,8 +68,31 @@ public class NormalForm {
 			return false;
 		}
 
-		if ((leftRuleClass == RuleClass.LP && ruleType != RuleType.RP) || rightRuleClass == RuleClass.RP) {
+		// Constraints on punctuation.
+
+		if (ruleType == RuleType.LP && !isPrefixOfSentence) {
+			// Only remove punctuation to the left at the start of the sentence.
+			return false;
+		}
+
+		if ((leftRuleClass == RuleClass.LP && ruleType != RuleType.RP && isPrefixOfSentence)
+				|| rightRuleClass == RuleClass.RP || rightRuleClass == RuleClass.LP) {
 			// Remove punctuation as late as possible.
+			return false;
+		}
+
+		if ((ruleType == RuleType.LP && (rightRuleClass == RuleClass.FORWARD_TYPERAISE || rightRuleClass == RuleClass.BACKWARD_TYPE_RAISE))) {
+			// Don't allow punctuation rules to apply after type-raising.
+			return false;
+		}
+
+		if ((ruleType == RuleType.RP && (leftRuleClass == RuleClass.FORWARD_TYPERAISE || leftRuleClass == RuleClass.BACKWARD_TYPE_RAISE))) {
+			// Don't allow punctuation rules to apply after type-raising.
+			return false;
+		}
+
+		if ((ruleType == RuleType.RP && leftRuleClass == RuleClass.FC)
+				|| (ruleType == RuleType.LP && rightRuleClass == RuleClass.BX)) {
 			return false;
 		}
 
@@ -78,6 +102,20 @@ public class NormalForm {
 			return false;
 		}
 		if (rightRuleClass == RuleClass.CONJ && ruleType != RuleType.BA) {
+			return false;
+		}
+
+		// Scope of modifiers. Technically these are semantically distinct, but our representations aren't smart enough
+		// to notice.
+
+		if (rightRuleClass == RuleClass.B_MOD && ruleType == RuleType.FA && rightCategory.equals(result)) {
+			// This version gives rightward modifiers (e.g. relative clauses) scope over leftward modifiers (e.g.
+			// adjectives).
+			return false;
+		}
+
+		if (rightRuleClass == RuleClass.FC && ruleType == RuleType.FA && rightCategory.equals(result)) {
+			// Rules out: (very (big red)), forcing ((very big) red)
 			return false;
 		}
 

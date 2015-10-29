@@ -16,8 +16,7 @@ public interface Parser {
 	 */
 	public abstract List<Scored<SyntaxTreeNode>> parseTokens(List<String> words);
 
-	public abstract List<Scored<SyntaxTreeNode>> parseSentence(
-			SuperTaggingResults results, InputToParser input);
+	public abstract List<Scored<SyntaxTreeNode>> parseSentence(SuperTaggingResults results, InputToParser input);
 
 	public abstract List<Scored<SyntaxTreeNode>> doParsing(InputToParser input);
 
@@ -29,4 +28,5 @@ public interface Parser {
 
 	long getTaggingTimeOnlyInMillis();
 
+	public abstract int getMaxSentenceLength();
 }

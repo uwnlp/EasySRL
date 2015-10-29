@@ -12,6 +12,7 @@ import edu.uw.easysrl.main.EasySRL.InputFormat;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
+import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.grammar.NormalForm;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
@@ -49,8 +50,8 @@ public class ParserAStar extends AbstractParser {
 		int chartSize = 0;
 
 		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-		// TODO && agenda.peek() != null && agenda.peek().getCost() >
-		// result.get(0).getProbability() + nbestBeam
+				// TODO && agenda.peek() != null && agenda.peek().getCost() >
+				// result.get(0).getProbability() + nbestBeam
 				))) {
 			// Add items from the agenda, until we have enough parses.
 
@@ -77,19 +78,25 @@ public class ParserAStar extends AbstractParser {
 				}
 
 				// See if any Unary Rules can be applied to the new entry.
-				// if (agendaItem.getParse().getRuleType() != RuleType.LP
-				// && agendaItem.getParse().getRuleType() != RuleType.RP) {
-				for (final UnaryRule unaryRule : unaryRules.get(agendaItem.getParse().getCategory())) {
 
-					final List<UnlabelledDependency> resolvedDependencies = new ArrayList<>();
-					agenda.add(model.unary(
-							agendaItem,
-							new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
-									.getDependencyStructureTransformation().apply(
-											agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-											unaryRule, resolvedDependencies), unaryRule));
+				for (final UnaryRule unaryRule : unaryRules.get(agendaItem.getParse().getCategory())) {
+					if ((agendaItem.getParse().getRuleType() != RuleType.LP && agendaItem.getParse().getRuleType() != RuleType.RP)
+							|| unaryRule.getCategory().isTypeRaised()) {
+						// Don't allow unary rules to apply to the output of non-type-raising rules.
+						// i.e. don't allow both (NP (N ,))
+						// The reason for allowing type-raising is to simplify Eisner Normal Form contraints (a
+						// punctuation rule would mask the fact that a rule is the output of type-raising).
+						// TODO should probably refactor the constraint into NormalForm.
+
+						final List<UnlabelledDependency> resolvedDependencies = new ArrayList<>();
+						agenda.add(model.unary(
+								agendaItem,
+								new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
+										.getDependencyStructureTransformation().apply(
+												agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
+										unaryRule, resolvedDependencies), unaryRule));
+					}
 				}
-				// }
 
 				// See if the new entry can be the left argument of any binary
 				// rules.
@@ -97,7 +104,7 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-							- agendaItem.getSpanLength() - 1];
+					                                                                                            - agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}
@@ -154,9 +161,9 @@ public class ParserAStar extends AbstractParser {
 		final int spanLength = left.getSpanLength() + right.getSpanLength();
 
 		for (final RuleProduction production : getRules(leftChild.getCategory(), rightChild.getCategory())) {
-			if (!NormalForm.isOk(leftChild.getRuleType().getNormalFormClassForRule(), rightChild.getRuleType()
-					.getNormalFormClassForRule(), production.getRuleType(), leftChild.getCategory(), rightChild
-					.getCategory())) {
+			if (!NormalForm.isOk(leftChild.getRuleClass(), rightChild.getRuleClass(), production.getRuleType(),
+					leftChild.getCategory(), rightChild.getCategory(), production.getCategory(),
+					left.getStartOfSpan() == 0)) {
 				continue;
 			} else if (spanLength == sentenceLength && !possibleRootCategories.contains(production.getCategory())) {
 				// Enforce the root node has a prespecified category. Doesn't

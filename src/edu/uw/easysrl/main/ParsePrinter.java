@@ -1004,7 +1004,7 @@ public abstract class ParsePrinter {
 	abstract boolean outputsLogic();
 
 	public String printJointParses(final List<CCGandSRLparse> parses, final int id) {
-		return print(parses.stream().map(x -> x.getCcgParse()).collect(Collectors.toList()), id);
+		return print(parses == null ? null : parses.stream().map(x -> x.getCcgParse()).collect(Collectors.toList()), id);
 	}
 
 }

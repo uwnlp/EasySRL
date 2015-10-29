@@ -56,7 +56,14 @@ public abstract class SRLParser {
 			return null;
 		}
 
+		@Override
+		public int getMaxSentenceLength() {
+			return parsers[parsers.length - 1].getMaxSentenceLength();
+		}
+
 	}
+
+	public abstract int getMaxSentenceLength();
 
 	public static class SemanticParser extends SRLParser {
 		private final SRLParser parser;
@@ -79,6 +86,11 @@ public abstract class SRLParser {
 
 			return parse;
 		}
+
+		@Override
+		public int getMaxSentenceLength() {
+			return parser.getMaxSentenceLength();
+		}
 	}
 
 	public static class JointSRLParser extends SRLParser {
@@ -100,6 +112,11 @@ public abstract class SRLParser {
 						.map(x -> new CCGandSRLparse(x.getObject(), x.getObject().getAllLabelledDependencies(), tokens))
 						.collect(Collectors.toList());
 			}
+		}
+
+		@Override
+		public int getMaxSentenceLength() {
+			return parser.getMaxSentenceLength();
 		}
 	}
 

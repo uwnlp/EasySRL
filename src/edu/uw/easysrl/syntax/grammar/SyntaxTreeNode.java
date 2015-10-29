@@ -16,6 +16,7 @@ import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.main.ParsePrinter;
 import edu.uw.easysrl.semantics.Lexicon;
 import edu.uw.easysrl.semantics.Logic;
+import edu.uw.easysrl.syntax.grammar.Combinator.RuleClass;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
@@ -160,6 +161,19 @@ public abstract class SyntaxTreeNode implements Serializable {
 					super.dependencyStructure, super.resolvedUnlabelledDependencies, Optional.of(semantics));
 		}
 
+		@Override
+		public RuleClass getRuleClass() {
+			if (ruleType == RuleType.FA && rightChild.getCategory().equals(super.category)) {
+				// X/X X --> X
+				return RuleClass.F_MOD;
+			} else if ((ruleType == RuleType.BA) && leftChild.getCategory().equals(super.category)) {
+				// X X\X --> X
+				return RuleClass.B_MOD;
+			} else {
+				return ruleType.getNormalFormClassForRule();
+			}
+		}
+
 	}
 
 	public static class SyntaxTreeNodeLeaf extends SyntaxTreeNode {
@@ -257,6 +271,11 @@ public abstract class SyntaxTreeNode implements Serializable {
 			final Logic semantics = lexicon.getEntry(semanticDependencies, super.headIndex);
 			return new SyntaxTreeNodeLeaf(word, pos, ner, super.category, super.headIndex, Optional.of(semantics));
 		}
+
+		@Override
+		public RuleClass getRuleClass() {
+			return RuleClass.LEXICON;
+		}
 	}
 
 	public static class SyntaxTreeNodeUnary extends SyntaxTreeNode {
@@ -349,6 +368,11 @@ public abstract class SyntaxTreeNode implements Serializable {
 			return new SyntaxTreeNodeUnary(super.category, newChild, super.dependencyStructure, unaryRule,
 					super.resolvedUnlabelledDependencies, Optional.of(semantics));
 		}
+
+		@Override
+		public RuleClass getRuleClass() {
+			return ruleType.getNormalFormClassForRule();
+		}
 	}
 
 	@Override
@@ -373,6 +397,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 	}
 
 	public abstract RuleType getRuleType();
+
+	public abstract RuleClass getRuleClass();
 
 	public abstract List<SyntaxTreeNode> getChildren();
 
@@ -484,6 +510,11 @@ public abstract class SyntaxTreeNode implements Serializable {
 		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
 			final SyntaxTreeNode newChild = child.addSemantics(lexicon, semanticDependencies);
 			return new SyntaxTreeNodeLabelling(newChild, labelled, super.resolvedUnlabelledDependencies);
+		}
+
+		@Override
+		public RuleClass getRuleClass() {
+			return child.getRuleClass();
 		}
 
 	}
