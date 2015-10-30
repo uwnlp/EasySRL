@@ -245,12 +245,13 @@ public class Lexicon {
 			final Map<IDorHead, Variable> idToVar, final boolean isContentWord, final List<SRLLabel> labels) {
 
 		SRLLabel label = labels.size() == 0 ? SRLFrame.NONE : labels.get(labels.size() - 1);
-		if (category.getNumberOfArguments() > 0 && category.getLeft().isModifier() && labels.size() > 0
-				&& labels.get(1) != SRLFrame.NONE) {
-			// For transitive modifier categories, like (S\S)/NP move the semantic role to the argument.
+		if (category.getNumberOfArguments() > 0 && category.getLeft().isModifier() && labels.size() > 1
+				&& labels.get(labels.size() - 2) != SRLFrame.NONE) {
+			// For transitive modifier categories, like (S\S)/NP or ((S\NP)\(S\NP)/NP move the semantic role to the
+			// argument.
 			// Hacky, but simplifies things a lot.
-			label = labels.get(1);
-			labels.set(1, SRLFrame.NONE);
+			label = labels.get(labels.size() - 2);
+			labels.set(labels.size() - 2, SRLFrame.NONE);
 		}
 
 		if (Category.valueOf("(NP|NP)|(NP|NP)").matches(category)
