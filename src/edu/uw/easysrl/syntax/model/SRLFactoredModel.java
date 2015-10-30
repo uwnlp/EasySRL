@@ -41,7 +41,7 @@ public class SRLFactoredModel extends Model {
 			final Collection<BinaryFeature> binaryFeatures, final Collection<RootCategoryFeature> rootFeatures,
 			final List<InputWord> sentence
 
-			) {
+	) {
 		super(forests.size());
 		this.forests = forests;
 		this.supertaggerBeam = supertaggerBeam;
@@ -254,8 +254,8 @@ public class SRLFactoredModel extends Model {
 
 		@Override
 		public Model make(final List<InputWord> sentence) {
-			final FeatureCache featureCache = new FeatureCache(sentence, featureToScore, featureSet, cutoffsDictionary,
-					supertaggingFeatureScore, lexicalCategories, slotFeatureCache);
+			final FeatureCache featureCache = new FeatureCache(sentence, featureToScore, featureSet,
+					supertaggingFeatureScore, slotFeatureCache);
 
 			final List<ExtendedLexicalEntry> forests = new ArrayList<>(sentence.size());
 			int wordIndex = 0;
