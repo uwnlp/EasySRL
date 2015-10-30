@@ -89,13 +89,14 @@ class CKY {
 			final ChartCell left = chart[startOfSpan][spanSplit - 1];
 			final ChartCell right = chart[startOfSpan + spanSplit][spanLength - spanSplit - 1];
 
-			makeChartCell(entries, left, right, spanLength, chart.length);
+			makeChartCell(entries, left, right, spanLength, chart.length, startOfSpan);
 		}
 		return ChartCell.make(entries);
 	}
 
 	private void makeChartCell(final Multimap<EquivalenceClassKey, EquivalenceClassValue> entries,
-			final ChartCell left, final ChartCell right, final int spanLength, final int sentenceLength) {
+			final ChartCell left, final ChartCell right, final int spanLength, final int sentenceLength,
+			final int startOfSpan) {
 
 		for (final EquivalenceClassKey l : left.entries.keySet()) {
 			for (final EquivalenceClassKey r : right.entries.keySet()) {
@@ -114,7 +115,8 @@ class CKY {
 					final RuleType rightRuleClass = r.getRuleType();
 
 					if (!NormalForm.isOk(leftRuleClass.getNormalFormClassForRule(),
-							rightRuleClass.getNormalFormClassForRule(), ruleType, l.getCategory(), r.getCategory())) {
+							rightRuleClass.getNormalFormClassForRule(), ruleType, l.getCategory(), r.getCategory(),
+							rule.getCategory(), startOfSpan == 0)) {
 						continue;
 					}
 

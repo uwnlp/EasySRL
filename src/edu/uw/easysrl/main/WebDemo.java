@@ -63,7 +63,7 @@ public class WebDemo extends AbstractHandler {
 	}
 
 	public static void main(final String[] args) throws Exception {
-		final Server server = new Server(8081);
+		final Server server = new Server(8080);
 		server.setHandler(new WebDemo());
 		server.start();
 		server.join();
@@ -98,7 +98,14 @@ public class WebDemo extends AbstractHandler {
 
 		if (!sentence.isEmpty()) {
 			System.out.println(sentence);
-			final List<CCGandSRLparse> parses = parser.parseTokens(InputWord.listOf(sentence.split(" ")));
+
+			final List<InputWord> words = InputWord.listOf(sentence.split(" "));
+			if (words.size() > parser.getMaxSentenceLength()) {
+				response.println("<br>Max sentence length: " + parser.getMaxSentenceLength());
+				return;
+			}
+			final List<CCGandSRLparse> parses = parser.parseTokens(words);
+
 			response.println(printer.printJointParses(parses, 0));
 		}
 

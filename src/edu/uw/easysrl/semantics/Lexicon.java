@@ -27,6 +27,7 @@ import edu.uw.easysrl.semantics.ConnectiveSentence.Connective;
 import edu.uw.easysrl.semantics.OperatorSentence.Operator;
 import edu.uw.easysrl.semantics.QuantifierSentence.Quantifier;
 import edu.uw.easysrl.syntax.grammar.Category;
+import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
@@ -484,7 +485,8 @@ public class Lexicon {
 		if (node.getLeaves().stream().allMatch(x -> x.getPos().startsWith("NNP"))) {
 			// Analyze "Barack Obama" as barack_obama, not #x.barack(x)&obama(x)
 			return true;
-		} else if (node.getCategory() == Category.CONJ) {
+		} else if (node.getCategory() == Category.CONJ && node.getRuleType() != RuleType.LP
+				&& node.getRuleType() != RuleType.RP) {
 			// Don't bother trying to do multi-word conjunctions compositionally (e.g. "as well as").
 			return true;
 		} else if (node.getCategory() == Category.ADJECTIVE

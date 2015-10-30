@@ -45,7 +45,9 @@ public abstract class Combinator {
 	}
 
 	public enum RuleClass {
-		FC, BX, GFC, GBX, FORWARD_TYPERAISE, BACKWARD_TYPE_RAISE, CONJ, LEXICON, OTHER, LP, RP
+		FC, BX, GFC, GBX, FORWARD_TYPERAISE, BACKWARD_TYPE_RAISE, CONJ, LEXICON, OTHER, LP, RP,
+		// Forward and backward modifiers, e.g. N/N N --> N
+		F_MOD, B_MOD
 	}
 
 	// TODO Can we get rid of RuleType altogether?

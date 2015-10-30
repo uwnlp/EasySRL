@@ -130,7 +130,7 @@ public class ParserCKY extends AbstractParser {
 					final RuleClass rightRuleClass = r.getParse().getRuleType().getNormalFormClassForRule();
 
 					if (!NormalForm.isOk(leftRuleClass, rightRuleClass, ruleType, l.getParse().getCategory(), r
-							.getParse().getCategory())) {
+							.getParse().getCategory(), rule.getCategory(), l.getStartOfSpan() == 0)) {
 						continue;
 					}
 
