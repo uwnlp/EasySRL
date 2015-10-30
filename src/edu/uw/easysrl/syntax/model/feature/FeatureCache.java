@@ -1,7 +1,6 @@
 package edu.uw.easysrl.syntax.model.feature;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -11,7 +10,6 @@ import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
 import edu.uw.easysrl.syntax.model.feature.Feature.FeatureKey;
 
 /**
@@ -36,22 +34,10 @@ public class FeatureCache {
 
 	@SuppressWarnings("unchecked")
 	public FeatureCache(final List<InputWord> words, final ObjectDoubleHashMap<FeatureKey> featureToScore,
-			final FeatureSet featureSet, final CutoffsDictionary cutoffs, final double supertaggerWeight,
-			final Collection<Category> lexicalCategories, final SlotFeatureCache slotFeatureCache) {
+			final FeatureSet featureSet, final double supertaggerWeight, final SlotFeatureCache slotFeatureCache) {
 
 		this.slotFeatureCache = slotFeatureCache;
 		this.wordToCategoryToScore = featureSet.lexicalCategoryFeatures.getCategoryScores(words, supertaggerWeight);
-
-		// new ArrayList<>(words.size());
-		//
-		// for (int i = 0; i < words.size(); i++) {
-		// Collection<Category> categoriesForWord = cutoffs.getCategoriesForWord(words.get(i).word);
-		// if (categoriesForWord.size() == 0) {
-		// categoriesForWord = lexicalCategories;
-		// }
-		// wordToCategoryToScore.add(featureSet.lexicalCategoryFeatures.getCategoryScores(words, i, categoriesForWord,
-		// supertaggerWeight));
-		// }
 
 		this.predicateToLabelToScore = new ObjectDoubleHashMap[words.size()];
 		this.argumentToLabelToScore = new ObjectDoubleHashMap[words.size()];
@@ -160,7 +146,7 @@ public class FeatureCache {
 		private final List<ArgumentSlotFeature> lexicalizedSlotFeatures = new ArrayList<>();
 		private final List<ArgumentSlotFeature> unlexicalizedSlotFeatures = new ArrayList<>();
 		private final double[][][][] categoryToSlotToPrepositionToScore = new double[Category.numberOfCategories()][6][Preposition
-		                                                                                                               .numberOfPrepositions() + 1][SRLLabel.numberOfLabels()];
+				.numberOfPrepositions() + 1][SRLLabel.numberOfLabels()];
 
 		public SlotFeatureCache(final FeatureSet featureSet, final ObjectDoubleHashMap<FeatureKey> featureToScore) {
 			for (final ArgumentSlotFeature feature : featureSet.argumentSlotFeatures) {
