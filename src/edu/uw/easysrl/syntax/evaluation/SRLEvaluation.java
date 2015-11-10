@@ -47,8 +47,8 @@ public class SRLEvaluation {
 			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
 					ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), 1), posTagger), pipeline);
 
-			// final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-			// ParsingAlgorithm.CKY, 400000, true), posTagger), pipeline);
+			final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
+					ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
 			//
 			// final SRLParser jointAST = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.1,
 			// ParsingAlgorithm.CKY, 400000, true), posTagger), new JointSRLParser(EasySRL.makeParser(folder, 0.01,
@@ -58,7 +58,7 @@ public class SRLEvaluation {
 			// ParsingAlgorithm.ASTAR, 20000, true), posTagger), pipeline);
 
 			evaluate(// pipeline,
-					jointAstar,
+					jointCKY,
 					// // BrownPropbankReader.readCorpus()//
 					ParallelCorpusReader.getPropBank00()
 					// ParallelCorpusReader.getPropBank23()

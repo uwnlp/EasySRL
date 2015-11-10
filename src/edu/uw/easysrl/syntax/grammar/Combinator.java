@@ -30,8 +30,8 @@ public abstract class Combinator {
 	public enum RuleType {
 		FA(RuleClass.OTHER), BA(RuleClass.OTHER), FC(RuleClass.FC), BX(RuleClass.BX), GFC(RuleClass.GFC), GBX(
 				RuleClass.GBX), CONJ(RuleClass.CONJ), RP(RuleClass.RP), LP(RuleClass.LP), NOISE(RuleClass.OTHER), FORWARD_TYPERAISE(
-						RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(
-								RuleClass.OTHER), LEXICON(RuleClass.LEXICON);
+				RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(
+				RuleClass.OTHER), LEXICON(RuleClass.LEXICON);
 		private final RuleClass ruleClass;
 
 		RuleType(final RuleClass ruleClass) {
@@ -99,8 +99,8 @@ public abstract class Combinator {
 			new ForwardApplication(), new BackwardApplication(),
 			new ForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD), new BackwardComposition(Slash.FWD, Slash.BWD,
 					Slash.FWD), new GeneralizedForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD),
-					new GeneralizedBackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD), new Conjunction(),
-					new RemovePunctuation(false), new RemovePunctuation(true), new CommaAndVPtoNPmodifier() // TODO
+			new GeneralizedBackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD), new Conjunction(),
+			new RemovePunctuation(false), new RemovePunctuation(true), new CommaAndVPtoNPmodifier() // TODO
 			, new CommaAndVerbPhrasetoAdverb() // TODO
 			));
 
@@ -176,7 +176,7 @@ public abstract class Combinator {
 				Category.valueOf("(NP\\NP)/(S\\NP)"));
 
 		private final DependencyStructure dependencyStructure = DependencyStructure.makeUnaryRuleTransformation(
-				"S\\NP_1", "NP_1\\NP_1");
+				"(S_2\\NP_1)_2", "(NP_1\\NP_1)_2");
 
 		private CommaAndVPtoNPmodifier() {
 			super(RuleType.NOISE);
@@ -645,6 +645,9 @@ public abstract class Combinator {
 		private final Logic semantics = LogicParser.fromString("#p#q#x#e . q(x,e) & p(x,e)",
 				Category.make(Category.ADVERB, Slash.FWD, ngVP));
 
+		private final DependencyStructure dependencyStructure = DependencyStructure.makeUnaryRuleTransformation(
+				"(S_2\\NP_1)_2", "((S_3\\NP_1)_3\\(S_3\\NP_1)_3)_2");
+
 		@Override
 		public boolean canApply(final Category left, final Category right) {
 
@@ -665,7 +668,7 @@ public abstract class Combinator {
 		@Override
 		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
 				final List<UnlabelledDependency> resolvedDependencies) {
-			return right.conjunction();
+			return dependencyStructure.apply(right, resolvedDependencies);
 		}
 
 		@Override

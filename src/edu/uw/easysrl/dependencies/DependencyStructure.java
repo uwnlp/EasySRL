@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.syntax.grammar.Category;
@@ -371,7 +372,8 @@ public class DependencyStructure implements Serializable {
 	}
 
 	/**
-	 *
+	 * Represents the endpoint of a dependency. For fully-specified dependencies, this will be a 'head'. Multiple heads
+	 * are possible to deal with coordination. Otherwise, it will be an 'id', referring to some coindexation.
 	 */
 	public static class IDorHead implements Serializable {
 
@@ -384,11 +386,15 @@ public class DependencyStructure implements Serializable {
 		}
 
 		public IDorHead(final List<Integer> head) {
+			if (head != null && head.indexOf(-1) > -1) {
+				Util.debugHook();
+			}
+
 			this.head = head;
 			this.id = null;
 		}
 
-		IDorHead(final Integer id) {
+		public IDorHead(final Integer id) {
 			this.head = null;
 			this.id = id;
 		}
@@ -413,16 +419,24 @@ public class DependencyStructure implements Serializable {
 			return Objects.equals(head, other.head) && Objects.equals(id, other.id);
 		}
 
+		public int getID() {
+			return id;
+		}
+
+		public List<Integer> getHeadIndices() {
+			return head;
+		}
+
 	}
 
-	private final Coindexation argument;
+	private final Coindexation coindexation;
 
 	private final boolean isConjunction;
 
-	private DependencyStructure(final Coindexation argument, final Set<UnresolvedDependency> unresolvedDependencies,
-			final boolean isConjunction) {
+	private DependencyStructure(final Coindexation coindexation,
+			final Set<UnresolvedDependency> unresolvedDependencies, final boolean isConjunction) {
 
-		this.argument = argument;
+		this.coindexation = coindexation;
 		this.unresolvedDependencies = unresolvedDependencies;
 		this.isConjunction = isConjunction;
 	}
@@ -450,11 +464,11 @@ public class DependencyStructure implements Serializable {
 	}
 
 	public int getArbitraryHead() {
-		return argument.idOrHead.head.get(0);
+		return coindexation.idOrHead.head.get(0);
 	}
 
 	public boolean hasNoArguments() {
-		return argument.countNumberOfArguments() == 0;
+		return coindexation.countNumberOfArguments() == 0;
 	}
 
 	public Set<UnresolvedDependency> getUnresolvedDependencies() {
@@ -466,7 +480,7 @@ public class DependencyStructure implements Serializable {
 	@Override
 	public int hashCode() {
 		if (hashcode == 0) {
-			hashcode = Objects.hash(unresolvedDependencies, argument, isConjunction);
+			hashcode = Objects.hash(unresolvedDependencies, coindexation, isConjunction);
 		}
 		return hashcode;
 	}
@@ -474,17 +488,17 @@ public class DependencyStructure implements Serializable {
 	@Override
 	public boolean equals(final Object obj) {
 		final DependencyStructure other = (DependencyStructure) obj;
-		return argument.equals(other.argument) && unresolvedDependencies.equals(other.unresolvedDependencies)
+		return coindexation.equals(other.coindexation) && unresolvedDependencies.equals(other.unresolvedDependencies)
 				&& isConjunction == other.isConjunction;
 	}
 
 	@Override
 	public String toString() {
-		return getArbitraryHead() + " " + unresolvedDependencies + " " + argument;
+		return getArbitraryHead() + " " + unresolvedDependencies + " " + coindexation;
 	}
 
 	public Coindexation getCoindexation() {
-		return argument;
+		return coindexation;
 	}
 
 	public static DependencyStructure fromString(final Category category, final String markedUpCategory,
@@ -520,9 +534,9 @@ public class DependencyStructure implements Serializable {
 	public static DependencyStructure makeUnaryRuleTransformation(final String from, final String to) {
 
 		// N_1\N_1 S\NP_1 ---> (N_1\N_1)/(S\NP_1)
-
 		final String cat = maybeBracket(to) + "/" + maybeBracket(from);
-		return fromString(Category.valueOf(cat), cat, -1);
+		return new DependencyStructure(Coindexation.fromString(cat, new IDorHead(-1), new HashMap<>(), -1, true),
+				Collections.emptySet());
 	}
 
 	private static String maybeBracket(final String input) {
@@ -579,24 +593,23 @@ public class DependencyStructure implements Serializable {
 		}
 	}
 
-	private DependencyStructure(final Coindexation argument, final Category category) {
+	public DependencyStructure(final Coindexation argument, final Category category) {
 		this(argument, DependencyStructure.createUnresolvedDependencies(argument, category), false);
 	}
 
-	private DependencyStructure(final Coindexation argument, final Set<UnresolvedDependency> unresolvedDependencies) {
+	public DependencyStructure(final Coindexation argument, final Set<UnresolvedDependency> unresolvedDependencies) {
 		this(argument, unresolvedDependencies, false);
 	}
 
-	public DependencyStructure apply(final DependencyStructure other,
-			final List<UnlabelledDependency> newResolvedDependencies) {
-		// other = standardizeApart(other);
+	public DependencyStructure apply(DependencyStructure other, final List<UnlabelledDependency> newResolvedDependencies) {
+		other = standardizeApart(other, coindexation.getMaxID() + 1);
 
-		final UnifyingSubstitution substitution = UnifyingSubstitution.make(argument.right, other.argument,
+		final UnifyingSubstitution substitution = UnifyingSubstitution.make(coindexation.right, other.coindexation,
 				isConjunction);
 
 		final Set<UnresolvedDependency> newUnresolvedDependencies = new HashSet<>();
 
-		final Coindexation newArgument = substitution.applyTo(argument.left, true);
+		final Coindexation newArgument = substitution.applyTo(coindexation.left, true);
 
 		updateResolvedDependencies(other, substitution, newUnresolvedDependencies, newResolvedDependencies);
 
@@ -631,16 +644,15 @@ public class DependencyStructure implements Serializable {
 	}
 
 	public DependencyStructure conjunction() {
-		return new DependencyStructure(new Coindexation(argument, argument, argument.idOrHead),
+		return new DependencyStructure(new Coindexation(coindexation, coindexation, coindexation.idOrHead),
 				getUnresolvedDependencies(), true);
 	}
 
-	private static DependencyStructure standardizeApart(final DependencyStructure other) {
-		// TODO really hacky way of standardizing apart. Do it better.
+	private static DependencyStructure standardizeApart(final DependencyStructure other, final int minID) {
 		final Set<UnresolvedDependency> normalizedUnresolvedDependencies = new HashSet<>(
 				other.unresolvedDependencies.size());
-		final Coindexation newArgument = normalize(other.argument, other.unresolvedDependencies,
-				normalizedUnresolvedDependencies, Collections.emptyList(), 100000);
+		final Coindexation newArgument = normalize(other.coindexation, other.unresolvedDependencies,
+				normalizedUnresolvedDependencies, Collections.emptyList(), minID);
 
 		return new DependencyStructure(newArgument, normalizedUnresolvedDependencies);
 	}
@@ -648,16 +660,17 @@ public class DependencyStructure implements Serializable {
 	public DependencyStructure compose(DependencyStructure other,
 			final List<UnlabelledDependency> newResolvedDependencies) {
 
-		other = standardizeApart(other);
-		final UnifyingSubstitution substitution = UnifyingSubstitution.make(argument.right, other.argument.left, false);
+		other = standardizeApart(other, coindexation.getMaxID() + 1);
+		final UnifyingSubstitution substitution = UnifyingSubstitution.make(coindexation.right,
+				other.coindexation.left, false);
 
 		final Set<UnresolvedDependency> newUnresolvedDependencies = new HashSet<>();
 		updateResolvedDependencies(other, substitution, newUnresolvedDependencies, newResolvedDependencies);
 
-		final Coindexation newArgumentLeft = substitution.applyTo(argument.left, true);
-		final Coindexation newArgumentRight = substitution.applyTo(other.argument.right, false);
-		final boolean headIsLeft = !argument.left.idOrHead.equals(argument.right.idOrHead);
-		final IDorHead idOrHead = substitution.applyTo(headIsLeft ? argument : other.argument, headIsLeft).idOrHead;
+		final Coindexation newArgumentLeft = substitution.applyTo(coindexation.left, true);
+		final Coindexation newArgumentRight = substitution.applyTo(other.coindexation.right, false);
+		final boolean headIsLeft = !coindexation.left.idOrHead.equals(coindexation.right.idOrHead);
+		final IDorHead idOrHead = substitution.applyTo(headIsLeft ? coindexation : other.coindexation, headIsLeft).idOrHead;
 
 		final Set<UnresolvedDependency> normalizedUnresolvedDependencies = new HashSet<>(
 				newUnresolvedDependencies.size());
@@ -668,22 +681,31 @@ public class DependencyStructure implements Serializable {
 		return new DependencyStructure(normalizedArgument, normalizedUnresolvedDependencies);
 	}
 
-	private static class UnifyingSubstitution {
+	public static class UnifyingSubstitution {
 		private final Map<Integer, IDorHead> leftSubstitutions;
 		private final Map<Integer, IDorHead> rightSubstitutions;
 
 		private final Map<Integer, Preposition> leftPrepositionSubstitutions;
 		private final Map<Integer, Preposition> rightPrepositionSubstitutions;
 
+		private final Map<List<Integer>, IDorHead> headSubstitutions;
+
 		private UnifyingSubstitution(final Map<Integer, IDorHead> leftSubstitutions,
 				final Map<Integer, IDorHead> rightSubstitutions,
 				final Map<Integer, Preposition> leftPrepositionSubstitutions,
-				final Map<Integer, Preposition> rightPrepositionSubstitutions) {
+				final Map<Integer, Preposition> rightPrepositionSubstitutions,
+				final Map<List<Integer>, IDorHead> headSubstitutions) {
 			super();
 			this.leftSubstitutions = leftSubstitutions;
 			this.rightSubstitutions = rightSubstitutions;
 			this.leftPrepositionSubstitutions = leftPrepositionSubstitutions;
 			this.rightPrepositionSubstitutions = rightPrepositionSubstitutions;
+			this.headSubstitutions = headSubstitutions;
+		}
+
+		public static UnifyingSubstitution makeHeadSubstitution(final List<Integer> headIndices, final IDorHead newHead) {
+			return new UnifyingSubstitution(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+					Collections.emptyMap(), ImmutableMap.of(headIndices, newHead));
 		}
 
 		private static UnifyingSubstitution make(final Coindexation left, final Coindexation right,
@@ -694,16 +716,19 @@ public class DependencyStructure implements Serializable {
 			final Map<Integer, Preposition> leftPrepositionSubstitutions = new HashMap<>();
 			final Map<Integer, Preposition> rightPrepositionSubstitutions = new HashMap<>();
 
+			final Map<List<Integer>, IDorHead> headSubstitutions = new HashMap<>();
+
 			make(left, right, leftSubstitutions, rightSubstitutions, leftPrepositionSubstitutions,
-					rightPrepositionSubstitutions, new AtomicInteger(0), isConjunction);
+					rightPrepositionSubstitutions, headSubstitutions, new AtomicInteger(0), isConjunction);
 			return new UnifyingSubstitution(leftSubstitutions, rightSubstitutions, leftPrepositionSubstitutions,
-					rightPrepositionSubstitutions);
+					rightPrepositionSubstitutions, headSubstitutions);
 		}
 
 		private static void make(final Coindexation left, final Coindexation right,
 				final Map<Integer, IDorHead> leftSubstitutions, final Map<Integer, IDorHead> rightSubstitutions,
 				final Map<Integer, Preposition> leftPrepositionSubstitutions,
-				final Map<Integer, Preposition> rightPrepositionSubstitutions, final AtomicInteger freshID,
+				final Map<Integer, Preposition> rightPrepositionSubstitutions,
+				final Map<List<Integer>, IDorHead> headSubstitutions, final AtomicInteger freshID,
 				final boolean isConjunction) {
 			// Syntax should enforce that they're not both non-null
 			final Preposition newLeftPreposition;
@@ -725,7 +750,15 @@ public class DependencyStructure implements Serializable {
 			if (right.idOrHead.head == null) {
 				if (left.idOrHead.head == null) {
 					// TODO urgh
-					final IDorHead id = new IDorHead(freshID.decrementAndGet());
+					IDorHead id = leftSubstitutions.get(left.idOrHead.id);
+					if (id == null) {
+						id = rightSubstitutions.get(right.idOrHead.id);
+					}
+
+					if (id == null) {
+						id = new IDorHead(freshID.decrementAndGet());
+					}
+
 					leftSubstitutions.put(left.idOrHead.id, id);
 					rightSubstitutions.put(right.idOrHead.id, id);
 
@@ -751,7 +784,9 @@ public class DependencyStructure implements Serializable {
 					} else {
 						Util.debugHook();
 					}
-					leftSubstitutions.put(left.idOrHead.id, new IDorHead(coordinatedHead));
+					// leftSubstitutions.put(left.idOrHead.id, new IDorHead(coordinatedHead));
+					headSubstitutions.put(left.idOrHead.head, new IDorHead(coordinatedHead));
+					headSubstitutions.put(right.idOrHead.head, new IDorHead(coordinatedHead));
 				} else {
 					leftSubstitutions.put(left.idOrHead.id, right.idOrHead);
 				}
@@ -763,11 +798,11 @@ public class DependencyStructure implements Serializable {
 
 			if (left.left != null) {
 				make(left.left, right.left, leftSubstitutions, rightSubstitutions, leftPrepositionSubstitutions,
-						rightPrepositionSubstitutions, freshID, isConjunction);
+						rightPrepositionSubstitutions, headSubstitutions, freshID, isConjunction);
 			}
 			if (left.right != null) {
 				make(left.right, right.right, leftSubstitutions, rightSubstitutions, leftPrepositionSubstitutions,
-						rightPrepositionSubstitutions, freshID, isConjunction);
+						rightPrepositionSubstitutions, headSubstitutions, freshID, isConjunction);
 			}
 		}
 
@@ -796,6 +831,10 @@ public class DependencyStructure implements Serializable {
 			}
 		}
 
+		public Coindexation apply(final Coindexation other) {
+			return applyTo(other, true);
+		}
+
 		private Coindexation applyTo(final Coindexation arg, final boolean isLeft) {
 			return applyTo(arg, isLeft ? leftSubstitutions : rightSubstitutions, isLeft ? leftPrepositionSubstitutions
 					: rightPrepositionSubstitutions);
@@ -806,7 +845,8 @@ public class DependencyStructure implements Serializable {
 			if (arg == null) {
 				return null;
 			}
-			final IDorHead newID = substitutions.get(arg.idOrHead.id);
+			final IDorHead newID = arg.idOrHead.id != null ? substitutions.get(arg.idOrHead.id) : headSubstitutions
+					.get(arg.idOrHead.head);
 			if (arg.left == null && arg.right == null) {
 				final Preposition newPrep = prepositionSubstitutions.get(arg.idOrHead.id);
 				return new Coindexation(newID != null ? newID : arg.idOrHead, newPrep != null ? newPrep
@@ -824,39 +864,36 @@ public class DependencyStructure implements Serializable {
 	public DependencyStructure compose2(DependencyStructure other,
 			final List<UnlabelledDependency> newResolvedDependencies) {
 		// A/B (B/C)/D ---> (A/C)/D
-		other = standardizeApart(other);
+		other = standardizeApart(other, coindexation.getMaxID() + 1);
 
-		final UnifyingSubstitution substitution = UnifyingSubstitution.make(argument.right, other.argument.left.left,
-				false);
+		final UnifyingSubstitution substitution = UnifyingSubstitution.make(coindexation.right,
+				other.coindexation.left.left, false);
 
 		final Set<UnresolvedDependency> newUnresolvedDependencies = new HashSet<>();
 
 		updateResolvedDependencies(other, substitution, newUnresolvedDependencies, newResolvedDependencies);
-
-		boolean headIsLeft;
-		if (argument.left.idOrHead.equals(argument.right.idOrHead)) {
-			headIsLeft = false;
-		} else {
-			headIsLeft = true;
-		}
-
-		final Coindexation newArgumentLeftLeft = substitution.applyTo(argument.left, true);
-		final Coindexation newArgumentLeftRight = substitution.applyTo(other.argument.left.right, false);
-		final Coindexation newArgumentRight = substitution.applyTo(other.argument.right, false);
-		final IDorHead idOrHeadLeft = (headIsLeft ? newArgumentLeftLeft.idOrHead : newArgumentLeftRight.idOrHead);
-		final IDorHead idOrHeadRight = idOrHeadLeft;
-
 		final Set<UnresolvedDependency> normalizedUnresolvedDependencies = new HashSet<>(
 				newUnresolvedDependencies.size());
-		final Coindexation normalizedArgument = normalize(new Coindexation(new Coindexation(newArgumentLeftLeft,
-				newArgumentLeftRight, idOrHeadLeft), newArgumentRight, idOrHeadRight), newUnresolvedDependencies,
-				normalizedUnresolvedDependencies, newResolvedDependencies, 1);
+		final Coindexation normalizedArgument;
+		if (coindexation.isModifier()) {
+			// X/X X/Y/Z
+			normalizedArgument = normalize(substitution.applyTo(other.coindexation, false), newUnresolvedDependencies,
+					normalizedUnresolvedDependencies, newResolvedDependencies, 1);
+		} else {
+			// S\NP/NP NP/PP/PP
+			final Coindexation leftWithSubstitution = substitution.applyTo(coindexation, true);
+			final Coindexation rightWithSubstitution = substitution.applyTo(other.coindexation, true);
+			normalizedArgument = normalize(new Coindexation(new Coindexation(leftWithSubstitution.left,
+					rightWithSubstitution.left, leftWithSubstitution.idOrHead), rightWithSubstitution.right,
+					leftWithSubstitution.idOrHead), newUnresolvedDependencies, normalizedUnresolvedDependencies,
+					newResolvedDependencies, 1);
+		}
 
 		return new DependencyStructure(normalizedArgument, normalizedUnresolvedDependencies);
 	}
 
 	public DependencyStructure specifyPreposition(final Preposition preposition) {
-		return new DependencyStructure(argument.specifyPreposition(preposition), getUnresolvedDependencies());
+		return new DependencyStructure(coindexation.specifyPreposition(preposition), getUnresolvedDependencies());
 	}
 
 }

@@ -50,8 +50,8 @@ public class ParserAStar extends AbstractParser {
 		int chartSize = 0;
 
 		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-				// TODO && agenda.peek() != null && agenda.peek().getCost() >
-				// result.get(0).getProbability() + nbestBeam
+		// TODO && agenda.peek() != null && agenda.peek().getCost() >
+		// result.get(0).getProbability() + nbestBeam
 				))) {
 			// Add items from the agenda, until we have enough parses.
 
@@ -94,7 +94,7 @@ public class ParserAStar extends AbstractParser {
 								new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
 										.getDependencyStructureTransformation().apply(
 												agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-										unaryRule, resolvedDependencies), unaryRule));
+												unaryRule, resolvedDependencies), unaryRule));
 					}
 				}
 
@@ -104,7 +104,7 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-					                                                                                            - agendaItem.getSpanLength() - 1];
+							- agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}
@@ -174,10 +174,10 @@ public class ParserAStar extends AbstractParser {
 				final List<UnlabelledDependency> resolvedDependencies = new ArrayList<>();
 				final DependencyStructure newDependencies = production.getCombinator().apply(
 						leftChild.getDependencyStructure(), rightChild.getDependencyStructure(), resolvedDependencies);
-
+				final boolean headIsLeft = newDependencies.getArbitraryHead() == leftChild.getDependencyStructure()
+						.getArbitraryHead();
 				final SyntaxTreeNodeBinary newNode = new SyntaxTreeNodeBinary(production.getCategory(), leftChild,
-						rightChild, production.getRuleType(), production.isHeadIsLeft(), newDependencies,
-						resolvedDependencies);
+						rightChild, production.getRuleType(), headIsLeft, newDependencies, resolvedDependencies);
 				agenda.add(model.combineNodes(left, right, newNode));
 			}
 		}

@@ -249,4 +249,19 @@ public class Coindexation implements Serializable {
 			return left.getLeftMost();
 		}
 	}
+
+	int getMaxID() {
+		int result = 0;
+		if (!idOrHead.isHead()) {
+			result = idOrHead.getID();
+		}
+
+		if (left != null) {
+			result = Math.max(result, left.getMaxID());
+		}
+		if (right != null) {
+			result = Math.max(result, right.getMaxID());
+		}
+		return result;
+	}
 }
