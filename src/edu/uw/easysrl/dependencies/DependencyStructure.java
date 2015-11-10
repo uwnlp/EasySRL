@@ -508,8 +508,10 @@ public class DependencyStructure implements Serializable {
 
 		final int wordIndex = sentencePosition;
 
-		return new DependencyStructure(Coindexation.fromString(markedUpCategory,
-				new IDorHead(Arrays.asList(wordIndex)), new HashMap<>(), wordIndex, true), category);
+		final Coindexation coindexation = Coindexation.fromString(markedUpCategory,
+				new IDorHead(Arrays.asList(wordIndex)), new HashMap<>(), wordIndex, true);
+
+		return new DependencyStructure(coindexation, category);
 	}
 
 	public static DependencyStructure make(final Category category, final String word, final int sentencePosition) {
@@ -882,9 +884,9 @@ public class DependencyStructure implements Serializable {
 		} else {
 			// S\NP/NP NP/PP/PP
 			final Coindexation leftWithSubstitution = substitution.applyTo(coindexation, true);
-			final Coindexation rightWithSubstitution = substitution.applyTo(other.coindexation, true);
+			final Coindexation rightWithSubstitution = substitution.applyTo(other.coindexation, false);
 			normalizedArgument = normalize(new Coindexation(new Coindexation(leftWithSubstitution.left,
-					rightWithSubstitution.left, leftWithSubstitution.idOrHead), rightWithSubstitution.right,
+					rightWithSubstitution.left.right, leftWithSubstitution.idOrHead), rightWithSubstitution.right,
 					leftWithSubstitution.idOrHead), newUnresolvedDependencies, normalizedUnresolvedDependencies,
 					newResolvedDependencies, 1);
 		}

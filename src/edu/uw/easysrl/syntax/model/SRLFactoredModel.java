@@ -3,7 +3,6 @@ package edu.uw.easysrl.syntax.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -41,7 +40,7 @@ public class SRLFactoredModel extends Model {
 			final Collection<BinaryFeature> binaryFeatures, final Collection<RootCategoryFeature> rootFeatures,
 			final List<InputWord> sentence
 
-	) {
+			) {
 		super(forests.size());
 		this.forests = forests;
 		this.supertaggerBeam = supertaggerBeam;
@@ -218,7 +217,6 @@ public class SRLFactoredModel extends Model {
 	// Worst class name EVER.
 	public static class SRLFactoredModelFactory extends ModelFactory {
 		private final CutoffsDictionary cutoffsDictionary;
-		private final Map<String, Forest> frequentWordToForestMap = new HashMap<>();
 		private final FeatureSet featureSet;
 		private final Collection<Category> lexicalCategories;
 		private final boolean usingDependencyFeatures;
@@ -260,14 +258,8 @@ public class SRLFactoredModel extends Model {
 			final List<ExtendedLexicalEntry> forests = new ArrayList<>(sentence.size());
 			int wordIndex = 0;
 			for (final InputWord word : sentence) {
-				Forest forest;
-
-				forest = frequentWordToForestMap.get(word.word);
-				if (forest == null) {
-					forest = ExtendedLexicalEntry.makeUnlexicalizedForest(word.word, lexicalCategories, 50,
-							cutoffsDictionary, usingSlotFeatures, usingDependencyFeatures);
-					frequentWordToForestMap.put(word.word, forest);
-				}
+				final Forest forest = ExtendedLexicalEntry.makeUnlexicalizedForest(word.word, lexicalCategories, 50,
+						cutoffsDictionary, usingSlotFeatures, usingDependencyFeatures);
 
 				forests.add(new ExtendedLexicalEntry(featureSet, wordIndex, sentence, forest, featureToScore,
 						featureCache));

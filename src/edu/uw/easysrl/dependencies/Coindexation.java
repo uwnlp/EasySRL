@@ -3,8 +3,10 @@ package edu.uw.easysrl.dependencies;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 
@@ -49,8 +51,9 @@ public class Coindexation implements Serializable {
 	@Override
 	public boolean equals(final Object obj) {
 		final Coindexation other = (Coindexation) obj;
-		return Objects.equals(idOrHead, other.idOrHead) && Objects.equals(preposition, other.preposition)
-				&& Objects.equals(left, other.left) && Objects.equals(right, other.right);
+		return other != null && Objects.equals(idOrHead, other.idOrHead)
+				&& Objects.equals(preposition, other.preposition) && Objects.equals(left, other.left)
+				&& Objects.equals(right, other.right);
 
 	}
 
@@ -89,6 +92,44 @@ public class Coindexation implements Serializable {
 			return left.countNumberOfArguments() + 1;
 		}
 
+	}
+
+	/**
+	 * Checks if this can be a correct coindexation for a category. In particular, it looks for cases like
+	 * (X_1\X_1)_2/Y_3, where the result of an application isn't properly headed. Basically, any ID used on the 'spine'
+	 * should have already been used somewhere to the right.
+	 *
+	 * Useful for debugging.
+	 */
+	boolean validate() {
+		final Set<Integer> idsUsedSoFar = new HashSet<>();
+
+		Coindexation coindexation = this;
+		while (coindexation != null) {
+
+			if (!coindexation.idOrHead.isHead() && !idsUsedSoFar.contains(coindexation.idOrHead.id)) {
+				return false;
+			}
+			if (coindexation.right != null) {
+				coindexation.right.getIDs(idsUsedSoFar);
+			}
+			coindexation = coindexation.left;
+		}
+
+		return true;
+	}
+
+	private void getIDs(final Set<Integer> idCount) {
+		if (!idOrHead.isHead()) {
+			idCount.add(idOrHead.id);
+		}
+		if (left != null) {
+			left.getIDs(idCount);
+		}
+
+		if (right != null) {
+			right.getIDs(idCount);
+		}
 	}
 
 	private Coindexation(final Coindexation left, final Coindexation right, final IDorHead idOrHead,
