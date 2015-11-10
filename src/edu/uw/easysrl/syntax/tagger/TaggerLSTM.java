@@ -2,6 +2,7 @@ package edu.uw.easysrl.syntax.tagger;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,7 +21,21 @@ public class TaggerLSTM extends Tagger {
 	TaggerLSTM(final File modelFolder, final double beta, final int maxTagsPerWord, final CutoffsDictionary cutoffs)
 			throws IOException {
 
-		this(DeepTagger.make(modelFolder), beta, maxTagsPerWord, cutoffs);
+		this(makeDeepTagger(modelFolder), beta, maxTagsPerWord, cutoffs);
+	}
+
+	private static DeepTagger makeDeepTagger(final File modelFolder) throws IOException {
+		// Apparently this is the easiest way to set the library path in code...
+		System.setProperty("java.library.path", "lib");
+		Field fieldSysPath;
+		try {
+			fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
+			fieldSysPath.setAccessible(true);
+			fieldSysPath.set(null, null);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		return DeepTagger.make(modelFolder);
 	}
 
 	private final List<Integer> possibleCategories = new ArrayList<>();
