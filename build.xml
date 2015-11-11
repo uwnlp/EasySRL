@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project name="EasySRL" default="create_run_jar">
 
+  <property name="lib"      value="lib"/>
   <property name="bin"      value="bin"/>
   <property name="jar"      value="easysrl.jar"/>
 
@@ -27,8 +28,12 @@
             <manifest>
                 <attribute name="Main-Class" value="edu.uw.easysrl.main.EasySRL"/>
                 <attribute name="Class-Path" value="."/>
+                <attribute name="Library-Path" value="lib"/>
             </manifest>
             <fileset dir="${bin}"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/deeptagger.jar"/>
+            <fileset file="lib/libdeeptagger.jnilib"/>
+            <fileset file="lib/libdeeptagger.so"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/guava-15.0.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/jewelcli-0.7.6.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/junit-4.11.jar"/>

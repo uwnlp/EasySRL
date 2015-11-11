@@ -135,8 +135,8 @@ public class EasySRL {
 			final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 			System.err.println("Loading model...");
 			final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
-					ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), commandLineOptions.getNbest()), Util.deserialize(new File(pipelineFolder,
-							"labelClassifier")), posTagger);
+					ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), commandLineOptions.getNbest()),
+					Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
 
 			final SRLParser parser2 = new BackoffSRLParser(new JointSRLParser(makeParser(commandLineOptions, 20000,
 					true, Optional.empty()), posTagger), pipeline);
