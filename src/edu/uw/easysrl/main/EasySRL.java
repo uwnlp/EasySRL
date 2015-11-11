@@ -122,7 +122,6 @@ public class EasySRL {
 	public static void main(final String[] args) throws IOException, InterruptedException {
 
 		try {
-
 			final CommandLineArguments commandLineOptions = CliFactory.parseArguments(CommandLineArguments.class, args);
 			final InputFormat input = InputFormat.valueOf(commandLineOptions.getInputFormat().toUpperCase());
 
@@ -132,8 +131,8 @@ public class EasySRL {
 
 			final String folder = commandLineOptions.getModel().getAbsolutePath();
 			final String pipelineFolder = folder + "/pipeline";
+			System.err.println("====Starting loading model====");
 			final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-			System.err.println("Loading model...");
 			final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
 					ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), commandLineOptions.getNbest()),
 					Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
@@ -172,8 +171,7 @@ public class EasySRL {
 				inputLines = Util.readFile(commandLineOptions.getInputFile()).iterator();
 				readingFromStdin = false;
 			}
-
-			System.err.println("Parsing...");
+			System.err.println("===Model loaded: parsing...===");
 
 			final Stopwatch timer = Stopwatch.createStarted();
 			final AtomicInteger parsedSentences = new AtomicInteger();
