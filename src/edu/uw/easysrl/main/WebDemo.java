@@ -48,7 +48,7 @@ public class WebDemo extends AbstractHandler {
 
 	private SRLParser makeParser() throws IOException {
 		final int nbest = 10;
-		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/joint_q";
+		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/model_questions";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
@@ -63,7 +63,7 @@ public class WebDemo extends AbstractHandler {
 	}
 
 	public static void main(final String[] args) throws Exception {
-		final Server server = new Server(8080);
+		final Server server = new Server(Integer.valueOf(args[0]));
 		server.setHandler(new WebDemo());
 		server.start();
 		server.join();

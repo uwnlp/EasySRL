@@ -356,7 +356,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 		public SyntaxTreeNode addSemantics(final Lexicon lexicon, final CCGandSRLparse semanticDependencies) {
 			final SyntaxTreeNode newChild;
 			final Logic semantics;
-			if (lexicon.isMultiWordExpression(this)) {
+			if (lexicon.isMultiWordExpression(this) && !unaryRule.isTypeRaising()) {
+				// Collapse this MWE. Apply type-raising after building semantics for an entity.
 				newChild = child;
 				semantics = lexicon.getEntry(getWord(), "MW", super.category,
 						super.dependencyStructure.getCoindexation());

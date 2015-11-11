@@ -138,6 +138,10 @@ public abstract class AbstractParser implements Parser {
 		public Logic apply(final Logic logic) {
 			return semantics.alphaReduce().apply(logic);
 		}
+
+		public boolean isTypeRaising() {
+			return getCategory().isTypeRaised();
+		}
 	}
 
 	/**
@@ -180,7 +184,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parse(java.lang.String)
 	 */
 	@Override
@@ -192,7 +196,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parseTokens(java.util.List)
 	 */
 	@Override
@@ -215,7 +219,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parseSentence(uk.ac.ed.easyccg .syntax.Parser.SuperTaggingResults,
 	 * uk.ac.ed.easyccg.syntax.InputReader.InputToParser)
 	 */
@@ -262,7 +266,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override
@@ -458,6 +462,7 @@ public abstract class AbstractParser implements Parser {
 
 	}
 
+	@Override
 	public int getMaxSentenceLength() {
 		return maxLength;
 	}

@@ -50,8 +50,8 @@ public class ParserAStar extends AbstractParser {
 		int chartSize = 0;
 
 		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-		// TODO && agenda.peek() != null && agenda.peek().getCost() >
-		// result.get(0).getProbability() + nbestBeam
+				// TODO && agenda.peek() != null && agenda.peek().getCost() >
+				// result.get(0).getProbability() + nbestBeam
 				))) {
 			// Add items from the agenda, until we have enough parses.
 
@@ -81,7 +81,7 @@ public class ParserAStar extends AbstractParser {
 
 				for (final UnaryRule unaryRule : unaryRules.get(agendaItem.getParse().getCategory())) {
 					if ((agendaItem.getParse().getRuleType() != RuleType.LP && agendaItem.getParse().getRuleType() != RuleType.RP)
-							|| unaryRule.getCategory().isTypeRaised()) {
+							|| unaryRule.isTypeRaising()) {
 						// Don't allow unary rules to apply to the output of non-type-raising rules.
 						// i.e. don't allow both (NP (N ,))
 						// The reason for allowing type-raising is to simplify Eisner Normal Form contraints (a
@@ -94,7 +94,7 @@ public class ParserAStar extends AbstractParser {
 								new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
 										.getDependencyStructureTransformation().apply(
 												agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-												unaryRule, resolvedDependencies), unaryRule));
+										unaryRule, resolvedDependencies), unaryRule));
 					}
 				}
 
@@ -104,7 +104,7 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-							- agendaItem.getSpanLength() - 1];
+					                                                                                            - agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}
