@@ -6,9 +6,8 @@ import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 public class NormalForm {
 
 	public static boolean isOk(final RuleClass leftRuleClass, final RuleClass rightRuleClass, final RuleType ruleType,
-			@SuppressWarnings("unused") final Category leftCategory,
-			@SuppressWarnings("unused") final Category rightCategory, final Category result,
-			final boolean isPrefixOfSentence) {
+			@SuppressWarnings("unused") final Category leftCategory, final Category rightCategory,
+			final Category result, final boolean isPrefixOfSentence) {
 		if ((leftRuleClass == RuleClass.FC || leftRuleClass == RuleClass.GFC)
 				&& (ruleType == RuleType.FA || ruleType == RuleType.FC || ruleType == RuleType.GFC)) {
 			// Eisner normal form constraint.

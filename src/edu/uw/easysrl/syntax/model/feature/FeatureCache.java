@@ -1,6 +1,7 @@
 package edu.uw.easysrl.syntax.model.feature;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -86,6 +87,8 @@ public class FeatureCache {
 				argumentToLabelToScore);
 		double result = 0.0;
 
+		// Features that only apply to the local context of the predicate. These will be shared across all the word's
+		// dependencies.
 		final double justPredicateScore = predicateLabelToScore.getOrDefault(role, Double.MIN_VALUE);
 		if (justPredicateScore == Double.MIN_VALUE) {
 			double score = 0.0;
@@ -100,6 +103,8 @@ public class FeatureCache {
 			result += justPredicateScore;
 		}
 
+		// Features that only apply to the local context of the argument. These will be shared across all the word's
+		// dependencies.
 		final double justArgumentScore = argumentLabelToScore.getOrDefault(role, Double.MIN_VALUE);
 		if (justArgumentScore == Double.MIN_VALUE) {
 			double score = 0.0;
@@ -114,6 +119,7 @@ public class FeatureCache {
 			result += justArgumentScore;
 		}
 
+		// Bilexical features.
 		for (final BilexicalFeature feature : bilexicalFeatures) {
 			result += feature.getFeatureScore(words, role, predicateIndex, argumentIndex, featureToScore);
 		}
@@ -126,7 +132,6 @@ public class FeatureCache {
 		ObjectDoubleHashMap<SRLLabel> labelToScore = predicateToLabelToScore[predicateIndex];
 		if (labelToScore == null) {
 			labelToScore = new ObjectDoubleHashMap<>();
-			// labelToScore.defaultReturnValue(Double.MIN_VALUE);
 			predicateToLabelToScore[predicateIndex] = labelToScore;
 		}
 		return labelToScore;
@@ -139,6 +144,10 @@ public class FeatureCache {
 
 	public double getScore(final int wordIndex, final Category category) {
 		return wordToCategoryToScore.get(wordIndex).getOrDefault(category, Double.NEGATIVE_INFINITY);
+	}
+
+	public Collection<Category> getCategoriesAtIndex(final int wordIndex) {
+		return wordToCategoryToScore.get(wordIndex).keySet();
 	}
 
 	public static class SlotFeatureCache {

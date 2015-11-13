@@ -16,8 +16,8 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Table;
 
-import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
+import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
@@ -77,7 +77,6 @@ public class CutoffsDictionary implements Serializable {
 			}
 
 			wordToCategory = tagDict;
-			// this.lexicalCategories = new HashSet<>();
 			this.lexicalCategories.addAll(lexicalCategories);
 		} catch (final IOException e) {
 			throw new RuntimeException(e);
@@ -191,6 +190,10 @@ public class CutoffsDictionary implements Serializable {
 
 	public Map<String, Collection<Category>> getTagDict() {
 		return wordToCategory;
+	}
+
+	public Collection<Integer> getOffsetsForLabel(final SRLLabel label) {
+		return srlToOffset.get(label).elementSet();
 	}
 
 }

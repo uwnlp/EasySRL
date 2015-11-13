@@ -79,7 +79,7 @@ public class Training {
 			Category.valueOf("S[q]"), Category.valueOf("S[wq]"), Category.valueOf("NP"), Category.valueOf("S[qem]"),
 			Category.valueOf("S[b]\\NP")
 
-	);
+			);
 
 	private final Logger trainingLogger;
 
@@ -121,7 +121,7 @@ public class Training {
 								// Pre-trained EasyCCG model
 								final File baseModel = new File(trainingSettings.getProperty(
 										"supertagging_model_folder").replaceAll("~",
-										Util.getHomeFolder().getAbsolutePath()));
+												Util.getHomeFolder().getAbsolutePath()));
 
 								if (!baseModel.exists()) {
 									throw new IllegalArgumentException("Supertagging model not found: "
@@ -139,7 +139,7 @@ public class Training {
 										ROOT_CATEGORIES, baseModel, maxChart, goldBeam);
 
 								// Features to use
-								final FeatureSet allFeatures = new FeatureSet(new DenseLexicalFeature(pipeline),
+								final FeatureSet allFeatures = new FeatureSet(new DenseLexicalFeature(pipeline, 0.0),
 										BilexicalFeature.getBilexicalFeatures(clusterings, 3),
 										ArgumentSlotFeature.argumentSlotFeatures, Feature.unaryRules,
 										PrepositionFeature.prepositionFeaures, Collections.emptyList(),
@@ -581,7 +581,7 @@ public class Training {
 			// Hack to deal with transient DenseLexicalFeature
 			try {
 				return new TrainingParameters(maxDependencyLength, featureSet.setSupertaggingFeature(new File(
-						modelFolder, "pipeline")), sigmaSquared, minimumFeatureFrequency, modelFolder,
+						modelFolder, "pipeline"), 0.0), sigmaSquared, minimumFeatureFrequency, modelFolder,
 						costFunctionWeight);
 			} catch (final IOException e) {
 				throw new RuntimeException(e);

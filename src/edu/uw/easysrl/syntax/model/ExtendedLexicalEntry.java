@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.hppc.ObjectDoubleHashMap;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
@@ -35,8 +36,8 @@ class ExtendedLexicalEntry {
 	private final FeatureSet featureSet;
 	private final ObjectDoubleHashMap<FeatureKey> featureToScore;
 
-	private final Double[] viterbiScoreConjunctiveCache;
-	private final Double[] featureScoreCache;
+	private final double[] viterbiScoreConjunctiveCache;
+	private final double[] featureScoreCache;
 	private final FeatureCache featureCache;
 
 	ExtendedLexicalEntry(final FeatureSet featureSet, final int wordIndex, final List<InputWord> words,
@@ -47,8 +48,8 @@ class ExtendedLexicalEntry {
 		this.forest = forest;
 		this.featureSet = featureSet;
 		this.featureToScore = featureToScore;
-		this.viterbiScoreConjunctiveCache = new Double[forest.numberOfConjunctiveNodes];
-		this.featureScoreCache = new Double[forest.numberOfConjunctiveNodes];
+		this.viterbiScoreConjunctiveCache = new double[forest.numberOfConjunctiveNodes];
+		this.featureScoreCache = new double[forest.numberOfConjunctiveNodes];
 		this.featureCache = featureCache;
 
 	}
@@ -59,8 +60,8 @@ class ExtendedLexicalEntry {
 			return 0.0;
 		}
 
-		Double result = viterbiScoreConjunctiveCache[disjunctiveNode.id];
-		if (result == null) {
+		double result = viterbiScoreConjunctiveCache[disjunctiveNode.id];
+		if (result == 0.0) {
 			assert (!disjunctiveNode.getChildren().isEmpty());
 
 			result = Double.NEGATIVE_INFINITY;
@@ -78,8 +79,8 @@ class ExtendedLexicalEntry {
 	}
 
 	private final double logViterbiScoreConjunctive(final ConjunctiveNode conjunctiveNode) {
-		Double result = viterbiScoreConjunctiveCache[conjunctiveNode.id];
-		if (result == null) {
+		double result = viterbiScoreConjunctiveCache[conjunctiveNode.id];
+		if (result == 0.0) {
 
 			final Collection<DisjunctiveNode> children = conjunctiveNode.getChildren();
 			result = logScoreOfFeaturesAtNode(conjunctiveNode);
@@ -95,8 +96,8 @@ class ExtendedLexicalEntry {
 	}
 
 	private double logScoreOfFeaturesAtNode(final ConjunctiveNode node) {
-		Double result = featureScoreCache[node.id];
-		if (result == null) {
+		double result = featureScoreCache[node.id];
+		if (result == 0.0) {
 			result = node.getLogScore(sentence, wordIndex, featureSet, featureToScore, featureCache);
 			featureScoreCache[node.id] = result;
 		}
@@ -105,7 +106,7 @@ class ExtendedLexicalEntry {
 
 	}
 
-	static Forest makeUnlexicalizedForest(final String word, final Collection<Category> allLexicalCategories,
+	static Forest makeUnlexicalizedForest(final String word, final Collection<Category> categoriesForWord,
 			final int maxDependencyLength, final CutoffsDictionary cutoffsDictionary, final boolean includeSlotNodes,
 			final boolean includeAttachmentNodes) {
 		final AtomicInteger numberOfConjunctiveNodes = new AtomicInteger();
@@ -113,20 +114,15 @@ class ExtendedLexicalEntry {
 		final DisjunctiveNode rootDisjunctive = new DisjunctiveNode(numberOfConjunctiveNodes.getAndIncrement());
 		final Collection<ConjunctiveDependencyNode> dependencyNodes = new ArrayList<>();
 		final Collection<ConjunctiveCategoryNode> categoryNodes = new ArrayList<>();
-		final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes = new ArrayList<>();
 		final Collection<ConjunctivePrepositionNode> prepositionNodes = new ArrayList<>();
 
-		Collection<Category> categoriesForWord = cutoffsDictionary.getCategoriesForWord(word);
-		if (categoriesForWord.size() == 0) {
-			categoriesForWord = allLexicalCategories;
-		}
 		for (final Category category : categoriesForWord) {
 			makeCategoryNode(word, category, rootDisjunctive, cache, maxDependencyLength, categoryNodes,
-					dependencyNodes, argumentSlotNodes, prepositionNodes, cutoffsDictionary, includeSlotNodes,
-					includeAttachmentNodes, numberOfConjunctiveNodes);
+					dependencyNodes, prepositionNodes, cutoffsDictionary, includeSlotNodes, includeAttachmentNodes,
+					numberOfConjunctiveNodes);
 		}
 
-		return new Forest(maxDependencyLength, rootDisjunctive, categoryNodes, dependencyNodes, argumentSlotNodes,
+		return new Forest(maxDependencyLength, rootDisjunctive, categoryNodes, dependencyNodes,
 				numberOfConjunctiveNodes.get());
 
 	}
@@ -134,8 +130,6 @@ class ExtendedLexicalEntry {
 	static class Forest {
 		private final DisjunctiveNode root;
 		private final Collection<ConjunctiveCategoryNode> categoryNodes;
-		private final Collection<ConjunctiveDependencyNode> dependencyNodes;
-		private final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes;
 		private final int maxDependencyLength;
 
 		private final int numberOfConjunctiveNodes;
@@ -147,23 +141,19 @@ class ExtendedLexicalEntry {
 
 		private Forest(final int maxDependencyLength, final DisjunctiveNode root,
 				final Collection<ConjunctiveCategoryNode> categoryNodes,
-				final Collection<ConjunctiveDependencyNode> dependencyNodes,
-				final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes, final int numberOfConjunctiveNodes) {
+				final Collection<ConjunctiveDependencyNode> dependencyNodes, final int numberOfConjunctiveNodes) {
 			super();
 			this.maxDependencyLength = maxDependencyLength;
 			this.root = root;
 			this.categoryNodes = ImmutableList.copyOf(categoryNodes);
-			this.dependencyNodes = ImmutableList.copyOf(dependencyNodes);
-			this.argumentSlotNodes = ImmutableList.copyOf(argumentSlotNodes);
 
 			this.numberOfConjunctiveNodes = numberOfConjunctiveNodes;
 
-			int maxArguments = 0;
 			int maxOffset = 0;
 			int minOffset = 0;
 			int maxCategoryIndex = 0;
+
 			for (final ConjunctiveCategoryNode categoryNode : categoryNodes) {
-				maxArguments = Math.max(maxArguments, categoryNode.category.getNumberOfArguments());
 				maxCategoryIndex = Math.max(maxCategoryIndex, categoryNode.category.getID());
 			}
 
@@ -189,16 +179,8 @@ class ExtendedLexicalEntry {
 
 		}
 
-		public Collection<ConjunctiveCategoryNode> getCategoryNodes() {
+		private Collection<ConjunctiveCategoryNode> getCategoryNodes() {
 			return categoryNodes;
-		}
-
-		public Collection<ConjunctiveDependencyNode> getDependencyNodes() {
-			return dependencyNodes;
-		}
-
-		public Collection<ConjunctiveArgumentSlotNode> getArgumentSlotNodes() {
-			return argumentSlotNodes;
 		}
 
 		private DisjunctiveNode getNode(final Category category, final int argNumber) {
@@ -213,9 +195,11 @@ class ExtendedLexicalEntry {
 			final DisjunctiveNode slotNode = getNode(category, argNumber);
 			if (slotNode != null) {
 
-				final DisjunctiveNode roleDisjunction = slotNode.getChild(preposition);
-
-				return roleDisjunction;
+				if (category.getArgument(argNumber) != Category.PP) {
+					return slotNode;
+				} else {
+					return slotNode.getChild(preposition).children.get(0);
+				}
 			}
 
 			return null;
@@ -234,7 +218,6 @@ class ExtendedLexicalEntry {
 	private static DisjunctiveNode makePrepositionNode(final String word, final Category category,
 			final int argumentNumber, final Map<Object, DisjunctiveNode> cache, final int maxDependencyLength,
 			final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes,
 			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionary cutoffsDictionary,
 			final boolean includeAttachmentNodes, final AtomicInteger numberOfConjunctiveNodes) {
 
@@ -251,7 +234,7 @@ class ExtendedLexicalEntry {
 				// labels
 
 				final DisjunctiveNode argumentSlotNode = makeArgumentSlotNode(word, category, argumentNumber,
-						preposition, cache, maxDependencyLength, dependencyNodes, argumentSlotNodes, cutoffsDictionary,
+						preposition, cache, maxDependencyLength, dependencyNodes, cutoffsDictionary,
 						includeAttachmentNodes, numberOfConjunctiveNodes);
 
 				// if (argumentSlotNode.children.size() > 0) {
@@ -266,21 +249,20 @@ class ExtendedLexicalEntry {
 
 		} else {
 			return makeArgumentSlotNode(word, category, argumentNumber, Preposition.NONE, cache, maxDependencyLength,
-					dependencyNodes, argumentSlotNodes, cutoffsDictionary, includeAttachmentNodes,
-					numberOfConjunctiveNodes);
+					dependencyNodes, cutoffsDictionary, includeAttachmentNodes, numberOfConjunctiveNodes);
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static DisjunctiveNode makeArgumentSlotNode(final String word, final Category category,
 			final int argumentNumber, final Preposition preposition, final Map<Object, DisjunctiveNode> cache,
 			final int maxDependencyLength, final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes, final CutoffsDictionary cutoffsDictionary,
-			final boolean includeAttachmentNodes, final AtomicInteger numberOfConjunctiveNodes) {
+			final CutoffsDictionary cutoffsDictionary, final boolean includeAttachmentNodes,
+			final AtomicInteger numberOfConjunctiveNodes) {
 
 		final DisjunctiveNode result = new DisjunctiveNode(numberOfConjunctiveNodes.getAndIncrement());
 
-		for (final SRLLabel label : cutoffsDictionary.getRoles(word, category, preposition, argumentNumber)// SRLFrame.getAllSrlLabels()
-		) {
+		for (final SRLLabel label : cutoffsDictionary.getRoles(word, category, preposition, argumentNumber)) {
 
 			List<DisjunctiveNode> attachmentNode;
 			if (label == SRLFrame.NONE) {
@@ -293,11 +275,11 @@ class ExtendedLexicalEntry {
 				// Have a node, but no children.
 				attachmentNode = Collections.emptyList();
 			} else {
-				attachmentNode = Arrays.asList(makeAttachmentNode(label, cache, maxDependencyLength, dependencyNodes,
+				attachmentNode = Collections.singletonList(makeAttachmentNode(label, cache, dependencyNodes,
 						cutoffsDictionary, numberOfConjunctiveNodes));
 			}
-			argumentSlotNodes.add(new ConjunctiveArgumentSlotNode(category, label, argumentNumber, preposition, result,
-					attachmentNode, numberOfConjunctiveNodes.getAndIncrement()));
+			new ConjunctiveArgumentSlotNode(category, label, argumentNumber, preposition, result, attachmentNode,
+					numberOfConjunctiveNodes.getAndIncrement());
 		}
 
 		return result;
@@ -307,7 +289,6 @@ class ExtendedLexicalEntry {
 			final DisjunctiveNode parent, final Map<Object, DisjunctiveNode> cache, final int maxDependencyLength,
 			final Collection<ConjunctiveCategoryNode> categoryNodes,
 			final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final Collection<ConjunctiveArgumentSlotNode> argumentSlotNodes,
 			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionary cutoffsDictionary,
 			final boolean includeSlotNodes, final boolean includeAttachmentNodes,
 			final AtomicInteger numberOfConjunctiveNodes) {
@@ -320,11 +301,12 @@ class ExtendedLexicalEntry {
 			for (int argumentNUmber = 1; argumentNUmber <= category.getNumberOfArguments(); argumentNUmber++) {
 
 				if (!cutoffsDictionary.isFrequentWithAnySRLLabel(category, argumentNUmber)) {
+					// Don't bother expanding non-semantic arguments, e.g. determiners
 					continue;
 				}
 
 				final DisjunctiveNode srlsForArgument = makePrepositionNode(word, category, argumentNUmber, cache,
-						maxDependencyLength, dependencyNodes, argumentSlotNodes, prepositionNodes, cutoffsDictionary,
+						maxDependencyLength, dependencyNodes, prepositionNodes, cutoffsDictionary,
 						includeAttachmentNodes, numberOfConjunctiveNodes);
 				if (srlsForArgument.children.size() > 0) {
 					children.add(srlsForArgument);
@@ -343,18 +325,14 @@ class ExtendedLexicalEntry {
 	}
 
 	private static DisjunctiveNode makeAttachmentNode(final SRLLabel label, final Map<Object, DisjunctiveNode> cache,
-			final int maxDependencyLength, final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final CutoffsDictionary cutoffsDictionary, final AtomicInteger numberOfConjunctiveNodes) {
+			final Collection<ConjunctiveDependencyNode> dependencyNodes, final CutoffsDictionary cutoffsDictionary,
+			final AtomicInteger numberOfConjunctiveNodes) {
 		final Object key = label;
 		DisjunctiveNode result = cache.get(key);
 
 		if (result == null) {
 			result = new DisjunctiveNode(numberOfConjunctiveNodes.getAndIncrement());
-			for (int offset = -maxDependencyLength; offset <= maxDependencyLength; offset++) {
-
-				if (cutoffsDictionary != null && !cutoffsDictionary.isFrequent(label, offset)) {
-					continue;
-				}
+			for (final int offset : cutoffsDictionary.getOffsetsForLabel(label)) {
 
 				final ConjunctiveDependencyNode dependencyChild = new ConjunctiveDependencyNode(label, offset, result,
 						Collections.emptyList(), numberOfConjunctiveNodes.getAndIncrement());
@@ -370,7 +348,6 @@ class ExtendedLexicalEntry {
 	private static class DisjunctiveNode {
 
 		private final Collection<ConjunctiveNode> children = new ArrayList<>();
-		private final Collection<ConjunctiveNode> parents = new ArrayList<>();
 		private final int id;
 
 		private DisjunctiveNode(final int id) {
@@ -385,40 +362,32 @@ class ExtendedLexicalEntry {
 			children.add(child);
 		}
 
-		private void addParent(final ConjunctiveNode parent) {
-			parents.add(parent);
-		}
-
-		public Collection<ConjunctiveNode> getParents() {
-			return parents;
-		}
-
 		/**
-		 * Weird function that returns the correct child for preposition nodes, and otherwise returns itself.
+		 * For nodes representing PP arguments, returns the corresponding child.
 		 */
-		DisjunctiveNode getChild(@SuppressWarnings("unused") final Preposition prep) {
-			return this;
+		ConjunctiveNode getChild(@SuppressWarnings("unused") final Preposition prep) {
+			throw new UnsupportedOperationException();
 		}
 
 	}
 
 	private static class DisjunctivePPNode extends DisjunctiveNode {
-		private final DisjunctiveNode[] prepToChild;
+		private final ConjunctiveNode[] prepToChild;
 
 		private DisjunctivePPNode(final int id) {
 			super(id);
-			this.prepToChild = new DisjunctiveNode[Preposition.numberOfPrepositions()];
+			this.prepToChild = new ConjunctiveNode[Preposition.numberOfPrepositions()];
 		}
 
 		@Override
-		DisjunctiveNode getChild(final Preposition prep) {
+		ConjunctiveNode getChild(final Preposition prep) {
 
 			return prepToChild[prep.getID()];
 		}
 
 		@Override
 		void addChild(final ConjunctiveNode child, final Preposition prep) {
-			prepToChild[prep.getID()] = child.getChildren().get(0);
+			prepToChild[prep.getID()] = child;
 			super.addChild(child, prep);
 		}
 	}
@@ -438,23 +407,14 @@ class ExtendedLexicalEntry {
 				ObjectDoubleHashMap<FeatureKey> featureToScore, FeatureCache featureCache);
 
 		private final List<DisjunctiveNode> children;
-		private final DisjunctiveNode parent;
 		private final int id;
 
 		private ConjunctiveNode(final DisjunctiveNode parent, final List<DisjunctiveNode> children, final int id,
 				final Preposition prep) {
-			this.parent = parent;
 			this.children = children;
 			this.id = id;
 
 			parent.addChild(this, prep);
-			for (final DisjunctiveNode child : children) {
-				child.addParent(this);
-			}
-		}
-
-		public DisjunctiveNode getParent() {
-			return parent;
 		}
 
 	}
@@ -513,10 +473,7 @@ class ExtendedLexicalEntry {
 
 			final int argumentIndex = functorIndex + offset;
 
-			if (argumentIndex < 0 || argumentIndex >= words.size()) {
-				throw new RuntimeException();
-			}
-
+			Preconditions.checkState(argumentIndex >= 0 && argumentIndex < words.size());
 			return featureCache.getScore(functorIndex, label, argumentIndex);
 		}
 
@@ -606,8 +563,7 @@ class ExtendedLexicalEntry {
 	}
 
 	double getLogUnnormalizedViterbiScore(final Category category, final int argNumber) {
-		return // Math.max(0,
-				logViterbiScoreDisjunctive(forest.getNode(category, argNumber));
+		return logViterbiScoreDisjunctive(forest.getNode(category, argNumber));
 	}
 
 	private double getLogScoreOfFeaturesAtNode(final Category category, final int argNumber,
@@ -618,12 +574,10 @@ class ExtendedLexicalEntry {
 		}
 		final DisjunctiveNode slotNode = forest.getNode(category, argNumber);
 		if (slotNode != null) {
-			final DisjunctiveNode roleDisjunction = slotNode.getChild(preposition);
+			final ConjunctiveNode node = slotNode.getChild(preposition);
 
-			if (roleDisjunction != null) {
-				return scoreNode(roleDisjunction.getParents().iterator().next());
+			return scoreNode(node);
 
-			}
 		}
 
 		return 0.0;
@@ -644,18 +598,13 @@ class ExtendedLexicalEntry {
 		final double prepScore = getLogScoreOfFeaturesAtNode(dep.getCategory(), dep.getArgNumber(),
 				dep.getPreposition());
 
-		if (roleChoice == null// || dep.getOffset() == 0
-		) {
+		if (roleChoice == null) {
 			// Slots that are never SRL.
 			return new Scored<>(SRLFrame.NONE, 0.0);
 		}
 
 		SRLLabel bestLabel = null;
 		double bestScore = Double.NEGATIVE_INFINITY;
-
-		// final int size = Math.min(numLabels, roleChoice.children.size());
-		// final MinMaxPriorityQueue<Scored<SRLLabel>> result = MinMaxPriorityQueue.expectedSize(size).maximumSize(size)
-		// .create();
 
 		for (final ConjunctiveNode child : roleChoice.children) {
 			final ConjunctiveArgumentSlotNode slotNode = (ConjunctiveArgumentSlotNode) child;
@@ -679,14 +628,8 @@ class ExtendedLexicalEntry {
 				bestScore = score;
 				bestLabel = slotNode.getLabel();
 			}
-
-			// if (score > result.peekLast().getScore()) {
-			// result.add(new Scored<>(slotNode.getLabel(), score));
-			// }
-
 		}
 
-		// return result;
 		return new Scored<>(bestLabel, bestScore);
 	}
 }

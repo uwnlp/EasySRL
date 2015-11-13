@@ -295,11 +295,10 @@ public class EasySRL {
 			}
 
 			modelFactory = new SRLFactoredModelFactory(weights, ((FeatureSet) Util.deserialize(new File(
-					commandLineOptions.getModel(), "features"))).setSupertaggingFeature(new File(commandLineOptions
-							.getModel(), "/pipeline")), TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(),
-									"categories")), cutoffs,
-									Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")),
-									commandLineOptions.getSupertaggerbeam());
+					commandLineOptions.getModel(), "features"))).setSupertaggingFeature(
+							new File(commandLineOptions.getModel(), "/pipeline"), commandLineOptions.getSupertaggerbeam()),
+							TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(), "categories")), cutoffs,
+							Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")));
 
 		} else {
 			modelFactory = new SupertagFactoredModelFactory(Tagger.make(commandLineOptions.getModel(),

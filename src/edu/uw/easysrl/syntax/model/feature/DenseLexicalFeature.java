@@ -22,9 +22,9 @@ public class DenseLexicalFeature extends LexicalCategoryFeature {
 
 	private final int id = -1;
 
-	public DenseLexicalFeature(final File modelFolder) throws IOException {
+	public DenseLexicalFeature(final File modelFolder, final double supertaggerBeam) throws IOException {
 
-		this.tagger = Tagger.make(modelFolder, 0.0, 50, null);
+		this.tagger = Tagger.make(modelFolder, supertaggerBeam, 50, null);
 
 	}
 

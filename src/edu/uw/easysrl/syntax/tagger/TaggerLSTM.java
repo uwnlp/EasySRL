@@ -5,10 +5,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Ordering;
 
 import edu.uw.deeptagger.DeepTagger;
 import edu.uw.easysrl.main.InputReader.InputWord;
@@ -75,14 +76,10 @@ public class TaggerLSTM extends Tagger {
 			bestScore = Math.max(bestScore, scores[i]);
 		}
 
-		Collections.sort(result);
-		if (result.size() > size) {
-			result = result.subList(0, size);
-		}
+		result = Ordering.natural().leastOf(result, size);
 
 		final double threshold = beta * Math.exp(bestScore);
-		for (int i = 2; i < result.size(); i++) {
-			// TODO binary search
+		for (int i = 1; i < result.size(); i++) {
 			if (Math.exp(result.get(i).getScore()) < threshold) {
 				result = result.subList(0, i);
 				break;

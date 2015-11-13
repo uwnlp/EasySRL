@@ -50,8 +50,8 @@ public class ParserAStar extends AbstractParser {
 		int chartSize = 0;
 
 		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-				// TODO && agenda.peek() != null && agenda.peek().getCost() >
-				// result.get(0).getProbability() + nbestBeam
+		// TODO && agenda.peek() != null && agenda.peek().getCost() >
+		// result.get(0).getProbability() + nbestBeam
 				))) {
 			// Add items from the agenda, until we have enough parses.
 
@@ -94,7 +94,7 @@ public class ParserAStar extends AbstractParser {
 								new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
 										.getDependencyStructureTransformation().apply(
 												agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-										unaryRule, resolvedDependencies), unaryRule));
+												unaryRule, resolvedDependencies), unaryRule));
 					}
 				}
 
@@ -104,16 +104,16 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-					                                                                                            - agendaItem.getSpanLength() - 1];
+							- agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}
 
 					for (final AgendaItem rightEntry : rightCell.getEntries()) {
-						if (rightEntry.getParse().getResolvedUnlabelledDependencies().isEmpty()) {
-							updateAgenda(agenda, agendaItem, rightEntry, sentenceLength, model);
+						// if (rightEntry.getParse().getResolvedUnlabelledDependencies().isEmpty()) {
+						updateAgenda(agenda, agendaItem, rightEntry, sentenceLength, model);
 
-						}
+						// }
 
 					}
 				}
@@ -128,9 +128,9 @@ public class ParserAStar extends AbstractParser {
 						continue;
 					}
 					for (final AgendaItem leftEntry : leftCell.getEntries()) {
-						if (leftEntry.getParse().getResolvedUnlabelledDependencies().isEmpty()) {
-							updateAgenda(agenda, leftEntry, agendaItem, sentenceLength, model);
-						}
+						// if (leftEntry.getParse().getResolvedUnlabelledDependencies().isEmpty()) {
+						updateAgenda(agenda, leftEntry, agendaItem, sentenceLength, model);
+						// }
 					}
 				}
 
