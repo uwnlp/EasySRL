@@ -26,7 +26,7 @@ public class OperatorSentence extends Sentence {
 
 	}
 
-	OperatorSentence(final Operator operator, final Sentence child) {
+	public OperatorSentence(final Operator operator, final Sentence child) {
 		this.child = child;
 		this.operator = operator;
 	}

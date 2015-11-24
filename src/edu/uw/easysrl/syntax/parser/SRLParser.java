@@ -12,7 +12,7 @@ import com.google.common.collect.Table;
 import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
-import edu.uw.easysrl.semantics.Lexicon;
+import edu.uw.easysrl.semantics.lexicon.Lexicon;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;

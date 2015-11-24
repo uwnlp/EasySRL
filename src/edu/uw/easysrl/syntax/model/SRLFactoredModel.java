@@ -36,7 +36,7 @@ public class SRLFactoredModel extends Model {
 			final Collection<BinaryFeature> binaryFeatures, final Collection<RootCategoryFeature> rootFeatures,
 			final List<InputWord> sentence
 
-			) {
+	) {
 		super(forests.size());
 		this.forests = forests;
 		this.unaryRuleFeatures = unaryRuleFeatures;
@@ -166,7 +166,6 @@ public class SRLFactoredModel extends Model {
 			insideScore += feature.getFeatureScore(rule.getID(), sentence, child.startOfSpan, child.startOfSpan
 					+ child.spanLength, featureToScore);
 		}
-		// + unaryRuleScores[rule.getID()];
 
 		AgendaItem agendaItem = new AgendaItem(result, insideScore, child.outsideScoreUpperbound, child.startOfSpan,
 				child.spanLength, true);

@@ -18,7 +18,7 @@ public class LambdaExpression extends Logic {
 	private final List<Variable> vars;
 	private final Logic statement;
 
-	LambdaExpression(final Logic statement, final Variable... vars) {
+	public LambdaExpression(final Logic statement, final Variable... vars) {
 		this(statement, Arrays.asList(vars));
 	}
 

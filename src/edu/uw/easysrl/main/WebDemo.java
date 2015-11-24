@@ -16,7 +16,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 
 import edu.uw.easysrl.main.EasySRL.ParsingAlgorithm;
 import edu.uw.easysrl.main.InputReader.InputWord;
-import edu.uw.easysrl.semantics.Lexicon;
+import edu.uw.easysrl.semantics.lexicon.CompositeLexicon;
 import edu.uw.easysrl.syntax.parser.SRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.BackoffSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
@@ -53,11 +53,11 @@ public class WebDemo extends AbstractHandler {
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
 				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest), Util.deserialize(new File(
-						pipelineFolder, "labelClassifier")), posTagger);
+				pipelineFolder, "labelClassifier")), posTagger);
 
 		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(
 				folder, 0.005, ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), nbest), posTagger), pipeline),
-				new Lexicon(new File(folder, "lexicon")));
+				CompositeLexicon.makeDefault(new File(folder, "lexicon")));
 
 		return jointAstar;
 	}

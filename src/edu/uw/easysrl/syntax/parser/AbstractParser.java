@@ -24,9 +24,10 @@ import edu.uw.easysrl.main.EasySRL.InputFormat;
 import edu.uw.easysrl.main.InputReader;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
-import edu.uw.easysrl.semantics.Lexicon;
 import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.semantics.LogicParser;
+import edu.uw.easysrl.semantics.lexicon.DefaultLexicon;
+import edu.uw.easysrl.semantics.lexicon.Lexicon;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Category.Slash;
 import edu.uw.easysrl.syntax.grammar.Combinator;
@@ -149,7 +150,7 @@ public abstract class AbstractParser implements Parser {
 	 */
 	public static Multimap<Category, UnaryRule> loadUnaryRules(final File file) throws IOException {
 		final Multimap<Category, UnaryRule> result = HashMultimap.create();
-		final Lexicon lexicon = new Lexicon();
+		final Lexicon lexicon = new DefaultLexicon();
 		for (String line : Util.readFile(file)) {
 			// Allow comments.
 			if (line.startsWith("#")) {

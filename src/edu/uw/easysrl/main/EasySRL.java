@@ -22,7 +22,8 @@ import uk.co.flamingpenguin.jewel.cli.Option;
 import com.google.common.base.Stopwatch;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.semantics.Lexicon;
+import edu.uw.easysrl.semantics.lexicon.CompositeLexicon;
+import edu.uw.easysrl.semantics.lexicon.Lexicon;
 import edu.uw.easysrl.syntax.evaluation.Results;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
@@ -147,7 +148,8 @@ public class EasySRL {
 			if (printer.outputsLogic()) {
 				// If we're outputing logic, load a lexicon
 				final File lexiconFile = new File(commandLineOptions.getModel(), "lexicon");
-				final Lexicon lexicon = lexiconFile.exists() ? new Lexicon(lexiconFile) : new Lexicon();
+				final Lexicon lexicon = lexiconFile.exists() ? CompositeLexicon.makeDefault(lexiconFile)
+						: CompositeLexicon.makeDefault();
 				parser = new SemanticParser(parser2, lexicon);
 			} else {
 				parser = parser2;

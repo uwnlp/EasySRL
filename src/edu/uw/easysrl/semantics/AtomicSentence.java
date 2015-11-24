@@ -50,7 +50,7 @@ public class AtomicSentence extends Sentence {
 		return type;
 	}
 
-	AtomicSentence(final String predicate, final Logic... children) {
+	public AtomicSentence(final String predicate, final Logic... children) {
 		this(predicate, Arrays.asList(children));
 	}
 
@@ -58,7 +58,7 @@ public class AtomicSentence extends Sentence {
 		this(new Constant(predicate, getType(children)), children);
 	}
 
-	AtomicSentence(final Logic predicate, final Logic... children) {
+	public AtomicSentence(final Logic predicate, final Logic... children) {
 		this(predicate, Arrays.asList(children));
 	}
 
