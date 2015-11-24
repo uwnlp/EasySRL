@@ -17,10 +17,10 @@ import lbfgsb.LBFGSBException;
 import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
 import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
@@ -125,9 +125,8 @@ public class PipelineTrainer extends
 				unlabelled.remove(ccgbankDep);
 				data.add(new TrainingExample(new UnlabelledDependency(ccgbankDep.getSentencePositionOfPredicate(), cats
 						.get(ccgbankDep.getSentencePositionOfPredicate()), ccgbankDep.getArgNumber(), Arrays
-						.asList(ccgbankDep.getSentencePositionOfArgument()), SRLFrame.UNLABELLED_ARGUMENT, Preposition
-						.fromString(entry.getKey().getPreposition())), sentence.getInputWords(), entry.getKey()
-						.getLabel()));
+						.asList(ccgbankDep.getSentencePositionOfArgument()), Preposition.fromString(entry.getKey()
+						.getPreposition())), sentence.getInputWords(), entry.getKey().getLabel()));
 			}
 
 			for (final CCGBankDependency dep : unlabelled) {
@@ -143,8 +142,8 @@ public class PipelineTrainer extends
 				}
 				data.add(new TrainingExample(new UnlabelledDependency(dep.getSentencePositionOfPredicate(), cats
 						.get(dep.getSentencePositionOfPredicate()), dep.getArgNumber(), Arrays.asList(dep
-						.getSentencePositionOfArgument()), SRLFrame.UNLABELLED_ARGUMENT, Preposition
-								.fromString(preposition)), sentence.getInputWords(), SRLFrame.NONE));
+						.getSentencePositionOfArgument()), Preposition.fromString(preposition)), sentence
+						.getInputWords(), SRLFrame.NONE));
 			}
 		}
 		return data;
@@ -166,7 +165,7 @@ public class PipelineTrainer extends
 		@Override
 		public void getValue(final List<Object> result, final TrainingExample trainingExample, final SRLLabel label) {
 			for (final int value : bilexicalFeature.getFeatureKey(trainingExample.sentence, label,
-					trainingExample.dep.getPredicateIndex(), trainingExample.dep.getArgumentIndex()).getValues()) {
+					trainingExample.dep.getHead(), trainingExample.dep.getFirstArgumentIndex()).getValues()) {
 				result.add(value);
 			}
 		}
@@ -188,7 +187,7 @@ public class PipelineTrainer extends
 		@Override
 		public void getValue(final List<Object> result, final TrainingExample trainingExample, final SRLLabel label) {
 			for (final int value : slotFeature.getFeatureKey(trainingExample.sentence,
-					trainingExample.dep.getPredicateIndex(), label, trainingExample.dep.getCategory(),
+					trainingExample.dep.getHead(), label, trainingExample.dep.getCategory(),
 					trainingExample.dep.getArgNumber(), trainingExample.dep.getPreposition()).getValues()) {
 				result.add(value);
 			}

@@ -11,8 +11,8 @@ import java.util.Optional;
 import com.google.common.base.Preconditions;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.ParsePrinter;
 import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.semantics.lexicon.Lexicon;

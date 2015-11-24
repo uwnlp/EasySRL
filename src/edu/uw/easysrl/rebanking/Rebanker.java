@@ -11,11 +11,11 @@ import java.util.List;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
 import edu.uw.easysrl.corpora.CCGBankParseReader;
 import edu.uw.easysrl.corpora.ParallelCorpusReader;
-import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.dependencies.DependencyStructure;
+import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -32,7 +32,7 @@ public abstract class Rebanker {
 
 	public static void main(final String[] args) throws IOException {
 
-		DependencyStructure.parseMarkedUpFile(new File("testfiles/model_rebank/markedup"));
+		Coindexation.parseMarkedUpFile(new File("testfiles/model_rebank/markedup"));
 
 		final boolean isDev = true;
 		final File trainingFolder = new File("training/experiments/rebank_again/" + (isDev ? "dev" : "train"));
@@ -40,7 +40,7 @@ public abstract class Rebanker {
 		processCorpus(isDev, trainingFolder, new DummyRebanker(), new PrepositionRebanker(), new VPadjunctRebanker(),
 				new ExtraArgumentRebanker()
 
-				);
+		);
 
 	}
 
@@ -75,7 +75,7 @@ public abstract class Rebanker {
 
 	private static void getTrainingData(final Iterator<Sentence> corpus, final BufferedWriter supertaggerTrainingFile,
 			final Multimap<String, Category> tagDictionary, final boolean isTest, final Rebanker... rebankers)
-			throws IOException {
+					throws IOException {
 		int changed = 0;
 		while (corpus.hasNext()) {
 			final Sentence sentence = corpus.next();
@@ -104,7 +104,7 @@ public abstract class Rebanker {
 				tagDictionary.put(leaf.getWord(), leaf.getCategory());
 
 				if (!isTest// && dontUseAsTrainingExample(leaf.getCategory())
-						) {
+				) {
 					supertaggerTrainingFile.write(leaf.getWord() + "||" + leaf.getCategory());
 				} else {
 					supertaggerTrainingFile.write(makeDatapoint(leaf));

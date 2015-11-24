@@ -18,7 +18,7 @@ import com.google.common.base.Stopwatch;
 
 import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.SRLParse;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.main.EasySRL;
@@ -37,18 +37,21 @@ public class SRLEvaluation {
 
 	public static void main(final String[] args) throws IOException {
 
-		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/joint";
+		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/model";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
+		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.00001,
 				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1), Util.deserialize(new File(pipelineFolder,
 				"labelClassifier")), posTagger);
+
 		for (final double beta : Arrays.asList(0.01)) {
+			// final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
+			// ParsingAlgorithm.ASTAR, 100000, true, Optional.empty(), 1), posTagger), pipeline);
 			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
 					ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), 1), posTagger), pipeline);
 
-			final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-					ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
+			// final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
+			// ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
 			//
 			// final SRLParser jointAST = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.1,
 			// ParsingAlgorithm.CKY, 400000, true), posTagger), new JointSRLParser(EasySRL.makeParser(folder, 0.01,
@@ -56,14 +59,14 @@ public class SRLEvaluation {
 			//
 			// final SRLParser parser = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
 			// ParsingAlgorithm.ASTAR, 20000, true), posTagger), pipeline);
+			// CCGBankEvaluation.evaluate(pipeline, false);
 
 			evaluate(// pipeline,
-					jointCKY,
+					jointAstar,
 					// // BrownPropbankReader.readCorpus()//
 					ParallelCorpusReader.getPropBank00()
 					// ParallelCorpusReader.getPropBank23()
 					, 70);
-			// CCGBankEvaluation.evaluate(jointAstar, false);
 		}
 	}
 
@@ -82,6 +85,7 @@ public class SRLEvaluation {
 
 		final boolean oneThread = true;
 
+		System.out.println("Parsing...");
 		final Stopwatch stopwatch = Stopwatch.createStarted();
 
 		for (final SRLParse srlParse : iterator) {
@@ -156,16 +160,16 @@ public class SRLEvaluation {
 				continue;
 			}
 
-			boolean found = false;
+			// boolean found = false;
 			for (final ResolvedDependency predictedDep : predictedDeps) {
 				int predictedPropbankPredicate;
 				int predictedPropbankArgument;
 				if (goldDep.isCoreArgument()) {
-					predictedPropbankPredicate = predictedDep.getPredicateIndex();
+					predictedPropbankPredicate = predictedDep.getHead();
 					predictedPropbankArgument = predictedDep.getArgumentIndex();
 				} else {
 					predictedPropbankPredicate = predictedDep.getArgumentIndex();
-					predictedPropbankArgument = predictedDep.getPredicateIndex();
+					predictedPropbankArgument = predictedDep.getHead();
 				}
 				// For adjuncts, the CCG functor is the Propbank argument
 
@@ -175,7 +179,7 @@ public class SRLEvaluation {
 
 					predictedDeps.remove(predictedDep);
 					correctCount++;
-					found = true;
+					// found = true;
 					break;
 				}
 			}

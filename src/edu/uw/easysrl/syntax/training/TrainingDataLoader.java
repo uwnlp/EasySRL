@@ -15,7 +15,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.dependencies.DependencyStructure;
+import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
@@ -51,7 +51,7 @@ class TrainingDataLoader {
 		try {
 			unaryRules = AbstractParser.loadUnaryRules(new File(this.dataParameters.getExistingModel(), "unaryRules"));
 
-			DependencyStructure.parseMarkedUpFile(new File(dataParameters.getExistingModel(), "markedup"));
+			Coindexation.parseMarkedUpFile(new File(dataParameters.getExistingModel(), "markedup"));
 
 			// Build set of possible parses
 			this.parser = new CKY(dataParameters.getExistingModel(), dataParameters.maxTrainingSentenceLength,

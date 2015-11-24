@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.uw.easysrl.dependencies.Coindexation;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.semantics.AtomicSentence;
 import edu.uw.easysrl.semantics.LambdaExpression;
 import edu.uw.easysrl.semantics.Logic;
@@ -70,7 +70,7 @@ public class CopulaLexicon extends Lexicon {
 			for (final ResolvedDependency dep : parse.getCcgParse().getAllLabelledDependencies()) {
 				if (dep.getCategory().equals(Category.valueOf("PP/NP"))
 						&& dep.getArgumentIndex() == deps.get(arg).getArgumentIndex()) {
-					result = parse.getCcgParse().getLeaves().get(dep.getPredicateIndex()).getWord();
+					result = parse.getCcgParse().getLeaves().get(dep.getHead()).getWord();
 				}
 			}
 		}

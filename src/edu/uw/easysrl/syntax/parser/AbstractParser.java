@@ -63,7 +63,7 @@ public abstract class AbstractParser implements Parser {
 		this.reader = InputReader.make(inputFormat);
 		this.seenRules = new SeenRules(seenRulesFile, lexicalCategories);
 		this.nbestBeam = Math.log(nbestBeam);
-		DependencyStructure.parseMarkedUpFile(markedupFile);
+		Coindexation.parseMarkedUpFile(markedupFile);
 
 		final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
 
@@ -173,7 +173,7 @@ public abstract class AbstractParser implements Parser {
 			if (fields.length == 3) {
 				logic = LogicParser.fromString(fields[2], cat);
 			} else {
-				logic = lexicon.getEntry(null, "NULL", cat, Coindexation.fromString(to + "/" + from));
+				logic = lexicon.getEntry(null, "NULL", cat, Coindexation.fromString(to + "/" + from, -1));
 			}
 			result.put(Category.valueOf(from), new UnaryRule(result.size(), from, to, logic));
 			// LogicParser.fromString(logic,Category.make(Category.valueOf(to), Slash.FWD,

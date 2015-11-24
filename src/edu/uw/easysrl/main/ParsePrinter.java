@@ -12,7 +12,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
 import edu.uw.easysrl.corpora.CCGBankDependencies;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.lemmatizer.MorphaStemmer;
 import edu.uw.easysrl.semantics.Logic;
@@ -270,7 +270,7 @@ public abstract class ParsePrinter {
 			for (int i = 1; i <= category.getNumberOfArguments(); i++) {
 				if (category.getArgument(i) == Category.PR) {
 					for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
-						if (dep.getPredicateIndex() == index && dep.getArgNumber() == i) {
+						if (dep.getHead() == index && dep.getArgNumber() == i) {
 							final String particle = parse.getLeaves().get(dep.getArgumentIndex()).getWord();
 							return result + "_" + particle;
 						}
@@ -482,7 +482,7 @@ public abstract class ParsePrinter {
 					} else {
 						// Draw in some extra CCG dependencies for nouns and adjectives.
 						label = "";
-						from = dep.getPredicateIndex();
+						from = dep.getHead();
 						to = dep.getArgumentIndex();
 					}
 
@@ -497,8 +497,8 @@ public abstract class ParsePrinter {
 		 * Decide which dependencies are worth showing.
 		 */
 		private boolean showDependency(final ResolvedDependency dep, final SyntaxTreeNode parse) {
-			final SyntaxTreeNodeLeaf predicateNode = parse.getLeaves().get(dep.getPredicateIndex());
-			if (dep.getPredicateIndex() == dep.getArgumentIndex()) {
+			final SyntaxTreeNodeLeaf predicateNode = parse.getLeaves().get(dep.getHead());
+			if (dep.getHead() == dep.getArgumentIndex()) {
 				return false;
 			} else if (dep.getSemanticRole() != SRLFrame.NONE) {
 				return true;
@@ -677,7 +677,7 @@ public abstract class ParsePrinter {
 
 			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
 
-				final List<ResolvedDependency> labelsForWord = labels.get(dep.getPredicateIndex());
+				final List<ResolvedDependency> labelsForWord = labels.get(dep.getHead());
 				if (dep.getArgumentIndex() > -1) {
 					labelsForWord.set(dep.getArgNumber() - 1, dep);
 				}

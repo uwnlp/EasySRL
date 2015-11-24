@@ -32,7 +32,7 @@ import com.google.common.io.Files;
 import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
 import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
@@ -331,14 +331,14 @@ public class Training {
 				// && cutoffsDictionary.isFrequent(dep.getCategory(),
 				// dep.getArgNumber(), dep.getSemanticRole())) {
 				for (final ArgumentSlotFeature feature : trainingParameters.getFeatureSet().argumentSlotFeatures) {
-					final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getPredicateIndex(),
+					final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getHead(),
 							role, dep.getCategory(), dep.getArgNumber(), dep.getPreposition());
 					keyCount.add(key);
 				}
 
 				if (dep.getPreposition() != Preposition.NONE) {
 					for (final PrepositionFeature feature : trainingParameters.getFeatureSet().prepositionFeatures) {
-						final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getPredicateIndex(),
+						final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getHead(),
 								dep.getCategory(), dep.getPreposition(), dep.getArgNumber());
 						keyCount.add(key);
 					}
@@ -348,7 +348,7 @@ public class Training {
 				if (dep.getSemanticRole() != SRLFrame.NONE) {
 					for (final BilexicalFeature feature : trainingParameters.getFeatureSet().dependencyFeatures) {
 						final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getSemanticRole(),
-								dep.getPredicateIndex(), dep.getArgumentIndex());
+								dep.getHead(), dep.getArgumentIndex());
 						bilexicalKeyCount.add(key);
 					}
 				}

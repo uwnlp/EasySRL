@@ -11,8 +11,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 
 import edu.uw.easysrl.dependencies.Coindexation;
-import edu.uw.easysrl.dependencies.DependencyStructure.IDorHead;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.semantics.AtomicSentence;
@@ -100,7 +99,7 @@ public class DefaultLexicon extends Lexicon {
 	 */
 	private Logic getEntry(final String word, final Category category, final Coindexation coindexation,
 			final List<Variable> vars, final Variable head, final Sentence resultSoFar,
-			final Map<IDorHead, Variable> idToVar, final boolean isContentWord, final List<SRLLabel> labels) {
+			final Map<Coindexation.IDorHead, Variable> idToVar, final boolean isContentWord, final List<SRLLabel> labels) {
 
 		SRLLabel label = labels.size() == 0 ? SRLFrame.NONE : labels.get(labels.size() - 1);
 		if (category.getNumberOfArguments() > 0 && category.getLeft().isModifier() && labels.size() > 1
@@ -187,8 +186,8 @@ public class DefaultLexicon extends Lexicon {
 
 	private Logic getEntryComplexCategories(final String word, final Category category,
 			final Coindexation coindexation, final List<Variable> vars, final Variable head,
-			final Sentence resultSoFar, final Map<IDorHead, Variable> idToVar, final boolean isContentWord,
-			final List<SRLLabel> labels, final SRLLabel label, final String argumentLabel) {
+			final Sentence resultSoFar, final Map<Coindexation.IDorHead, Variable> idToVar,
+			final boolean isContentWord, final List<SRLLabel> labels, final SRLLabel label, final String argumentLabel) {
 		// Other complex categories.
 		final Category argument = category.getRight();
 		final Variable predicate = vars.get(0);
@@ -222,7 +221,7 @@ public class DefaultLexicon extends Lexicon {
 
 	private Sentence getEntryComplexCategoryWithComplexArgument(final Category category,
 			final Coindexation coindexation, final Variable head, final Sentence resultSoFar,
-			final Map<IDorHead, Variable> idToVar, final String argumentLabel, final Variable predicate) {
+			final Map<Coindexation.IDorHead, Variable> idToVar, final String argumentLabel, final Variable predicate) {
 		final Category argument = category.getRight();
 		Sentence resultForArgument;
 		// Complex argument, e.g. ((S[dcl]\NP)/NP_1)/(S[to]\NP_1)
@@ -236,7 +235,7 @@ public class DefaultLexicon extends Lexicon {
 		for (int i = argument.getNumberOfArguments(); i > 0; i--) {
 			// Iterate over arguments of argument.
 			Logic argumentSemantics;
-			final IDorHead id = coindexationOfArgument.getRight().getID();
+			final Coindexation.IDorHead id = coindexationOfArgument.getRight().getID();
 			if (idToVar.containsKey(id)) {
 				// Argument is co-indexed with another argument.
 				final Variable coindexedVar = idToVar.get(id);
@@ -276,7 +275,7 @@ public class DefaultLexicon extends Lexicon {
 		// We need to add an extra variable for functions into N and S
 		// e.g. an S\NP argument p needs arguments p(x, e)
 		if (argument.getArgument(0) == Category.N || Category.S.matches(argument.getArgument(0))) {
-			final IDorHead id = coindexationOfArgument.getID();
+			final Coindexation.IDorHead id = coindexationOfArgument.getID();
 			if (idToVar.containsKey(id)) {
 				argumentsOfArgument.add(idToVar.get(id));
 			} else {
@@ -343,7 +342,7 @@ public class DefaultLexicon extends Lexicon {
 					Connective.AND,
 					new QuantifierSentence(Quantifier.EXISTS, ev, ConnectiveSentence.make(Connective.AND,
 							new AtomicSentence(predicate, ev), new AtomicSentence(argumentLabel, head, ev))),
-					resultSoFar);
+							resultSoFar);
 		} else {
 			throw new IllegalStateException();
 		}
@@ -363,7 +362,7 @@ public class DefaultLexicon extends Lexicon {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * edu.uw.easysrl.semantics.lexicon.AbstractLexicon#isMultiWordExpression(edu.uw.easysrl.syntax.grammar.SyntaxTreeNode
 	 * )

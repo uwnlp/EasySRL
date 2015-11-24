@@ -9,7 +9,7 @@ import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.EasySRL.InputFormat;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;

@@ -13,9 +13,9 @@ import com.carrotsearch.hppc.ObjectDoubleHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;

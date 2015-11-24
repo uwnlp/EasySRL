@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import edu.uw.easysrl.dependencies.Coindexation;
-import edu.uw.easysrl.dependencies.DependencyStructure.IDorHead;
 import edu.uw.easysrl.semantics.SemanticType;
 import edu.uw.easysrl.semantics.Variable;
 import edu.uw.easysrl.syntax.grammar.Category;
@@ -16,7 +15,7 @@ import edu.uw.easysrl.syntax.grammar.Category;
  *
  */
 class HeadAndArguments {
-	final Map<IDorHead, Variable> coindexationIDtoVariable;
+	final Map<Coindexation.IDorHead, Variable> coindexationIDtoVariable;
 	final List<Variable> argumentVariables;
 	final Variable headVariable;
 

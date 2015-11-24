@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.semantics.lexicon.Lexicon;
@@ -134,7 +134,7 @@ public abstract class SRLParser {
 			this.dependencyParse = dependencyParse;
 			this.words = words;
 			for (final ResolvedDependency dep : dependencyParse) {
-				headToArgNumberToDependency.put(dep.getPredicateIndex(), dep.getArgNumber(), dep);
+				headToArgNumberToDependency.put(dep.getHead(), dep.getArgNumber(), dep);
 			}
 			this.leaves = ccgParse.getLeaves();
 		}
@@ -189,7 +189,7 @@ public abstract class SRLParser {
 		private CCGandSRLparse addDependencies(final List<InputWord> tokens, final CCGandSRLparse parse) {
 			final Collection<ResolvedDependency> result = new ArrayList<>();
 			for (final ResolvedDependency dep : parse.getDependencyParse()) {
-				if (dep.getArgumentIndex() != dep.getPredicateIndex()) {
+				if (dep.getArgumentIndex() != dep.getHead()) {
 					result.add(dep.overwriteLabel(classifier.classify(dep.dropLabel(), tokens)));
 				}
 			}

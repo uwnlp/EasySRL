@@ -12,7 +12,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.syntax.grammar.Preposition;
@@ -228,14 +228,14 @@ public class GoldChartFinder {
 			final Collection<ResolvedDependency> newDeps) {
 		final Set<SRLDependency> matchedDeps = new HashSet<>(dependencies.size());
 		for (final ResolvedDependency dep : dependencies) {
-			final int predicateIndex = dep.getPredicateIndex();
+			final int predicateIndex = dep.getHead();
 			final int argumentIndex = predicateIndex + dep.getOffset();
 			boolean isSRL = false;
 
 			for (final SRLDependency srl : goldDeps) {
 				if (!matchedDeps.contains(srl)
 						&& cutoffs.isFrequent(dep.getCategory(), dep.getArgNumber(), srl.getLabel())
-						&& cutoffs.getRoles(completeChart.getWords().get(dep.getPredicateIndex()).word,
+						&& cutoffs.getRoles(completeChart.getWords().get(dep.getHead()).word,
 								dep.getCategory(), dep.getPreposition(), dep.getArgNumber()).contains(srl.getLabel())
 								&& matches(predicateIndex, argumentIndex, srl, dep.getPreposition())) {
 

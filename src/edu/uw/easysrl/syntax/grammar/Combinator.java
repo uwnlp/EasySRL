@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.semantics.AtomicSentence;
 import edu.uw.easysrl.semantics.ConnectiveSentence;
 import edu.uw.easysrl.semantics.ConnectiveSentence.Connective;

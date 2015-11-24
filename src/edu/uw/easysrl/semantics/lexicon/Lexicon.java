@@ -4,8 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.uw.easysrl.dependencies.Coindexation;
-import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.lemmatizer.MorphaStemmer;
 import edu.uw.easysrl.semantics.Constant;
 import edu.uw.easysrl.semantics.Logic;
@@ -27,9 +26,8 @@ public abstract class Lexicon {
 	 */
 	public Logic getEntry(final CCGandSRLparse parse, final int wordIndex) {
 		final SyntaxTreeNodeLeaf leaf = parse.getLeaf(wordIndex);
-		return getEntry(leaf.getWord(), leaf.getPos(), leaf.getCategory(),
-				Coindexation.fromString(DependencyStructure.getMarkedUp(leaf.getCategory()), wordIndex),
-				Optional.of(parse), wordIndex);
+		return getEntry(leaf.getWord(), leaf.getPos(), leaf.getCategory(), leaf.getDependencyStructure()
+				.getCoindexation(), Optional.of(parse), wordIndex);
 
 	}
 

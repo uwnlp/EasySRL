@@ -8,8 +8,8 @@ import java.util.PriorityQueue;
 
 import com.carrotsearch.hppc.ObjectDoubleHashMap;
 
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -133,7 +133,7 @@ public class SRLFactoredModel extends Model {
 		int i = 0;
 		for (final UnlabelledDependency dep : resolvedUnlabelledDependencies) {
 
-			final ExtendedLexicalEntry forest = forests.get(dep.getPredicateIndex());
+			final ExtendedLexicalEntry forest = forests.get(dep.getHead());
 			final Scored<SRLLabel> scoredLabel = forest.getBestLabels(dep);
 
 			final double newInsideScore = result.getInsideScore() + scoredLabel.getScore();

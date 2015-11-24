@@ -21,7 +21,7 @@ import uk.co.flamingpenguin.jewel.cli.Option;
 
 import com.google.common.base.Stopwatch;
 
-import edu.uw.easysrl.dependencies.DependencyStructure;
+import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.semantics.lexicon.CompositeLexicon;
 import edu.uw.easysrl.semantics.lexicon.Lexicon;
 import edu.uw.easysrl.syntax.evaluation.Results;
@@ -110,8 +110,8 @@ public class EasySRL {
 	public enum OutputFormat {
 		CCGBANK(ParsePrinter.CCGBANK_PRINTER), HTML(ParsePrinter.HTML_PRINTER), SUPERTAGS(ParsePrinter.SUPERTAG_PRINTER), PROLOG(
 				ParsePrinter.PROLOG_PRINTER), EXTENDED(ParsePrinter.EXTENDED_CCGBANK_PRINTER), DEPS(
-						new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
-				ParsePrinter.LOGIC_PRINTER);
+				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
+								ParsePrinter.LOGIC_PRINTER);
 
 		public final ParsePrinter printer;
 
@@ -270,8 +270,8 @@ public class EasySRL {
 		CommandLineArguments commandLineOptions;
 		try {
 			commandLineOptions = CliFactory.parseArguments(CommandLineArguments.class, new String[] { "-m",
-					modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString(),
-					"--nbest", "" + nbest });
+				modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString(),
+				"--nbest", "" + nbest });
 
 		} catch (final ArgumentValidationException e) {
 			throw new RuntimeException(e);
@@ -282,7 +282,7 @@ public class EasySRL {
 
 	private static Parser makeParser(final CommandLineArguments commandLineOptions, final int maxChartSize,
 			final boolean joint, final Optional<Double> supertaggerWeight) throws IOException {
-		DependencyStructure.parseMarkedUpFile(new File(commandLineOptions.getModel(), "markedup"));
+		Coindexation.parseMarkedUpFile(new File(commandLineOptions.getModel(), "markedup"));
 		final File cutoffsFile = new File(commandLineOptions.getModel(), "cutoffs");
 		final CutoffsDictionary cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
 
@@ -298,9 +298,9 @@ public class EasySRL {
 
 			modelFactory = new SRLFactoredModelFactory(weights, ((FeatureSet) Util.deserialize(new File(
 					commandLineOptions.getModel(), "features"))).setSupertaggingFeature(
-							new File(commandLineOptions.getModel(), "/pipeline"), commandLineOptions.getSupertaggerbeam()),
-							TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(), "categories")), cutoffs,
-							Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")));
+					new File(commandLineOptions.getModel(), "/pipeline"), commandLineOptions.getSupertaggerbeam()),
+					TaggerEmbeddings.loadCategories(new File(commandLineOptions.getModel(), "categories")), cutoffs,
+					Util.deserialize(new File(commandLineOptions.getModel(), "featureToIndex")));
 
 		} else {
 			modelFactory = new SupertagFactoredModelFactory(Tagger.make(commandLineOptions.getModel(),
@@ -314,15 +314,15 @@ public class EasySRL {
 		if (algorithm == ParsingAlgorithm.CKY) {
 			parser = new ParserCKY(
 
-					modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
-					.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
-							commandLineOptions.getModel(), maxChartSize);
+			modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
+							.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
+					commandLineOptions.getModel(), maxChartSize);
 		} else {
 			parser = new ParserAStar(
 
-					modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
-					.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
-							commandLineOptions.getModel(), maxChartSize);
+			modelFactory, commandLineOptions.getMaxLength(), nBest, nBestBeam, InputFormat.valueOf(commandLineOptions
+							.getInputFormat().toUpperCase()), Training.ROOT_CATEGORIES, // commandLineOptions.getRootCategories(),
+					commandLineOptions.getModel(), maxChartSize);
 		}
 
 		return parser;

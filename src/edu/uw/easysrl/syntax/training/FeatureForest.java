@@ -11,7 +11,7 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
-import edu.uw.easysrl.dependencies.DependencyStructure.ResolvedDependency;
+import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.main.InputReader.InputWord;
@@ -500,13 +500,13 @@ class FeatureForest {
 			if (dependency.getSemanticRole() != SRLFrame.NONE && dependency.getOffset() != 0 && includeDepsFeatures) {
 				for (final BilexicalFeature feature : featureSet.dependencyFeatures) {
 					final int index = feature.getFeatureIndex(words, dependency.getSemanticRole(),
-							dependency.getPredicateIndex(), dependency.getArgumentIndex(), featureToIndexMap);
+							dependency.getHead(), dependency.getArgumentIndex(), featureToIndexMap);
 					result.add(index);
 				}
 			}
 
 			for (final ArgumentSlotFeature feature : featureSet.argumentSlotFeatures) {
-				final int index = feature.getFeatureIndex(words, dependency.getPredicateIndex(),
+				final int index = feature.getFeatureIndex(words, dependency.getHead(),
 						dependency.getSemanticRole(), dependency.getCategory(), dependency.getArgNumber(),
 						dependency.getPreposition(), featureToIndexMap);
 				result.add(index);
@@ -514,7 +514,7 @@ class FeatureForest {
 
 			if (dependency.getPreposition() != Preposition.NONE) {
 				for (final PrepositionFeature feature : featureSet.prepositionFeatures) {
-					final int index = feature.getFeatureIndex(words, dependency.getPredicateIndex(),
+					final int index = feature.getFeatureIndex(words, dependency.getHead(),
 							dependency.getCategory(), dependency.getPreposition(), dependency.getArgNumber(),
 							featureToIndexMap);
 					result.add(index);

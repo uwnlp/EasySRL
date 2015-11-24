@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleClass;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;

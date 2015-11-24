@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.dependencies.DependencyStructure.UnlabelledDependency;
+import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;

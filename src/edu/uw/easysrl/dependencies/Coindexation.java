@@ -1,35 +1,112 @@
 package edu.uw.easysrl.dependencies;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 
-import edu.uw.easysrl.dependencies.DependencyStructure.IDorHead;
+import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.util.Util;
 
 public class Coindexation implements Serializable {
 
 	/**
+	 * Represents the endpoint of a dependency. For fully-specified dependencies, this will be a 'head'. Multiple heads
+	 * are possible to deal with coordination. Otherwise, it will be an 'id', referring to some coindexation.
+	 */
+	public static class IDorHead implements Serializable {
+
+		private static final long serialVersionUID = -2338555345725737539L;
+		final List<Integer> head;
+		final Integer id;
+
+		public boolean isHead() {
+			return head != null;
+		}
+
+		IDorHead(final List<Integer> head) {
+			this.head = head;
+			this.id = null;
+		}
+
+		IDorHead(final Integer id) {
+			this.head = null;
+			this.id = id;
+		}
+
+		@Override
+		public String toString() {
+			if (head == null) {
+				return "" + id;
+			} else {
+				return head.toString();
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(head, id);
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			final IDorHead other = (IDorHead) obj;
+			return Objects.equals(head, other.head) && Objects.equals(id, other.id);
+		}
+
+		public int getID() {
+			return id;
+		}
+
+		public List<Integer> getHeadIndices() {
+			return head;
+		}
+
+	}
+
+	/**
 	 *
 	 */
 	private static final long serialVersionUID = 1201129160464966099L;
 
+	private static final Map<Category, String> categoryToMarkedUpCategory = new HashMap<>();
+
+	/**
+	 * Loads co-indexation information from the specified file.
+	 */
+	public static void parseMarkedUpFile(final File file) throws IOException {
+		final Iterator<String> lines = Util.readFileLineByLine(file);
+		while (lines.hasNext()) {
+			String line = lines.next();
+			if (line.isEmpty() || line.startsWith("#")) {
+				continue;
+			}
+			line = line.replaceAll(":B", "");
+
+			categoryToMarkedUpCategory.put(Category.valueOf(line), line);
+		}
+	}
+
 	Coindexation normalize(final IntIntHashMap substitutions, final int minValue) {
-		IDorHead newIDorHead = idOrHead;
+		Coindexation.IDorHead newIDorHead = idOrHead;
 		if (idOrHead.id != null) {
 			int newID = substitutions.getOrDefault(idOrHead.id, Integer.MIN_VALUE);
 			if (newID == Integer.MIN_VALUE) {
 				newID = substitutions.size() + minValue;
 				substitutions.put(idOrHead.id, newID);
 			}
-			newIDorHead = new IDorHead(newID);
+			newIDorHead = new Coindexation.IDorHead(newID);
 		}
 
 		return new Coindexation(left == null ? null : left.normalize(substitutions, minValue), right == null ? null
@@ -57,7 +134,7 @@ public class Coindexation implements Serializable {
 
 	}
 
-	final IDorHead idOrHead;
+	final Coindexation.IDorHead idOrHead;
 	final Coindexation left;
 	final Coindexation right;
 	final Preposition preposition;
@@ -73,15 +150,15 @@ public class Coindexation implements Serializable {
 		}
 	}
 
-	Coindexation(final IDorHead head, final Preposition preposition) {
+	Coindexation(final Coindexation.IDorHead head, final Preposition preposition) {
 		this(null, null, head, preposition);
 	}
 
-	Coindexation(final Coindexation left, final Coindexation right, final IDorHead head) {
+	Coindexation(final Coindexation left, final Coindexation right, final Coindexation.IDorHead head) {
 		this(left, right, head, Preposition.NONE);
 	}
 
-	public IDorHead getID() {
+	public Coindexation.IDorHead getID() {
 		return idOrHead;
 	}
 
@@ -132,7 +209,7 @@ public class Coindexation implements Serializable {
 		}
 	}
 
-	private Coindexation(final Coindexation left, final Coindexation right, final IDorHead idOrHead,
+	private Coindexation(final Coindexation left, final Coindexation right, final Coindexation.IDorHead idOrHead,
 			final Preposition preposition) {
 		super();
 		this.idOrHead = idOrHead;
@@ -150,9 +227,9 @@ public class Coindexation implements Serializable {
 		return right;
 	}
 
-	private static DependencyStructure.IDorHead getID(final DependencyStructure.IDorHead defaultHead,
+	private static Coindexation.IDorHead getID(final Coindexation.IDorHead defaultHead,
 			final Map<Integer, Integer> usedIDs, final Integer ccgbankID) {
-		DependencyStructure.IDorHead idOrHead;
+		Coindexation.IDorHead idOrHead;
 		if (ccgbankID != null) {
 			// Negate CCGBank ID's to avoid clashes with automatically generated
 			// ones.
@@ -162,7 +239,7 @@ public class Coindexation implements Serializable {
 				usedIDs.put(-ccgbankID, id);
 			}
 
-			idOrHead = new DependencyStructure.IDorHead(id);
+			idOrHead = new Coindexation.IDorHead(id);
 		} else {
 			// NP
 			if (defaultHead != null) {
@@ -170,33 +247,38 @@ public class Coindexation implements Serializable {
 			} else {
 				final int id = usedIDs.size() + 1;
 				usedIDs.put(id, id);
-				idOrHead = new DependencyStructure.IDorHead(id);
+				idOrHead = new Coindexation.IDorHead(id);
 			}
 
 		}
 		return idOrHead;
 	}
 
-	public static Coindexation fromString(final String category) {
-		return fromString(category, 0);
+	static Coindexation fromString(final Category category2, final int wordIndex) {
+		String category = categoryToMarkedUpCategory.get(category2);
+		if (category == null) {
+			category = category2.toString();
+		}
+		return fromString(category, new Coindexation.IDorHead(Collections.singletonList(wordIndex)), new HashMap<>(),
+				wordIndex, true);
 	}
 
 	public static Coindexation fromString(final String category, final int wordIndex) {
-		return fromString(category, new IDorHead(Arrays.asList(wordIndex)), new HashMap<>(), wordIndex, true);
+		return fromString(category, new Coindexation.IDorHead(Collections.singletonList(wordIndex)), new HashMap<>(),
+				wordIndex, true);
 	}
 
-	public static Coindexation fromString(String category, final DependencyStructure.IDorHead defaultHead,
+	static Coindexation fromString(String category, final Coindexation.IDorHead defaultHead,
 			final Map<Integer, Integer> usedIDs, final int headWord, final boolean isOnSpine) {
 
 		if (category.endsWith("}") && !category.endsWith("{_*}")) {
 			final int openIndex = category.lastIndexOf("{");
 			category = category.substring(0, openIndex);
 		}
-
 		final int slashIndex = Util.indexOfAny(category, "/\\");
 
 		if (slashIndex == -1) {
-			DependencyStructure.IDorHead idOrHead;
+			Coindexation.IDorHead idOrHead;
 			// NP_4
 			final String[] fields = category.split("_");
 
@@ -204,7 +286,7 @@ public class Coindexation implements Serializable {
 				// Used on categories like
 				// his NP_1/(N_1/PP{_*})_1
 				// To indicate that the PP is headed by "his"
-				idOrHead = new DependencyStructure.IDorHead(Arrays.asList(headWord));
+				idOrHead = new Coindexation.IDorHead(Arrays.asList(headWord));
 			} else if (fields.length == 1) {
 				idOrHead = Coindexation.getID(defaultHead, usedIDs, null);
 			} else {
@@ -223,7 +305,7 @@ public class Coindexation implements Serializable {
 			// (X_i/Y_j)_k/(Y_j\Z_k)_z
 			// ((X_i/Y_j)_k/(Y_j\Z_k)_z)_x
 
-			DependencyStructure.IDorHead idOrHead = null;
+			Coindexation.IDorHead idOrHead = null;
 
 			int nonNestedSlashIndex = Util.findNonNestedChar(category, "/\\");
 
@@ -256,7 +338,6 @@ public class Coindexation implements Serializable {
 			final String r = category.substring(nonNestedSlashIndex + 1);
 
 			final Coindexation left = fromString(l, defaultHead, usedIDs, headWord, isOnSpine);
-
 			final Coindexation right = fromString(r, null, usedIDs, headWord, false);
 
 			if (idOrHead == null) {
