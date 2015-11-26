@@ -53,7 +53,7 @@ public class WebDemo extends AbstractHandler {
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
 				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest), Util.deserialize(new File(
-				pipelineFolder, "labelClassifier")), posTagger);
+						pipelineFolder, "labelClassifier")), posTagger);
 
 		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(
 				folder, 0.005, ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), nbest), posTagger), pipeline),
@@ -77,7 +77,15 @@ public class WebDemo extends AbstractHandler {
 			sentence = "";
 		}
 		response.println("<html><head><title>EasySRL Parser Demo</title></head><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js\"></script>\n"
-				+ "<body>\n");
+				+ "<!-- Latest compiled and minified CSS -->\n"
+				+ "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css\" integrity=\"sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==\" crossorigin=\"anonymous\">\n"
+				+ "\n"
+				+ "<!-- Optional theme -->\n"
+				+ "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css\" integrity=\"sha384-aUGj/X2zp5rLCbBxumKTCw2Z50WgIr1vs/PFN4praOTvYXWlVyh2UtNUU0KAUhAX\" crossorigin=\"anonymous\">\n"
+				+ "\n"
+				+ "<!-- Latest compiled and minified JavaScript -->\n"
+				+ "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js\" integrity=\"sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==\" crossorigin=\"anonymous\"></script>"
+				+ "<body style=\"padding:20\">");
 		response.println("<h1><font face=\"arial\">EasySRL Parser Demo</font></h1>");
 		response.println("      <div><a href=https://github.com/mikelewis0/EasySRL>Download here!</a></div>      \n"
 				+ "        <br><form action=\"\" method=\"get\">\n"
