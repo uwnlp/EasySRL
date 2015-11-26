@@ -50,6 +50,10 @@ public class Util {
 		return -1;
 	}
 
+	public static File getFile(final String path) {
+		return new File(path.replace("~", System.getProperty("user.home")));
+	}
+
 	public static File getHomeFolder() {
 		return new File(System.getProperty("user.home"));
 	}

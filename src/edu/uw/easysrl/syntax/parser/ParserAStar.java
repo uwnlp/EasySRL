@@ -29,10 +29,10 @@ public class ParserAStar extends AbstractParser {
 	private final int maxChartSize;
 
 	public ParserAStar(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
-			final double nbestBeam, final InputFormat inputFormat, final List<Category> validRootCategories,
-			final File modelFolder, final int maxChartSize) throws IOException {
-		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, nbestBeam, inputFormat,
-				validRootCategories, modelFolder);
+			final InputFormat inputFormat, final List<Category> validRootCategories, final File modelFolder,
+			final int maxChartSize) throws IOException {
+		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, inputFormat, validRootCategories,
+				modelFolder);
 		this.modelFactory = modelFactory;
 		this.maxChartSize = maxChartSize;
 	}
@@ -49,10 +49,7 @@ public class ParserAStar extends AbstractParser {
 		final List<Scored<SyntaxTreeNode>> result = new ArrayList<>();
 		int chartSize = 0;
 
-		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest
-		// TODO && agenda.peek() != null && agenda.peek().getCost() >
-		// result.get(0).getProbability() + nbestBeam
-				))) {
+		while (chartSize < maxChartSize && (result.isEmpty() || (result.size() < nbest))) {
 			// Add items from the agenda, until we have enough parses.
 
 			final AgendaItem agendaItem = agenda.poll();
@@ -94,7 +91,7 @@ public class ParserAStar extends AbstractParser {
 								new SyntaxTreeNodeUnary(unaryRule.getResult(), agendaItem.getParse(), unaryRule
 										.getDependencyStructureTransformation().apply(
 												agendaItem.getParse().getDependencyStructure(), resolvedDependencies),
-												unaryRule, resolvedDependencies), unaryRule));
+										unaryRule, resolvedDependencies), unaryRule));
 					}
 				}
 
@@ -104,7 +101,7 @@ public class ParserAStar extends AbstractParser {
 						- agendaItem.getStartOfSpan(); spanLength++) {
 
 					final ChartCell rightCell = chart[agendaItem.getStartOfSpan() + agendaItem.getSpanLength()][spanLength
-							- agendaItem.getSpanLength() - 1];
+					                                                                                            - agendaItem.getSpanLength() - 1];
 					if (rightCell == null) {
 						continue;
 					}

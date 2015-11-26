@@ -46,23 +46,21 @@ import edu.uw.easysrl.util.Util.Scored;
 public abstract class AbstractParser implements Parser {
 
 	public AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
-			final double nbestBeam, final InputFormat inputFormat, final List<Category> validRootCategories,
-			final File modelFolder) throws IOException {
-		this(lexicalCategories, maxSentenceLength, nbest, nbestBeam, inputFormat, validRootCategories, new File(
-				modelFolder, "unaryRules"), new File(modelFolder, "binaryRules"), new File(modelFolder, "markedup"),
-				new File(modelFolder, "seenRules"));
+			final InputFormat inputFormat, final List<Category> validRootCategories, final File modelFolder)
+					throws IOException {
+		this(lexicalCategories, maxSentenceLength, nbest, inputFormat, validRootCategories, new File(modelFolder,
+				"unaryRules"), new File(modelFolder, "binaryRules"), new File(modelFolder, "markedup"), new File(
+						modelFolder, "seenRules"));
 	}
 
 	private AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
-			final double nbestBeam, final InputFormat inputFormat, final List<Category> validRootCategories,
-			final File unaryRulesFile, final File extraCombinatorsFile, final File markedupFile,
-			final File seenRulesFile) throws IOException {
+			final InputFormat inputFormat, final List<Category> validRootCategories, final File unaryRulesFile,
+			final File extraCombinatorsFile, final File markedupFile, final File seenRulesFile) throws IOException {
 		this.maxLength = maxSentenceLength;
 		this.nbest = nbest;
 		this.unaryRules = loadUnaryRules(unaryRulesFile);
 		this.reader = InputReader.make(inputFormat);
 		this.seenRules = new SeenRules(seenRulesFile, lexicalCategories);
-		this.nbestBeam = Math.log(nbestBeam);
 		Coindexation.parseMarkedUpFile(markedupFile);
 
 		final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
@@ -80,7 +78,6 @@ public abstract class AbstractParser implements Parser {
 	protected final Collection<Combinator> binaryRules;
 	protected final Multimap<Category, UnaryRule> unaryRules;
 	protected final int nbest;
-	protected final double nbestBeam;
 
 	private final InputReader reader;
 

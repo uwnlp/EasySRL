@@ -29,10 +29,10 @@ import edu.uw.easysrl.util.Util.Scored;
 public class ParserCKY extends AbstractParser {
 
 	public ParserCKY(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
-			final double nbestBeam, final InputFormat inputFormat, final List<Category> validRootCategories,
-			final File modelFolder, final int maxChartSize) throws IOException {
-		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, nbestBeam, inputFormat,
-				validRootCategories, modelFolder);
+			final InputFormat inputFormat, final List<Category> validRootCategories, final File modelFolder,
+			final int maxChartSize) throws IOException {
+		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, inputFormat, validRootCategories,
+				modelFolder);
 		this.maxChartSize = maxChartSize;
 		this.modelFactory = modelFactory;
 	}
