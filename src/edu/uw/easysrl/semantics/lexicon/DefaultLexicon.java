@@ -341,7 +341,7 @@ public class DefaultLexicon extends Lexicon {
 			resultForArgument = ConnectiveSentence.make(
 					Connective.AND,
 					new QuantifierSentence(Quantifier.EXISTS, ev, ConnectiveSentence.make(Connective.AND,
-							new AtomicSentence(predicate, ev), new AtomicSentence(argumentLabel, head, ev))),
+							new AtomicSentence(predicate, ev), new AtomicSentence(argumentLabel, ev, head))),
 							resultSoFar);
 		} else {
 			throw new IllegalStateException();
@@ -362,7 +362,7 @@ public class DefaultLexicon extends Lexicon {
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * edu.uw.easysrl.semantics.lexicon.AbstractLexicon#isMultiWordExpression(edu.uw.easysrl.syntax.grammar.SyntaxTreeNode
 	 * )
