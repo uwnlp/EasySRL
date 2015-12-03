@@ -32,7 +32,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 	private final DependencyStructure dependencyStructure;
 	private final List<UnlabelledDependency> resolvedUnlabelledDependencies;
 	private final int length;
-	private final Optional<Logic> semantics;
+	private final Logic semantics;
 
 	public abstract SyntaxTreeNodeLeaf getHead();
 
@@ -44,7 +44,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 		this.dependencyStructure = dependencyStructure;
 		this.resolvedUnlabelledDependencies = resolvedUnlabelledDependencies;
 		this.length = length;
-		this.semantics = semantics;
+		this.semantics = semantics.orElse(null);
 		this.word = word;
 	}
 
@@ -154,7 +154,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 			} else {
 				newLeft = leftChild.addSemantics(lexicon, semanticDependencies);
 				newRight = rightChild.addSemantics(lexicon, semanticDependencies);
-				semantics = Combinator.fromRule(ruleType).apply(newLeft.semantics.get(), newRight.semantics.get());
+				semantics = Combinator.fromRule(ruleType).apply(newLeft.semantics, newRight.semantics);
 
 			}
 			return new SyntaxTreeNodeBinary(super.category, newLeft, newRight, ruleType, headIsLeft,
@@ -363,7 +363,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 						super.dependencyStructure.getCoindexation());
 			} else {
 				newChild = child.addSemantics(lexicon, semanticDependencies);
-				semantics = unaryRule.apply(newChild.semantics.get());
+				semantics = unaryRule.apply(newChild.semantics);
 			}
 
 			return new SyntaxTreeNodeUnary(super.category, newChild, super.dependencyStructure, unaryRule,
@@ -466,7 +466,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 		public SyntaxTreeNodeLabelling(final SyntaxTreeNode child, final Collection<ResolvedDependency> labelled,
 				final List<UnlabelledDependency> unlabelled) {
 			super(child.category, child.getHeadIndex(), child.getDependencyStructure(), unlabelled, child.length, child
-					.getWord(), child.semantics);
+					.getWord(), child.getSemantics());
 			this.labelled = labelled;
 			this.child = child;
 		}
@@ -538,7 +538,7 @@ public abstract class SyntaxTreeNode implements Serializable {
 	}
 
 	public Optional<Logic> getSemantics() {
-		return semantics;
+		return Optional.ofNullable(semantics);
 	}
 
 }
