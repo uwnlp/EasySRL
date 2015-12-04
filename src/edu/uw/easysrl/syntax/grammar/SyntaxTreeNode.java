@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
@@ -42,7 +43,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 		this.category = category;
 		this.headIndex = headIndex;
 		this.dependencyStructure = dependencyStructure;
-		this.resolvedUnlabelledDependencies = resolvedUnlabelledDependencies;
+		// Because subList isn't serializable.
+		this.resolvedUnlabelledDependencies = ImmutableList.copyOf(resolvedUnlabelledDependencies);
 		this.length = length;
 		this.semantics = semantics.orElse(null);
 		this.word = word;
