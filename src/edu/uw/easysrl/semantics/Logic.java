@@ -58,7 +58,7 @@ public abstract class Logic implements Serializable {
 
 	public abstract void accept(LogicVisitor v);
 
-	interface LogicVisitor {
+  public interface LogicVisitor {
 		void visit(AtomicSentence s);
 
 		void visit(ConnectiveSentence s);

@@ -31,7 +31,7 @@ public abstract class Lexicon {
 
 	}
 
-	abstract Logic getEntry(String word, String pos, Category category, Coindexation coindexation,
+	public abstract Logic getEntry(String word, String pos, Category category, Coindexation coindexation,
 			Optional<CCGandSRLparse> parse, int wordIndex);
 
 	/**
