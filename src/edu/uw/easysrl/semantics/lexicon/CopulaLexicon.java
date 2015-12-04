@@ -17,7 +17,7 @@ import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
 public class CopulaLexicon extends Lexicon {
 
 	@Override
-	Logic getEntry(final String word, final String pos, final Category category, final Coindexation coindexation,
+	public Logic getEntry(final String word, final String pos, final Category category, final Coindexation coindexation,
 			final Optional<CCGandSRLparse> parse, final int wordIndex) {
 		if (parse.isPresent() && getLemma(word, pos, parse, wordIndex).equals("be")
 				&& category.getNumberOfArguments() == 2
