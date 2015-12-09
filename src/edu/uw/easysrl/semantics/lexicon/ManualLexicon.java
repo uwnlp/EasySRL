@@ -31,7 +31,7 @@ public class ManualLexicon extends Lexicon {
 	}
 
 	@Override
-	Logic getEntry(final String word, final String pos, final Category category, final Coindexation coindexation,
+	public Logic getEntry(final String word, final String pos, final Category category, final Coindexation coindexation,
 			final Optional<CCGandSRLparse> parse, final int wordIndex) {
 		final String lemma = getLemma(word, pos, parse, wordIndex);
 

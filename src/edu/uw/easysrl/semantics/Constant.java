@@ -19,6 +19,14 @@ public class Constant extends Logic {
 		this.type = type;
 	}
 
+	public String getName() {
+		return name;
+	}
+	
+	public SemanticType getSemanticType() {
+		return type;
+	}
+	
 	@Override
 	public Logic doSubstitution(final Substitution substitution) {
 		return this;
@@ -33,7 +41,7 @@ public class Constant extends Logic {
 	public SemanticType getType() {
 		return type;
 	}
-
+	
 	@Override
 	protected Logic alphaReduce(final Map<Variable, Variable> update) {
 		return this;
