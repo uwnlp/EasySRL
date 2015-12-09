@@ -20,6 +20,7 @@ public abstract class PrepositionFeature extends Feature {
 	private static final long serialVersionUID = -7424348475245869871L;
 
 	private final FeatureKey defaultKey;
+	private int defaultIndex = 0;
 	private double defaultScore = Double.MIN_VALUE;
 
 	private final static PrepositionFeature wordAndPrepositionFeature = new PrepositionFeature() {
@@ -85,9 +86,13 @@ public abstract class PrepositionFeature extends Feature {
 		this.defaultKey = new FeatureKey(super.id);
 	}
 
+	@Override
 	public FeatureKey getDefault() {
 		return defaultKey;
 	}
+
+	@Override
+	public void resetDefaultIndex() { defaultIndex = 0; }
 
 	public Integer getFeatureIndex(final List<InputWord> words,
 			final int wordIndex, final Category category,
@@ -97,7 +102,10 @@ public abstract class PrepositionFeature extends Feature {
 				preposition, argumentNumber);
 		Integer result = featureToIndex.get(featureKey);
 		if (result == null) {
-			result = featureToIndex.get(defaultKey);
+			if (defaultIndex == 0) {
+				defaultIndex = featureToIndex.get(defaultKey);
+			}
+			return defaultIndex;
 		}
 		return result;
 	}

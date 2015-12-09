@@ -58,6 +58,11 @@ public class DenseLexicalFeature extends LexicalCategoryFeature {
 		return defaultKey;
 	}
 
+	@Override
+	public void resetDefaultIndex() {
+		// Do nothing.
+	}
+
 	public List<Map<Category, Double>> getCategoryScores(final List<InputWord> words, final double supertaggerWeight) {
 		return tagger.getCategoryScores(words, supertaggerWeight);
 	}

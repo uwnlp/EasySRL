@@ -28,8 +28,14 @@ public abstract class BilexicalFeature extends Feature {
 		this.defaultKey = new FeatureKey(super.id);
 	}
 
+	@Override
 	public FeatureKey getDefault() {
 		return defaultKey;
+	}
+
+	@Override
+	public void resetDefaultIndex() {
+		defaultIndex = 0;
 	}
 
 	public int getFeatureIndex(final List<InputWord> words,

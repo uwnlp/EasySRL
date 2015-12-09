@@ -102,7 +102,7 @@ public class Training {
 		for (final String file : trainingSettings.getProperty("clusterings").split(",")) {
 			clusterings.add(new Clustering(new File(file), false));
 		}
-
+		
 		final boolean local = args.length == 1;
 
 		for (final int minFeatureCount : parseIntegers(trainingSettings, "minimum_feature_frequency")) {
@@ -192,9 +192,10 @@ public class Training {
 		return parseStrings(settings, field).stream().map(x -> Double.valueOf(x)).collect(Collectors.toList());
 	}
 
-	private List<TrainingExample> makeTrainingData(final boolean small) throws IOException {
-		return new TrainingDataLoader(cutoffsDictionary, dataParameters, true).makeTrainingData(
-				ParallelCorpusReader.READER.readCorpus(small), small);
+	private List<TrainingExample> makeTrainingData(final boolean isDev) throws IOException {
+		boolean singleThread = isDev;
+		return new TrainingDataLoader(cutoffsDictionary, dataParameters, true /* backoff */).makeTrainingData(
+				ParallelCorpusReader.READER.readCorpus(isDev), singleThread);
 	}
 
 	private double[] trainLocal() throws IOException {
@@ -202,7 +203,7 @@ public class Training {
 		final Map<FeatureKey, Integer> featureToIndex = makeKeyToIndexMap(trainingParameters.minimumFeatureFrequency,
 				boundedFeatures);
 
-		final List<TrainingExample> data = makeTrainingData(false);
+		final List<TrainingExample> data = makeTrainingData(false /* not dev */);
 
 		final LossFunction lossFunction = Optimization.getLossFunction(data, featureToIndex, trainingParameters,
 				trainingLogger);
@@ -223,7 +224,7 @@ public class Training {
 
 		final List<Runnable> tasks = new ArrayList<>();
 
-		final int sentencesToLoad = Iterators.size(ParallelCorpusReader.READER.readCorpus(false));
+		final int sentencesToLoad = Iterators.size(ParallelCorpusReader.READER.readCorpus(false /* not dev */));
 		final int shardSize = sentencesToLoad / workers.size();
 
 		int i = 0;
@@ -383,6 +384,7 @@ public class Training {
 			if (!result.containsKey(feature.getDefault())) {
 				result.put(feature.getDefault(), result.size());
 			}
+			feature.resetDefaultIndex();
 		}
 
 		System.out.println("Total features: " + result.size());
