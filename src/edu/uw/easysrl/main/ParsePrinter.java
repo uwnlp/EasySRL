@@ -1,7 +1,6 @@
 package edu.uw.easysrl.main;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,7 +10,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
-import edu.uw.easysrl.corpora.CCGBankDependencies;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
 import edu.uw.easysrl.lemmatizer.MorphaStemmer;
@@ -36,6 +34,7 @@ public abstract class ParsePrinter {
 	public final static ParsePrinter SUPERTAG_PRINTER = new SupertagPrinter();
 	public final static ParsePrinter SRL_PRINTER = new SRLprinter();
 	public final static ParsePrinter LOGIC_PRINTER = new LogicPrinter();
+	public final static ParsePrinter DEPENDENCIES_PRINTER = new DependenciesPrinter();
 
 	public String print(final List<SyntaxTreeNode> parses, final int id) {
 		final StringBuilder result = new StringBuilder();
@@ -577,15 +576,15 @@ public abstract class ParsePrinter {
 		}
 
 		private String makeCell(final Category category, final Optional<Logic> logic, final int width) {
-			return "<td colspan=" + width + "><center><hr style=\"margin:1px\"/>" + getCategoryHTML(category)
-					+ "<br><i>" + printLogic(logic) + "</i></center></td>";
+			return "<td colspan=" + width + "><center><hr style=\"margin:5px\"/>" + getCategoryHTML(category) + "<br>"
+					+ printLogic(logic) + "</center></td>";
 		}
 
 		private String makeCell(final String word, final Category category, final Optional<Logic> logic,
 				final int index, final int parseNumber) {
 			return "<td id=w" + index + "." + parseNumber + "><center><font face=\"Arial\">" + word
-					+ "</font><hr style=\"margin:1px\" />" + getCategoryHTML(category) + "<br><i>" + printLogic(logic)
-					+ "</i></center></td>";
+					+ "</font><hr style=\"margin:5px\" />" + getCategoryHTML(category) + "<br>" + printLogic(logic)
+					+ "</center></td>";
 		}
 
 		private String getCategoryHTML(final Category c) {
@@ -597,7 +596,7 @@ public abstract class ParsePrinter {
 
 		private String printLogic(final Optional<Logic> logic) {
 			if (logic.isPresent()) {
-				return Logic2Html.getHTML(logic.get());
+				return "<font face=\"serif\"><i>" + Logic2Html.getHTML(logic.get()) + "</i></font>";
 			} else {
 				return "&nbsp;";
 			}
@@ -944,56 +943,46 @@ public abstract class ParsePrinter {
 
 		@Override
 		void printFileHeader(final StringBuilder result) {
-			result.append("Empty header\n");
-			result.append("To keep C&C evaluate script happy\n");
-			result.append("\n");
+
 		}
 
 		@Override
 		void printFailure(final StringBuilder result) {
+
 		}
 
 		@Override
 		void printHeader(final int id, final StringBuilder result) {
+
 		}
 
 		@Override
 		void printFooter(final StringBuilder result) {
+
 		}
 
 		@Override
 		void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
-			/*
-			 * Pierre_1 (N{Y}/N{Y}<1>){_} 1 Vinken_2 0 61_4 (N{Y}/N{Y}<1>){_} 1 years_5 0 old_6
-			 * ((S[adj]{_}\NP{Y}<1>){_}\NP{Z}<2>){_} 2 years_5 0 old_6 ((S[adj]{_}\NP{Y}<1>){_}\NP{Z}<2>){_} 1 Vinken_2
-			 * 6 the_10 (NP[nb]{Y}/N{Y}<1>){_} 1 board_11 0 join_9 ((S[b]{_}\NP{Y}<1>){_}/NP{Z}<2>){_} 2 board_11 0
-			 * nonexecutive_14 (N{Y}/N{Y}<1>){_} 1 director_15 0 a_13 (NP[nb]{Y}/N{Y}<1>){_} 1 director_15 0 as_12
-			 * (((S[X]{Y}\NP{Z}){Y}\(S[X]{Y}<1>\NP{Z}){Y}){_}/NP{W}<2>){_} 3 director_15 0 as_12
-			 * (((S[X]{Y}\NP{Z}){Y}\(S[X]{Y}<1>\NP{Z}){Y}){_}/NP{W}<2>){_} 2 join_9 0 Nov._16
-			 * (((S[X]{Y}\NP{Z}){Y}\(S[X]{Y}<1>\NP{Z}){Y}){_}/N[num]{W}<2>){_} 3 29_17 0 Nov._16
-			 * (((S[X]{Y}\NP{Z}){Y}\(S[X]{Y}<1>\NP{Z}){Y}){_}/N[num]{W}<2>){_} 2 join_9 0 will_8
-			 * ((S[dcl]{_}\NP{Y}<1>){_}/(S[b]{Z}<2>\NP{Y*}){Z}){_} 2 join_9 0 will_8
-			 * ((S[dcl]{_}\NP{Y}<1>){_}/(S[b]{Z}<2>\NP{Y*}){Z}){_} 1 Vinken_2 0 join_9
-			 * ((S[b]{_}\NP{Y}<1>){_}/NP{Z}<2>){_} 1 Vinken_2 0 ((S[dcl]{X}\NP{Y}<15>){X}/(S[b]{Z}<16>\NP{Y*}){Z}){X}
-			 * <c> Pierre|NNP|N/N Vinken|NNP|N ,|,|, 61|CD|N/N years|NNS|N old|JJ|(S[adj]\NP)\NP ,|,|,
-			 * will|MD|(S[dcl]\NP)/(S[b]\NP) join|VB|(S[b]\NP)/NP the|DT|NP[nb]/N board|NN|N as|IN|((S\NP)\(S\NP))/NP
-			 * a|DT|NP[nb]/N nonexecutive|JJ|N/N director|NN|N Nov.|NNP|((S\NP)\(S\NP))/N[num] 29|CD|N[num] .|.|.
-			 */
-			String depParse;
+			final List<String> words = parse.getLeaves().stream().map(x -> x.getWord()).collect(Collectors.toList());
+			for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
+				result.append(words.get(dep.getHead()));
+				result.append("\t");
+				result.append(dep.getHead());
+				result.append("\t");
+				result.append(dep.getSemanticRole());
+				result.append("\t");
+				result.append(words.get(dep.getArgumentIndex()));
+				result.append("\t");
+				result.append(dep.getArgumentIndex());
+				result.append("\t");
+				result.append(dep.getCategory());
+				result.append("\t");
+				result.append(dep.getArgNumber());
+				result.append("\t");
+				result.append(dep.getPreposition());
+				result.append("\n");
+			}
 
-			depParse = CCGBankDependencies.getDependenciesAsString(Arrays.asList(parse), sentenceNumber);
-			for (final String line : depParse.split("\n")) {
-				if (!line.startsWith("#") && !line.trim().isEmpty()) {
-					result.append(line);
-					result.append("\n");
-				}
-			}
-			result.append("<c>");
-			for (final SyntaxTreeNodeLeaf word : parse.getLeaves()) {
-				result.append(" " + word.getWord() + "|" + (word.getPos() == null ? "" : word.getPos()) + "|"
-						+ word.getCategory());
-			}
-			result.append("\n");
 		}
 
 		@Override
