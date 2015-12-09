@@ -98,11 +98,9 @@ public class Training {
 
 		// Dummy clustering (i.e. words)
 		clusterings.add(null);
-/* TODO: remove later
 		for (final String file : trainingSettings.getProperty("clusterings").split(",")) {
 			clusterings.add(new Clustering(new File(file), false));
 		}
-*/
 		final boolean local = args.length == 1;
 
 		for (final int minFeatureCount : parseIntegers(trainingSettings, "minimum_feature_frequency")) {

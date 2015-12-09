@@ -92,9 +92,6 @@ class TrainingDataLoader {
 						if (trainingExample != null) {
 							synchronized (result) {
 								result.add(trainingExample);
-								if (result.size() % 100 == 0) {
-									System.out.println("Processed\t" + result.size() + " sentences.");
-								}
 							}
 						}
 
