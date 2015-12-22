@@ -642,7 +642,7 @@ public abstract class Combinator {
 
 		private final Category ngVP = Category.valueOf("S[ng]\\NP");
 		private final Category pssVP = Category.valueOf("S[pss]\\NP");
-		private final Logic semantics = LogicParser.fromString("#p#q#x#e . q(x,e) & p(x,e)",
+		private final Logic semantics = LogicParser.fromString("#p#q#x#e . q(x,e) & \\exists e1[p(x,e1) & ARG(e, e1)]",
 				Category.make(Category.ADVERB, Slash.FWD, ngVP));
 
 		private final DependencyStructure dependencyStructure = DependencyStructure.makeUnaryRuleTransformation(
