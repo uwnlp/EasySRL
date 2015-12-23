@@ -35,7 +35,7 @@ public abstract class LogicParser {
 
 		@Override
 		boolean canApply(final String input, final Map<String, Variable> nameToVar) {
-			return nameToVar.containsKey(input) && isAlphaNumeric(input);
+			return nameToVar.containsKey(input) && isVariableName(input);
 		}
 
 	};
@@ -43,9 +43,13 @@ public abstract class LogicParser {
 	boolean isAlphaNumeric(final String input) {
 		return input.matches("[a-zA-Z0-9_]+");
 	}
+	
+	boolean isVariableName(final String input) {
+		return input.matches("[a-zA-Z0-9_]+'*");
+	}
 
 	Variable bindVar(final String name, SemanticType type, final Map<String, Variable> nameToVar) {
-		Preconditions.checkState(isAlphaNumeric(name), "Expected variable name, but found: " + name);
+		Preconditions.checkState(isVariableName(name), "Expected variable name, but found: " + name);
 		Preconditions.checkState(!(nameToVar.containsKey(name)), "Variable name already bound: " + name);
 		if (type == null) {
 			// Guess a semantic type based on the variable name.
@@ -130,21 +134,34 @@ public abstract class LogicParser {
 
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
-			final Operator op = getOp(input);
-			return new OperatorSentence(op, (Sentence) parse(input.substring(op.toString().length() + 1), nameToVar));
+			final String opString = getOpString(input);
+			final Operator op = getOp(opString);
+			return new OperatorSentence(op, (Sentence) parse(input.substring(opString.length()), nameToVar));
 
 		}
 
 		@Override
 		boolean canApply(final String input, final Map<String, Variable> nameToVar) {
-			return getOp(input) != null;
+			return getOpString(input) != null;
 		}
 
-		private Operator getOp(final String input) {
+		private String getOpString(String input) {
 			for (final Operator op : OperatorSentence.Operator.values()) {
 				// \not p(x)
 				if (input.startsWith("\\")
 						&& input.substring(1, op.toString().length() + 1).equalsIgnoreCase(op.toString())) {
+					return input.substring(0, op.toString().length() + 1);
+				} else if (input.startsWith(op.asString())) {
+					return op.asString();
+				}
+			}
+			return null;
+		}
+		
+		private Operator getOp(final String opString) {
+			for (final Operator op : OperatorSentence.Operator.values()) {
+				// \not p(x)
+				if (opString.equals(op.toString()) || opString.equals(op.asString())) {
 					return op;
 				}
 			}
@@ -157,8 +174,9 @@ public abstract class LogicParser {
 
 		@Override
 		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
-			final Quantifier quantifier = getOp(input);
-			final String afterQuantifier = input.substring(quantifier.toString().length() + 1).trim();
+			final String opString = getOpString(input);
+			final Quantifier quantifier = getOp(opString);
+			final String afterQuantifier = input.substring(opString.length()).trim();
 			final int bracket = afterQuantifier.indexOf("[");
 			Preconditions.checkState(bracket > -1);
 			final String name = afterQuantifier.substring(0, bracket);
@@ -173,10 +191,19 @@ public abstract class LogicParser {
 
 		@Override
 		boolean canApply(final String input, final Map<String, Variable> nameToVar) {
-			return getOp(input) != null;
+			return getOpString(input) != null;
 		}
 
-		private Quantifier getOp(final String input) {
+		private Quantifier getOp(final String opString) {
+			for (final Quantifier op : Quantifier.values()) {
+				if (opString.equals(op.getSymbol()) || opString.equals("\\" + op.toString())) {
+					return op;
+				}
+			}
+			return null;
+		}
+		
+		private String getOpString(final String input) {
 			if (!input.endsWith("]")) {
 				return null;
 			}
@@ -184,7 +211,10 @@ public abstract class LogicParser {
 				if (// \exists
 						(input.startsWith("\\") && input.length() > op.toString().length() && input
 								.substring(1, op.toString().length() + 1).toUpperCase().equals(op.toString()))) {
-					return op;
+					return input
+							.substring(0, op.toString().length() + 1).toUpperCase();
+				} else if (input.startsWith(op.getSymbol())) {
+					return op.getSymbol();
 				}
 			}
 			return null;
@@ -291,11 +321,39 @@ public abstract class LogicParser {
 			return input.startsWith("sk(") && Util.findClosingBracket(input, "sk(".length() - 1) == input.length() - 1;
 		}
 	};
+	
+	private static LogicParser SET_PARSER = new LogicParser() {
+
+		@Override
+		Logic fromString2(final String input, final Map<String, Variable> nameToVar) {
+			String argumentsString = input.substring(1, input.length() - 1);
+			final List<Logic> arguments = new ArrayList<>();
+			int comma = Util.findNonNestedChar(argumentsString, ",");
+			while (comma != -1) {
+				final String argumentString = argumentsString.substring(0, comma);
+				arguments.add(parse(argumentString, nameToVar));
+
+				argumentsString = argumentsString.substring(comma + 1);
+				comma = Util.findNonNestedChar(argumentsString, ",");
+			}
+			arguments.add(parse(argumentsString, nameToVar));
+			
+			Logic setExpression = new Set(arguments);
+			
+			return setExpression;
+		}
+
+		@Override
+		boolean canApply(final String input, final Map<String, Variable> nameToVar) {
+			return input.startsWith("{") && input.endsWith("}");
+		}
+		
+	};
 
 	// This list defines precedence
 	private final static List<LogicParser> parsers = Arrays.asList(BRACKETS_PARSER, LAMBDA_EXPRESSION_PARSER,
 			CONNECTIVE_SENTENCE_PARSER, SKOLEM_PARSER, QUANTIFIER_SENTENCE_PARSER, OPERATOR_SENTENCE_PARSER,
-			ATOMIC_SENTENCE_PARSER, VARIABLE_PARSER, CONSTANT_PARSER);
+			ATOMIC_SENTENCE_PARSER, VARIABLE_PARSER, CONSTANT_PARSER, SET_PARSER);
 
 	public static Logic fromString(final String input, final Category category) {
 		return fromString(input, category, new HashMap<String, Variable>());
