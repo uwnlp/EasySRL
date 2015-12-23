@@ -237,9 +237,9 @@ public class Util {
 		int openBrackets = 0;
 
 		for (int i = 0; i < haystack.length(); i++) {
-			if (haystack.charAt(i) == '(' || haystack.charAt(i) == '[') {
+			if (haystack.charAt(i) == '(' || haystack.charAt(i) == '[' || haystack.charAt(i) == '{') {
 				openBrackets++;
-			} else if (haystack.charAt(i) == ')' || haystack.charAt(i) == ']') {
+			} else if (haystack.charAt(i) == ')' || haystack.charAt(i) == ']' || haystack.charAt(i) == '}') {
 				openBrackets--;
 			} else if (openBrackets == 0) {
 				for (int j = 0; j < needles.length(); j++) {

@@ -90,6 +90,7 @@ public class ConnectiveSentence extends Sentence {
 
 	@Override
 	void toString(final StringBuilder result, final VariableNames varToName) {
+		result.append("(");
 		boolean isFirst = true;
 		for (final Sentence child : children) {
 			if (isFirst) {
@@ -99,6 +100,7 @@ public class ConnectiveSentence extends Sentence {
 			}
 			child.toString(result, varToName);
 		}
+		result.append(")");
 	}
 
 	@Override
