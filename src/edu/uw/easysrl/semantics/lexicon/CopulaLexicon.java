@@ -6,9 +6,12 @@ import java.util.Optional;
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.semantics.AtomicSentence;
+import edu.uw.easysrl.semantics.Constant;
 import edu.uw.easysrl.semantics.LambdaExpression;
 import edu.uw.easysrl.semantics.Logic;
+import edu.uw.easysrl.semantics.SemanticType;
 import edu.uw.easysrl.semantics.Variable;
+import edu.uw.easysrl.semantics.SemanticType.ComplexSemanticType;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -53,7 +56,14 @@ public class CopulaLexicon extends Lexicon {
 				statement = new AtomicSentence(getPrepositionPredicate(deps, 0, parse), vars.get(0), vars.get(1), head);
 			} else {
 				// S\NP/NP
-				statement = new AtomicSentence(equals, vars.get(0), vars.get(1), head);
+				SemanticType type = SemanticType.T;
+				type = ComplexSemanticType.make(head.getType(), type);
+				type = ComplexSemanticType.make(vars.get(1).getType(), type);
+				type = ComplexSemanticType.make(vars.get(0).getType(), type);
+				
+				Constant pred = new Constant("eq", type);
+				
+				statement = new AtomicSentence(pred, vars.get(0), vars.get(1), head);
 			}
 		}
 
