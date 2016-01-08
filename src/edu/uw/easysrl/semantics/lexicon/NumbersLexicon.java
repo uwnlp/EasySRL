@@ -20,7 +20,7 @@ public class NumbersLexicon extends Lexicon {
 		if (category == Category.ADJECTIVE && pos.equals("CD")) {
 			// Lots of room for improvement here...
 			return LogicParser.fromString("#y#p#x.p(x) & eq(size(x), y)", Category.valueOf("(N/N)/NP")).apply(
-					new Constant(getLemma(word, pos, parse, wordIndex), SemanticType.makeFromCategory(Category.N)));
+					new Constant(getLemma(word, pos, parse, wordIndex), SemanticType.makeFromCategory(Category.NP)));
 		}
 
 		return null;
