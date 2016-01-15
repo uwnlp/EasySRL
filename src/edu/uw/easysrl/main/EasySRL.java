@@ -65,7 +65,7 @@ public class EasySRL {
 		@Option(shortName = "i", defaultValue = "tokenized", description = "(Optional) Input Format: one of \"tokenized\", \"POStagged\" (word|pos), or \"POSandNERtagged\" (word|pos|ner)")
 		String getInputFormat();
 
-		@Option(shortName = "o", description = "Output Format: one of \"logic\" \"srl\", \"ccgbank\", \"html\", \"dependencies\" or \"supertagged\"", defaultValue = "logic")
+		@Option(shortName = "o", description = "Output Format: one of \"logic\", \"srl\", \"srl_indices\", \"ccgbank\", \"html\", \"dependencies\" or \"supertagged\"", defaultValue = "logic")
 		String getOutputFormat();
 
 		@Option(shortName = "a", description = "(Optional) Parsing algorithm: one of \"astar\" or \"cky\"", defaultValue = "astar")
@@ -100,8 +100,8 @@ public class EasySRL {
 	public enum OutputFormat {
 		CCGBANK(ParsePrinter.CCGBANK_PRINTER), HTML(ParsePrinter.HTML_PRINTER), SUPERTAGS(ParsePrinter.SUPERTAG_PRINTER), PROLOG(
 				ParsePrinter.PROLOG_PRINTER), EXTENDED(ParsePrinter.EXTENDED_CCGBANK_PRINTER), DEPENDENCIES(
-				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
-								ParsePrinter.LOGIC_PRINTER);
+				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), SRL_INDICES(
+								ParsePrinter.SRL_PRINTER_WITH_INDICES), LOGIC(ParsePrinter.LOGIC_PRINTER);
 
 		public final ParsePrinter printer;
 

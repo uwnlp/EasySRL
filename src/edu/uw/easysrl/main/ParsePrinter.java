@@ -32,7 +32,8 @@ public abstract class ParsePrinter {
 	public final static ParsePrinter PROLOG_PRINTER = new PrologPrinter();
 	public final static ParsePrinter EXTENDED_CCGBANK_PRINTER = new ExtendedCCGBankPrinter();
 	public final static ParsePrinter SUPERTAG_PRINTER = new SupertagPrinter();
-	public final static ParsePrinter SRL_PRINTER = new SRLprinter();
+	public final static ParsePrinter SRL_PRINTER = new SRLprinter(false);
+	public final static ParsePrinter SRL_PRINTER_WITH_INDICES = new SRLprinter(true);
 	public final static ParsePrinter LOGIC_PRINTER = new LogicPrinter();
 	public final static ParsePrinter DEPENDENCIES_PRINTER = new DependenciesPrinter();
 
@@ -215,6 +216,11 @@ public abstract class ParsePrinter {
 	}
 
 	private static class SRLprinter extends ParsePrinter {
+		private final boolean includeWordIndices;
+
+		public SRLprinter(final boolean includeWordIndices) {
+			this.includeWordIndices = includeWordIndices;
+		}
 
 		@Override
 		protected void printFileHeader(final StringBuilder result) {
@@ -236,13 +242,13 @@ public abstract class ParsePrinter {
 		protected void printParse(final SyntaxTreeNode parse, final int sentenceNumber, final StringBuilder result) {
 			final List<ResolvedDependency> deps = parse.getAllLabelledDependencies();
 			for (final ResolvedDependency dep : deps) {
-				// output = output + "\n" + dep.toString();
 				if (dep.getSemanticRole() != SRLFrame.NONE) {
+					final SyntaxTreeNode argumentConstituent = getArgumentConstituent(parse, dep);
 					result.append(getPredicate(parse, dep.getPropbankPredicateIndex()));
 					result.append(" " + dep.getSemanticRole());
-					final SyntaxTreeNode argumentConstituent = getArgumentConstituent(parse, dep);
 					int i = 0;
 					final List<SyntaxTreeNodeLeaf> argumentWords = argumentConstituent.getLeaves();
+					final List<Integer> indices = new ArrayList<>();
 					for (final SyntaxTreeNodeLeaf child : argumentWords) {
 						if (i == 0 && dep.getSemanticRole().isCoreArgument()
 								&& child.getCategory().isFunctionInto(Category.PP) && argumentWords.size() > 1) {
@@ -251,9 +257,12 @@ public abstract class ParsePrinter {
 							// Drop trailing punctutation
 						} else {
 							result.append(" " + child.getWord());
+							indices.add(child.getHeadIndex());
 						}
 						i++;
 					}
+
+					addIndices(result, indices);
 					result.append("\n");
 				}
 
@@ -267,8 +276,11 @@ public abstract class ParsePrinter {
 
 		private String getPredicate(final SyntaxTreeNode parse, final int index) {
 			final SyntaxTreeNodeLeaf node = parse.getLeaves().get(index);
-			final String result = node.getWord();
+			final StringBuilder result = new StringBuilder();
+			result.append(MorphaStemmer.stemToken(node.getWord()));
 			final Category category = node.getCategory();
+			final List<Integer> indices = new ArrayList<>();
+			indices.add(index);
 
 			// Add particles if necessary. e.g. give_up, take_off
 			for (int i = 1; i <= category.getNumberOfArguments(); i++) {
@@ -276,13 +288,30 @@ public abstract class ParsePrinter {
 					for (final ResolvedDependency dep : parse.getAllLabelledDependencies()) {
 						if (dep.getHead() == index && dep.getArgNumber() == i) {
 							final String particle = parse.getLeaves().get(dep.getArgumentIndex()).getWord();
-							return result + "_" + particle;
+							indices.add(dep.getArgumentIndex());
+							result.append("_");
+							result.append(particle);
+							break;
 						}
 					}
 				}
 			}
 
-			return result;
+			addIndices(result, indices);
+
+			return result.toString();
+		}
+
+		private void addIndices(final StringBuilder result, final List<Integer> indices) {
+			if (includeWordIndices) {
+				result.append("@");
+				for (int i = 0; i < indices.size(); i++) {
+					if (i > 0) {
+						result.append(",");
+					}
+					result.append(indices.get(i));
+				}
+			}
 		}
 
 		private SyntaxTreeNode getArgumentConstituent(final SyntaxTreeNode node, final ResolvedDependency dep) {
