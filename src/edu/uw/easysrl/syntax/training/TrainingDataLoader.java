@@ -18,7 +18,7 @@ import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.parser.AbstractParser;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
@@ -33,7 +33,7 @@ import edu.uw.easysrl.syntax.training.Optimization.TrainingExample;
  */
 class TrainingDataLoader {
 
-	private final CutoffsDictionary cutoffsDictionary;
+	private final CutoffsDictionaryInterface cutoffsDictionary;
 	private final TrainingDataParameters dataParameters;
 	private final Multimap<Category, UnaryRule> unaryRules;
 	private final CKY parser;
@@ -41,7 +41,7 @@ class TrainingDataLoader {
 	private final boolean backoff;
 	private final POSTagger posTagger;
 
-	TrainingDataLoader(final CutoffsDictionary cutoffsDictionary, final TrainingDataParameters dataParameters,
+	TrainingDataLoader(final CutoffsDictionaryInterface cutoffsDictionary, final TrainingDataParameters dataParameters,
 			final boolean backoff) {
 		super();
 		this.cutoffsDictionary = cutoffsDictionary;
@@ -162,7 +162,8 @@ class TrainingDataLoader {
 			}
 
 			// Now find the parses which are maximally consistent with the SRL.
-			final CompressedChart goldChart = new GoldChartFinder(smallChart).goldChart(sentence, cutoffsDictionary);
+			final CompressedChart goldChart = new GoldChartFinder(smallChart, dataParameters.usingCCGbankDependencies)
+			.goldChart(sentence, cutoffsDictionary);
 
 			if (goldChart == null) {
 				// No matched dependencies, so we can't learn against this
@@ -182,6 +183,7 @@ class TrainingDataLoader {
 	}
 
 	static class TrainingDataParameters implements Serializable {
+		public boolean usingCCGbankDependencies;
 		private final double supertaggerBeamForGoldCharts;
 		/**
 		 *
@@ -195,7 +197,7 @@ class TrainingDataLoader {
 
 		TrainingDataParameters(final double supertaggerBeam, final int maxTrainingSentenceLength,
 				final Collection<Category> possibleRootCategories, final File existingModel, final int maxChartSize,
-				final double supertaggerBeamForGoldCharts) {
+				final double supertaggerBeamForGoldCharts, final boolean usingCCGbankDependencies) {
 			super();
 			this.supertaggerBeam = supertaggerBeam;
 			this.maxTrainingSentenceLength = maxTrainingSentenceLength;
@@ -204,6 +206,7 @@ class TrainingDataLoader {
 			this.supertaggerBeamForGoldCharts = supertaggerBeamForGoldCharts;
 
 			this.maxChartSize = maxChartSize;
+			this.usingCCGbankDependencies = usingCCGbankDependencies;
 
 			try {
 				this.unaryRules = AbstractParser.loadUnaryRules(new File(existingModel, "unaryRules"));

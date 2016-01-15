@@ -12,10 +12,8 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.uw.easysrl.util.Util;
 
-public abstract class Category implements Serializable {
-	/**
-	 *
-	 */
+public abstract class Category implements Serializable, Comparable<Category> {
+
 	private static final long serialVersionUID = -9163900631701144973L;
 	private final String asString;
 	private final int id;
@@ -25,7 +23,6 @@ public abstract class Category implements Serializable {
 
 	private final static Map<String, Category> cache = new HashMap<>();
 
-	private final Category withoutAnnotion;
 	public static final Category COMMA = valueOf(",");
 	public static final Category CONJ = valueOf("conj");
 	public static final Category LQU = valueOf("LQU");
@@ -47,12 +44,11 @@ public abstract class Category implements Serializable {
 	public static final Category POSSESSIVE_PRONOUN = valueOf("NP/(N/PP)");
 	public static final Category S = valueOf("S");
 	public static final Category ADJECTIVE = valueOf("N/N");
+	public static final Category DETERMINER = Category.valueOf("NP[nb]/N");
 
-	private Category(final String asString, final String semanticAnnotation) {
-		this.asString = asString + (semanticAnnotation == null ? "" : "{" + semanticAnnotation + "}");
+	private Category(final String asString) {
+		this.asString = asString;
 		this.id = numCats.getAndIncrement();
-		this.withoutAnnotion = semanticAnnotation == null ? this : valueOf(asString);
-
 	}
 
 	public static int numberOfCategories() {
@@ -95,10 +91,6 @@ public abstract class Category implements Serializable {
 		public boolean matches(final Slash other) {
 			return this == EITHER || this == other;
 		}
-	}
-
-	public Category withoutAnnotation() {
-		return withoutAnnotion;
 	}
 
 	public static Category valueOf(final String cat) {
@@ -154,15 +146,6 @@ public abstract class Category implements Serializable {
 		// Categories have the form: ((X/Y)\Z[feature]){ANNOTATION}
 		String newSource = source;
 
-		String semanticAnnotation;
-		if (newSource.endsWith("}")) {
-			final int openIndex = newSource.lastIndexOf("{");
-			semanticAnnotation = newSource.substring(openIndex + 1, newSource.length() - 1);
-			newSource = newSource.substring(0, openIndex);
-		} else {
-			semanticAnnotation = null;
-		}
-
 		if (newSource.startsWith("(")) {
 			final int closeIndex = Util.findClosingBracket(newSource);
 
@@ -195,16 +178,15 @@ public abstract class Category implements Serializable {
 				throw new RuntimeException("Can only handle single features: " + source);
 			}
 
-			final Category c = new AtomicCategory(base, features.size() == 0 ? null : features.get(0),
-					semanticAnnotation);
+			final String feature = features.size() == 0 ? null : features.get(0);
+			final Category c = new AtomicCategory(base, feature);
 			return c;
 		} else {
 			// Functor Category
 
 			final Category left = valueOf(newSource.substring(0, opIndex));
 			final Category right = valueOf(newSource.substring(opIndex + 1, endIndex));
-			return new FunctorCategory(left, Slash.fromString(newSource.substring(opIndex, opIndex + 1)), right,
-					semanticAnnotation);
+			return new FunctorCategory(left, Slash.fromString(newSource.substring(opIndex, opIndex + 1)), right);
 		}
 	}
 
@@ -253,9 +235,8 @@ public abstract class Category implements Serializable {
 		private final Slash slash;
 		private final boolean isMod;
 
-		private FunctorCategory(final Category left, final Slash slash, final Category right,
-				final String semanticAnnotation) {
-			super(left.toStringWithBrackets() + slash + right.toStringWithBrackets(), semanticAnnotation);
+		private FunctorCategory(final Category left, final Slash slash, final Category right) {
+			super(left.toStringWithBrackets() + slash + right.toStringWithBrackets());
 			this.left = left;
 			this.right = right;
 			this.slash = slash;
@@ -429,8 +410,8 @@ public abstract class Category implements Serializable {
 
 		private static final long serialVersionUID = -1021124001104979306L;
 
-		private AtomicCategory(final String type, final String feature, final String semanticAnnotation) {
-			super(type + (feature == null ? "" : "[" + feature + "]"), semanticAnnotation);
+		private AtomicCategory(final String type, final String feature) {
+			super(type + (feature == null ? "" : "[" + feature + "]"));
 			this.type = type;
 			this.feature = feature;
 			isPunctuation = !type.matches("[A-Za-z]+") || bracketAndQuoteCategories.contains(type);
@@ -449,14 +430,15 @@ public abstract class Category implements Serializable {
 			return !other.isFunctor()
 					&& type.equals(other.getType())
 					&& (feature == null || feature.equals(other.getFeature()) || WILDCARD_FEATURE.equals(getFeature())
-					|| WILDCARD_FEATURE.equals(other.getFeature()) || feature.equals("nb") // Ignoring the
+							|| WILDCARD_FEATURE.equals(other.getFeature()) || feature.equals("nb") // Ignoring the
 					// NP[nb] feature,
 					// which isn't very helpful. For
 					// example, it stops us
 					// coordinating
 					// "John and a girl",
 					// because "and a girl" ends up with a NP[nb]\NP[nb] tag.
-							);
+
+					);
 		}
 
 		/**
@@ -657,6 +639,18 @@ public abstract class Category implements Serializable {
 
 	public Category addAnnotation(final String annotation) {
 		return valueOf(toString() + "{" + annotation + "}");
+	}
+
+	public Category withoutAnnotation() {
+		return this;
+	}
+
+	@Override
+	/**
+	 * Implementing Comparable for use in TreeMaps.
+	 */
+	public int compareTo(final Category other) {
+		return id - other.id;
 	}
 
 }

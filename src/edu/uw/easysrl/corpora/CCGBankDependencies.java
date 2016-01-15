@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashBasedTable;
@@ -19,10 +20,13 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 import com.google.common.io.Files;
 
+import edu.uw.easysrl.dependencies.ResolvedDependency;
+import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.main.ParsePrinter;
 import edu.uw.easysrl.rebanking.Rebanker;
 import edu.uw.easysrl.syntax.grammar.Category;
+import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.util.Util;
@@ -186,12 +190,15 @@ public class CCGBankDependencies implements Serializable {
 		private final String file;
 		private final int sentenceNumber;
 		private final int sentenceLength;
+		private final List<SyntaxTreeNodeLeaf> leaves;
 
-		private DependencyParse(final String file, final int sentenceNumber, final List<InputWord> words) {
+		private DependencyParse(final String file, final int sentenceNumber, final List<InputWord> words,
+				final List<SyntaxTreeNodeLeaf> leaves) {
 			this.file = file;
 			this.sentenceNumber = sentenceNumber;
 			this.sentenceLength = words.size();
 			this.words = words;
+			this.leaves = leaves;
 		}
 
 		private void addDependency(final CCGBankDependency dep) {
@@ -217,6 +224,32 @@ public class CCGBankDependencies implements Serializable {
 
 		public Collection<CCGBankDependency> getDependencies() {
 			return allDependencies;
+		}
+
+		public Collection<ResolvedDependency> getResolvedDependencies() {
+			return allDependencies
+					.stream()
+					.map(x -> new ResolvedDependency(x.sentencePositionOfPredicate, leaves.get(
+							x.sentencePositionOfPredicate).getCategory(), x.argumentNumber,
+							x.sentencePositionOfArgument, SRLLabel.fromString("ARG" + (x.argumentNumber - 1)),
+							getPrepostion(x))).collect(Collectors.toList());
+		}
+
+		private Preposition getPrepostion(final CCGBankDependency dep) {
+			Preposition preposition;
+			if (dep.getCategory().getArgument(dep.getArgNumber()) == Category.PP) {
+				// Prepositons are the heads of PP's in CCGBank v1. Hmm.
+				preposition = Preposition.fromString(dep.getArgumentWord());
+
+			} else {
+				preposition = Preposition.NONE;
+			}
+
+			return preposition;
+		}
+
+		public List<SyntaxTreeNodeLeaf> getLeaves() {
+			return leaves;
 		}
 
 		public boolean containsDependency(final int i, final int j) {
@@ -265,7 +298,7 @@ public class CCGBankDependencies implements Serializable {
 	private static DependencyParse getDependencyParseCandC(final Iterator<String> lines,
 			final List<SyntaxTreeNodeLeaf> supertags, final int id) {
 		// Pierre_1 N/N 1 Vinken_2
-		final DependencyParse result = new DependencyParse("", id, InputWord.fromLeaves(supertags));
+		final DependencyParse result = new DependencyParse("", id, InputWord.fromLeaves(supertags), supertags);
 
 		while (lines.hasNext()) {
 			final String line = lines.next();
@@ -311,7 +344,7 @@ public class CCGBankDependencies implements Serializable {
 			Preconditions.checkState(
 					Files.getNameWithoutExtension(autoFile.getName()).equals(
 							Files.getNameWithoutExtension(pargFile.getName())),
-					autoFile.getName() + " vs. " + pargFile.getName());
+							autoFile.getName() + " vs. " + pargFile.getName());
 
 			result.addAll(getDependencyParses(autoFile, pargFile));
 		}
@@ -352,7 +385,7 @@ public class CCGBankDependencies implements Serializable {
 		final int period = line.indexOf(".");
 		final String file = line.substring(quote1 + 1, period);
 		final int sentenceNumber = Integer.valueOf(line.substring(period + 1, quote2)) - 1;
-		final DependencyParse result = new DependencyParse(file, sentenceNumber, InputWord.fromLeaves(words));
+		final DependencyParse result = new DependencyParse(file, sentenceNumber, InputWord.fromLeaves(words), words);
 
 		while (lines.hasNext()) {
 			line = lines.next();

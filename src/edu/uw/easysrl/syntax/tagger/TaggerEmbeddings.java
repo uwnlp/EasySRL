@@ -23,7 +23,7 @@ import com.google.common.io.PatternFilenameFilter;
 
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.util.Util;
 
 public class TaggerEmbeddings extends Tagger {
@@ -67,7 +67,7 @@ public class TaggerEmbeddings extends Tagger {
 	private final Map<Category, Integer> categoryToIndex;
 
 	public TaggerEmbeddings(final File modelFolder, final double beta, final int maxTagsPerWord,
-			final CutoffsDictionary cutoffs) throws IOException {
+			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		super(cutoffs, beta, loadCategories(new File(modelFolder, "categories")), maxTagsPerWord);
 		try {
 			final FilenameFilter embeddingsFileFilter = new PatternFilenameFilter("embeddings.*");

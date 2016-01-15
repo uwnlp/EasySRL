@@ -31,6 +31,7 @@ public class AgendaItem implements Comparable<AgendaItem> {
 		this.startOfSpan = startIndex;
 		this.spanLength = length;
 		this.includeDeps = includeDeps;
+		this.key = getEquivalenceClassKey2();
 	}
 
 	/**
@@ -38,9 +39,11 @@ public class AgendaItem implements Comparable<AgendaItem> {
 	 */
 	@Override
 	public int compareTo(final AgendaItem o) {
-		final int result = Double.compare(o.getCost(), getCost());
+		return compare(o.getCost(), getCost());
+	}
 
-		return result;
+	private int compare(final double d1, final double d2) {
+		return d1 < d2 ? -1 : (d1 > d2 ? 1 : 0);
 	}
 
 	public SyntaxTreeNode getParse() {
@@ -63,7 +66,13 @@ public class AgendaItem implements Comparable<AgendaItem> {
 		return spanLength;
 	}
 
+	private final Object key;
+
 	public Object getEquivalenceClassKey() {
+		return key;
+	}
+
+	private Object getEquivalenceClassKey2() {
 
 		// Same category
 		// Same unused SRL labels
@@ -72,7 +81,10 @@ public class AgendaItem implements Comparable<AgendaItem> {
 		final RuleClass ruleClass = parse.getRuleClass();
 
 		return includeDeps ? new KeyWithDeps(parse.getCategory(), ruleClass, parse.getDependencyStructure(),
-				parse.getResolvedUnlabelledDependencies()) : new KeyNoDeps(parse.getCategory(), ruleClass);
+				parse.getResolvedUnlabelledDependencies())
+		// If not using dependencies, just use the Category as a key. Technically we should include the ruleClass too,
+		// but it doesn't affect results, and this way is much faster.
+				: parse.getCategory();
 	}
 
 	private static class KeyWithDeps {
@@ -107,28 +119,4 @@ public class AgendaItem implements Comparable<AgendaItem> {
 		}
 
 	}
-
-	private static class KeyNoDeps {
-		private final Category category;
-		private final RuleClass rule;
-
-		public KeyNoDeps(final Category category, final RuleClass ruleClass) {
-			super();
-			this.category = category.withoutAnnotation();
-			this.rule = ruleClass;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(category, rule);
-		}
-
-		@Override
-		public boolean equals(final Object obj) {
-
-			final AgendaItem.KeyNoDeps other = (AgendaItem.KeyNoDeps) obj;
-			return Objects.equals(category, other.category) && Objects.equals(rule, other.rule);
-		}
-	}
-
 }

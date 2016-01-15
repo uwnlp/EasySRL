@@ -75,7 +75,7 @@ public class NormalForm {
 		}
 
 		if ((leftRuleClass == RuleClass.LP && ruleType != RuleType.RP && isPrefixOfSentence)
-				|| rightRuleClass == RuleClass.RP || rightRuleClass == RuleClass.LP) {
+				|| rightRuleClass == RuleClass.LP) {
 			// Remove punctuation as late as possible.
 			return false;
 		}

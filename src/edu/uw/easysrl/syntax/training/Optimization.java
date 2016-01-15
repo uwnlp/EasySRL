@@ -25,7 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import edu.uw.easysrl.main.InputReader.InputWord;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.feature.Feature.FeatureKey;
 import edu.uw.easysrl.syntax.model.feature.FeatureSet;
 import edu.uw.easysrl.util.Util;
@@ -235,7 +235,7 @@ public class Optimization {
 		private final List<InputWord> words;
 
 		TrainingExample(final CompressedChart allParses, final CompressedChart goldParses, final List<InputWord> words,
-				final CutoffsDictionary cutoffsDictionary) {
+				final CutoffsDictionaryInterface cutoffsDictionary) {
 			super();
 			this.goldParses = new FeatureForest(words, goldParses, cutoffsDictionary);
 			this.allParses = new FeatureForest(words, allParses, cutoffsDictionary);

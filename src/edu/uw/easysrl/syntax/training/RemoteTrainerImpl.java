@@ -17,7 +17,7 @@ import java.util.Map;
 
 import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.feature.Feature.FeatureKey;
 import edu.uw.easysrl.syntax.training.Optimization.LossFunction;
 import edu.uw.easysrl.syntax.training.Optimization.TrainingExample;
@@ -81,7 +81,7 @@ RemoteTrainer {
 
 		final Training.TrainingParameters trainingParameters = Util
 				.deserialize(new File(modelFolder, "parameters"));
-		final CutoffsDictionary cutoffs = Util.deserialize(new File(
+		final CutoffsDictionaryInterface cutoffs = Util.deserialize(new File(
 				modelFolder, "cutoffs"));
 		final Map<FeatureKey, Integer> featureToIndex = Util
 				.deserialize(trainingParameters.getFeatureToIndexFile());

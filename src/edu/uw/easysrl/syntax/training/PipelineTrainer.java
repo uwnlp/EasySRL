@@ -33,10 +33,10 @@ import edu.uw.easysrl.util.Util;
  * Trains the pipeline model
  */
 public class PipelineTrainer extends
-		ClassifierTrainer<TrainingExample, AbstractFeature<TrainingExample, SRLLabel>, SRLLabel> {
+ClassifierTrainer<TrainingExample, AbstractFeature<TrainingExample, SRLLabel>, SRLLabel> {
 
-	static class TrainingExample extends
-			edu.uw.easysrl.syntax.training.ClassifierTrainer.AbstractTrainingExample<SRLLabel> {
+	public static class TrainingExample extends
+	edu.uw.easysrl.syntax.training.ClassifierTrainer.AbstractTrainingExample<SRLLabel> {
 		private final UnlabelledDependency dep;
 		private final List<InputWord> sentence;
 		private final SRLLabel label;
@@ -126,7 +126,7 @@ public class PipelineTrainer extends
 				data.add(new TrainingExample(new UnlabelledDependency(ccgbankDep.getSentencePositionOfPredicate(), cats
 						.get(ccgbankDep.getSentencePositionOfPredicate()), ccgbankDep.getArgNumber(), Arrays
 						.asList(ccgbankDep.getSentencePositionOfArgument()), Preposition.fromString(entry.getKey()
-						.getPreposition())), sentence.getInputWords(), entry.getKey().getLabel()));
+								.getPreposition())), sentence.getInputWords(), entry.getKey().getLabel()));
 			}
 
 			for (final CCGBankDependency dep : unlabelled) {
@@ -142,8 +142,8 @@ public class PipelineTrainer extends
 				}
 				data.add(new TrainingExample(new UnlabelledDependency(dep.getSentencePositionOfPredicate(), cats
 						.get(dep.getSentencePositionOfPredicate()), dep.getArgNumber(), Arrays.asList(dep
-						.getSentencePositionOfArgument()), Preposition.fromString(preposition)), sentence
-						.getInputWords(), SRLFrame.NONE));
+								.getSentencePositionOfArgument()), Preposition.fromString(preposition)), sentence
+								.getInputWords(), SRLFrame.NONE));
 			}
 		}
 		return data;
@@ -186,9 +186,9 @@ public class PipelineTrainer extends
 
 		@Override
 		public void getValue(final List<Object> result, final TrainingExample trainingExample, final SRLLabel label) {
-			for (final int value : slotFeature.getFeatureKey(trainingExample.sentence,
-					trainingExample.dep.getHead(), label, trainingExample.dep.getCategory(),
-					trainingExample.dep.getArgNumber(), trainingExample.dep.getPreposition()).getValues()) {
+			for (final int value : slotFeature.getFeatureKey(trainingExample.sentence, trainingExample.dep.getHead(),
+					label, trainingExample.dep.getCategory(), trainingExample.dep.getArgNumber(),
+					trainingExample.dep.getPreposition()).getValues()) {
 				result.add(value);
 			}
 		}

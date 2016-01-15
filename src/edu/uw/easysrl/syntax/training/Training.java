@@ -47,6 +47,7 @@ import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.feature.ArgumentSlotFeature;
 import edu.uw.easysrl.syntax.model.feature.BilexicalFeature;
 import edu.uw.easysrl.syntax.model.feature.Clustering;
@@ -76,10 +77,9 @@ import edu.uw.easysrl.util.Util.Logger;
 public class Training {
 
 	public static final List<Category> ROOT_CATEGORIES = Arrays.asList(Category.valueOf("S[dcl]"),
-			Category.valueOf("S[q]"), Category.valueOf("S[wq]"), Category.valueOf("NP"), Category.valueOf("S[qem]"),
-			Category.valueOf("S[b]\\NP")
+			Category.valueOf("S[q]"), Category.valueOf("S[wq]"), Category.valueOf("NP"), Category.valueOf("S[b]\\NP")
 
-			);
+	);
 
 	private final Logger trainingLogger;
 
@@ -102,7 +102,7 @@ public class Training {
 		for (final String file : trainingSettings.getProperty("clusterings").split(",")) {
 			clusterings.add(new Clustering(new File(file), false));
 		}
-		
+
 		final boolean local = args.length == 1;
 
 		for (final int minFeatureCount : parseIntegers(trainingSettings, "minimum_feature_frequency")) {
@@ -112,64 +112,68 @@ public class Training {
 						for (final double costFunctionWeight : parseDoubles(trainingSettings, "cost_function_weight")) {
 							for (final double beta : parseDoubles(trainingSettings, "beta_for_training_charts")) {
 
-								final File modelFolder = new File(trainingSettings.getProperty("output_folder")
-										.replaceAll("~", Util.getHomeFolder().getAbsolutePath()));
+								for (final boolean trainSupertaggerWeight : Arrays.asList(false, true)) {
+									final File modelFolder = new File(trainingSettings.getProperty("output_folder")
+											.replaceAll("~", Util.getHomeFolder().getAbsolutePath()));
 
-								modelFolder.mkdirs();
-								Files.copy(propertiesFile, new File(modelFolder, "training.properties"));
+									modelFolder.mkdirs();
+									Files.copy(propertiesFile, new File(modelFolder, "training.properties"));
 
-								// Pre-trained EasyCCG model
-								final File baseModel = new File(trainingSettings.getProperty(
-										"supertagging_model_folder").replaceAll("~",
-												Util.getHomeFolder().getAbsolutePath()));
+									// Pre-trained EasyCCG model
+									final File baseModel = new File(trainingSettings.getProperty(
+											"supertagging_model_folder").replaceAll("~",
+													Util.getHomeFolder().getAbsolutePath()));
 
-								if (!baseModel.exists()) {
-									throw new IllegalArgumentException("Supertagging model not found: "
-											+ baseModel.getAbsolutePath());
-								}
+									if (!baseModel.exists()) {
+										throw new IllegalArgumentException("Supertagging model not found: "
+												+ baseModel.getAbsolutePath());
+									}
 
-								final File pipeline = new File(modelFolder, "pipeline");
-								pipeline.mkdir();
-								for (final File f : baseModel.listFiles()) {
+									final File pipeline = new File(modelFolder, "pipeline");
+									pipeline.mkdir();
+									for (final File f : baseModel.listFiles()) {
 
-									java.nio.file.Files.copy(f.toPath(), new File(pipeline, f.getName()).toPath(),
-											StandardCopyOption.REPLACE_EXISTING);
-								}
-								final TrainingDataParameters dataParameters = new TrainingDataParameters(beta, 70,
-										ROOT_CATEGORIES, baseModel, maxChart, goldBeam);
+										java.nio.file.Files.copy(f.toPath(), new File(pipeline, f.getName()).toPath(),
+												StandardCopyOption.REPLACE_EXISTING);
+									}
+									final TrainingDataParameters dataParameters = new TrainingDataParameters(beta, 70,
+											ROOT_CATEGORIES, baseModel, maxChart, goldBeam, false);
 
-								// Features to use
-								final FeatureSet allFeatures = new FeatureSet(new DenseLexicalFeature(pipeline, 0.0),
-										BilexicalFeature.getBilexicalFeatures(clusterings, 3),
-										ArgumentSlotFeature.argumentSlotFeatures, Feature.unaryRules,
-										PrepositionFeature.prepositionFeaures, Collections.emptyList(),
-										Collections.emptyList());
+									// Features to use
+									final FeatureSet allFeatures = new FeatureSet(
+											new DenseLexicalFeature(pipeline, 0.0),
+											BilexicalFeature.getBilexicalFeatures(clusterings, 3),
+											ArgumentSlotFeature.argumentSlotFeatures, Feature.unaryRules,
+											PrepositionFeature.prepositionFeaures, Collections.emptyList(),
+											Collections.emptyList());
 
-								final TrainingParameters standard = new Training.TrainingParameters(50, allFeatures,
-										sigmaSquared, minFeatureCount, modelFolder, costFunctionWeight);
+									final TrainingParameters standard = new Training.TrainingParameters(50,
+											allFeatures, sigmaSquared, minFeatureCount, modelFolder,
+											costFunctionWeight, trainSupertaggerWeight);
 
-								final Training training = new Training(dataParameters, standard);
+									final Training training = new Training(dataParameters, standard);
 
-								if (local) {
-									training.trainLocal();
-								} else {
-									training.trainDistributed();
-								}
+									if (local) {
+										training.trainLocal();
+									} else {
+										training.trainDistributed();
+									}
 
-								for (final double beam : parseDoubles(trainingSettings, "beta_for_decoding")) {
-									System.out.println(Objects.toStringHelper("Settings").add("DecodingBeam", beam)
-											.add("MinFeatureCount", minFeatureCount).add("maxChart", maxChart)
-											.add("sigmaSquared", sigmaSquared)
-											.add("cost_function_weight", costFunctionWeight)
-											.add("beta_for_positive_charts", goldBeam)
-											.add("beta_for_training_charts", beta).toString());
+									for (final double beam : parseDoubles(trainingSettings, "beta_for_decoding")) {
+										System.out.println(Objects.toStringHelper("Settings").add("DecodingBeam", beam)
+												.add("MinFeatureCount", minFeatureCount).add("maxChart", maxChart)
+												.add("sigmaSquared", sigmaSquared)
+												.add("cost_function_weight", costFunctionWeight)
+												.add("beta_for_positive_charts", goldBeam)
+												.add("beta_for_training_charts", beta)
+												.add("train_supertagger", trainSupertaggerWeight).toString());
 
-									for (final Double supertaggerWeight : Arrays.asList(null, 0.5, 0.6, 0.7, 0.8, 0.9,
-											1.0)) {
-										training.evaluate(
-												beam,
-												supertaggerWeight == null ? Optional.empty() : Optional
-														.of(supertaggerWeight));
+										for (final Double supertaggerWeight : Arrays.asList(null, 0.5, 0.6, 0.7, 0.8,
+												0.9, 1.0, 1.1, 1.2)) {
+											System.out.println("supertaggerWeight=" + supertaggerWeight);
+											training.evaluate(beam, supertaggerWeight == null ? Optional.empty()
+													: Optional.of(supertaggerWeight));
+										}
 									}
 								}
 							}
@@ -193,7 +197,7 @@ public class Training {
 	}
 
 	private List<TrainingExample> makeTrainingData(final boolean isDev) throws IOException {
-		boolean singleThread = isDev;
+		final boolean singleThread = isDev;
 		return new TrainingDataLoader(cutoffsDictionary, dataParameters, true /* backoff */).makeTrainingData(
 				ParallelCorpusReader.READER.readCorpus(isDev), singleThread);
 	}
@@ -203,7 +207,7 @@ public class Training {
 		final Map<FeatureKey, Integer> featureToIndex = makeKeyToIndexMap(trainingParameters.minimumFeatureFrequency,
 				boundedFeatures);
 
-		final List<TrainingExample> data = makeTrainingData(false /* not dev */);
+		final List<TrainingExample> data = makeTrainingData(true /* not dev */);// FIXME false
 
 		final LossFunction lossFunction = Optimization.getLossFunction(data, featureToIndex, trainingParameters,
 				trainingLogger);
@@ -332,8 +336,8 @@ public class Training {
 				// && cutoffsDictionary.isFrequent(dep.getCategory(),
 				// dep.getArgNumber(), dep.getSemanticRole())) {
 				for (final ArgumentSlotFeature feature : trainingParameters.getFeatureSet().argumentSlotFeatures) {
-					final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getHead(),
-							role, dep.getCategory(), dep.getArgNumber(), dep.getPreposition());
+					final FeatureKey key = feature.getFeatureKey(sentence.getInputWords(), dep.getHead(), role,
+							dep.getCategory(), dep.getArgNumber(), dep.getPreposition());
 					keyCount.add(key);
 				}
 
@@ -355,6 +359,9 @@ public class Training {
 				}
 
 			}
+			if (!trainingParameters.getTrainSupertaggerWeight()) {
+				boundedFeatures.add(trainingParameters.getFeatureSet().lexicalCategoryFeatures.getDefault());
+			}
 
 			getFromDerivation(sentence.getCcgbankParse(), binaryFeatureCount, boundedFeatures,
 					sentence.getInputWords(), 0, sentence.getInputWords().size());
@@ -370,9 +377,7 @@ public class Training {
 
 		result.put(trainingParameters.getFeatureSet().lexicalCategoryFeatures.getDefault(), result.size());
 
-		addFrequentFeatures(// minimumFeatureFrequency,
-				30,//
-				binaryFeatureCount, result, boundedFeatures, true);
+		addFrequentFeatures(minimumFeatureFrequency, binaryFeatureCount, result, boundedFeatures, true);
 		addFrequentFeatures(minimumFeatureFrequency, keyCount, result, boundedFeatures, false);
 		addFrequentFeatures(minimumFeatureFrequency, bilexicalKeyCount, result, boundedFeatures, false);
 
@@ -482,24 +487,6 @@ public class Training {
 			}
 
 			final Preposition preposition = Preposition.NONE;
-			// if (dep.getCategory().getArgument(dep.getArgNumber()) ==
-			// Category.PP) {
-			// // If appropriate, figure out what the preposition should be.
-			// preposition = Preposition.OTHER;
-			//
-			// for (final CCGBankDependency prepDep : unlabelledDeps) {
-			// if (prepDep != dep
-			// && prepDep.getSentencePositionOfArgument() == dep
-			// .getSentencePositionOfArgument()
-			// && Preposition.isPrepositionCategory(prepDep
-			// .getCategory())) {
-			// preposition = Preposition.fromString(dep
-			// .getPredicateWord());
-			// }
-			// }
-			// } else {
-			// preposition = Preposition.NONE;
-			// }
 
 			goldDeps.add(new ResolvedDependency(dep.getSentencePositionOfPredicate(), goldCategory, dep.getArgNumber(),
 					dep.getSentencePositionOfArgument(), SRLFrame.NONE, preposition));
@@ -517,7 +504,7 @@ public class Training {
 
 	private final TrainingDataParameters dataParameters;
 	private final Training.TrainingParameters trainingParameters;
-	private final CutoffsDictionary cutoffsDictionary;
+	private final CutoffsDictionaryInterface cutoffsDictionary;
 
 	private Training(final TrainingDataParameters dataParameters, final Training.TrainingParameters parameters)
 			throws IOException {
@@ -541,12 +528,12 @@ public class Training {
 				.getStanfordTagger(new File(dataParameters.getExistingModel(), "posTagger"));
 
 		final SRLParser parser = new JointSRLParser(EasySRL.makeParser(trainingParameters.getModelFolder()
-				.getAbsolutePath(), testingSupertaggerBeam, ParsingAlgorithm.ASTAR, 20000, true, supertaggerWeight, 1),
-				posTagger);
+				.getAbsolutePath(), testingSupertaggerBeam, ParsingAlgorithm.ASTAR, 20000, true, supertaggerWeight, 1,
+				70), posTagger);
 
 		final SRLParser backoff = new BackoffSRLParser(parser, new PipelineSRLParser(EasySRL.makeParser(dataParameters
 				.getExistingModel().getAbsolutePath(), 0.0001, ParsingAlgorithm.ASTAR, 100000, false, Optional.empty(),
-				1), Util.deserialize(new File(dataParameters.getExistingModel(), "labelClassifier")), posTagger));
+				1, 70), Util.deserialize(new File(dataParameters.getExistingModel(), "labelClassifier")), posTagger));
 
 		final Results results = SRLEvaluation
 				.evaluate(backoff, ParallelCorpusReader.getPropBank00(), maxSentenceLength);
@@ -556,7 +543,7 @@ public class Training {
 	}
 
 	static class TrainingParameters implements Serializable {
-		private final int minimumFeatureFrequency;
+		final int minimumFeatureFrequency;
 		/**
 		 *
 		 */
@@ -566,10 +553,11 @@ public class Training {
 		private final int maxDependencyLength;
 		private final File modelFolder;
 		private final double costFunctionWeight;
+		private final boolean trainSupertaggerWeight;
 
-		private TrainingParameters(final int maxDependencyLength, final FeatureSet featureSet,
-				final double sigmaSquared, final int minimumFeatureFrequency, final File modelFolder,
-				final double costFunctionWeight) {
+		TrainingParameters(final int maxDependencyLength, final FeatureSet featureSet, final double sigmaSquared,
+				final int minimumFeatureFrequency, final File modelFolder, final double costFunctionWeight,
+				final boolean trainSupertaggerWeight) {
 			super();
 			this.featureSet = featureSet;
 			this.sigmaSquared = sigmaSquared;
@@ -577,6 +565,7 @@ public class Training {
 			this.minimumFeatureFrequency = minimumFeatureFrequency;
 			this.modelFolder = modelFolder;
 			this.costFunctionWeight = costFunctionWeight;
+			this.trainSupertaggerWeight = trainSupertaggerWeight;
 		}
 
 		private Object readResolve() {
@@ -584,7 +573,7 @@ public class Training {
 			try {
 				return new TrainingParameters(maxDependencyLength, featureSet.setSupertaggingFeature(new File(
 						modelFolder, "pipeline"), 0.0), sigmaSquared, minimumFeatureFrequency, modelFolder,
-						costFunctionWeight);
+						costFunctionWeight, trainSupertaggerWeight);
 			} catch (final IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -594,19 +583,19 @@ public class Training {
 			return featureSet.lexicalCategoryFeatures;
 		}
 
-		private File getLogFile() {
+		File getLogFile() {
 			return new File(getModelFolder(), "log");
 		}
 
-		private File getModelFolder() {
+		File getModelFolder() {
 			return modelFolder;
 		}
 
-		private File getFeaturesFile() {
+		File getFeaturesFile() {
 			return new File(getModelFolder(), "features");
 		}
 
-		private File getWeightsFile() {
+		File getWeightsFile() {
 			return new File(getModelFolder(), "weights");
 		}
 
@@ -614,11 +603,11 @@ public class Training {
 			return new File(getModelFolder(), "featureToIndex");
 		}
 
-		public int getMaxDependencyLength() {
+		int getMaxDependencyLength() {
 			return maxDependencyLength;
 		}
 
-		public FeatureSet getFeatureSet() {
+		FeatureSet getFeatureSet() {
 			return featureSet;
 		}
 
@@ -637,6 +626,10 @@ public class Training {
 
 		public double getCostFunctionWeight() {
 			return costFunctionWeight;
+		}
+
+		public boolean getTrainSupertaggerWeight() {
+			return trainSupertaggerWeight;
 		}
 
 	}

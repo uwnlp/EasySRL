@@ -107,7 +107,7 @@ class ExtendedLexicalEntry {
 	}
 
 	static Forest makeUnlexicalizedForest(final String word, final Collection<Category> categoriesForWord,
-			final int maxDependencyLength, final CutoffsDictionary cutoffsDictionary, final boolean includeSlotNodes,
+			final int maxDependencyLength, final CutoffsDictionaryInterface cutoffsDictionary, final boolean includeSlotNodes,
 			final boolean includeAttachmentNodes) {
 		final AtomicInteger numberOfConjunctiveNodes = new AtomicInteger();
 		final Map<Object, DisjunctiveNode> cache = new HashMap<>();
@@ -218,7 +218,7 @@ class ExtendedLexicalEntry {
 	private static DisjunctiveNode makePrepositionNode(final String word, final Category category,
 			final int argumentNumber, final Map<Object, DisjunctiveNode> cache, final int maxDependencyLength,
 			final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionary cutoffsDictionary,
+			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionaryInterface cutoffsDictionary,
 			final boolean includeAttachmentNodes, final AtomicInteger numberOfConjunctiveNodes) {
 
 		if (category.getArgument(argumentNumber).equals(Category.PP)) {
@@ -257,7 +257,7 @@ class ExtendedLexicalEntry {
 	private static DisjunctiveNode makeArgumentSlotNode(final String word, final Category category,
 			final int argumentNumber, final Preposition preposition, final Map<Object, DisjunctiveNode> cache,
 			final int maxDependencyLength, final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final CutoffsDictionary cutoffsDictionary, final boolean includeAttachmentNodes,
+			final CutoffsDictionaryInterface cutoffsDictionary, final boolean includeAttachmentNodes,
 			final AtomicInteger numberOfConjunctiveNodes) {
 
 		final DisjunctiveNode result = new DisjunctiveNode(numberOfConjunctiveNodes.getAndIncrement());
@@ -289,7 +289,7 @@ class ExtendedLexicalEntry {
 			final DisjunctiveNode parent, final Map<Object, DisjunctiveNode> cache, final int maxDependencyLength,
 			final Collection<ConjunctiveCategoryNode> categoryNodes,
 			final Collection<ConjunctiveDependencyNode> dependencyNodes,
-			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionary cutoffsDictionary,
+			final Collection<ConjunctivePrepositionNode> prepositionNodes, final CutoffsDictionaryInterface cutoffsDictionary,
 			final boolean includeSlotNodes, final boolean includeAttachmentNodes,
 			final AtomicInteger numberOfConjunctiveNodes) {
 
@@ -325,7 +325,7 @@ class ExtendedLexicalEntry {
 	}
 
 	private static DisjunctiveNode makeAttachmentNode(final SRLLabel label, final Map<Object, DisjunctiveNode> cache,
-			final Collection<ConjunctiveDependencyNode> dependencyNodes, final CutoffsDictionary cutoffsDictionary,
+			final Collection<ConjunctiveDependencyNode> dependencyNodes, final CutoffsDictionaryInterface cutoffsDictionary,
 			final AtomicInteger numberOfConjunctiveNodes) {
 		final Object key = label;
 		DisjunctiveNode result = cache.get(key);
@@ -628,6 +628,11 @@ class ExtendedLexicalEntry {
 				bestScore = score;
 				bestLabel = slotNode.getLabel();
 			}
+		}
+
+		if (bestLabel == null) {
+			// TODO temp hack to deal with dependencies out of range when we can't assign NONE
+			bestLabel = ((ConjunctiveArgumentSlotNode) roleChoice.children.iterator().next()).label;
 		}
 
 		return new Scored<>(bestLabel, bestScore);

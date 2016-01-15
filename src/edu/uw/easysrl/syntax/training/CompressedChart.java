@@ -22,7 +22,7 @@ import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 import edu.uw.easysrl.syntax.training.CKY.ChartCell;
 import edu.uw.easysrl.syntax.training.CKY.EquivalenceClassKey;
@@ -353,7 +353,7 @@ class CompressedChart {
 
 	private static Key make(final ChartCell[][] chart, final int spanStart, final int spanLength,
 			final EquivalenceClassKey key, final Map<Object, Key> cache, final Map<Object, Value> valueCache,
-			final CutoffsDictionary cutoffs, final Multimap<Category, UnaryRule> unaryRules) {
+			final CutoffsDictionaryInterface cutoffs, final Multimap<Category, UnaryRule> unaryRules) {
 
 		final ChartCell cell = chart[spanStart][spanLength - 1];
 
@@ -426,7 +426,7 @@ class CompressedChart {
 	}
 
 	static CompressedChart make(final List<InputWord> words, final ChartCell[][] chart,
-			final CutoffsDictionary cutoffs, final Multimap<Category, UnaryRule> unaryRules,
+			final CutoffsDictionaryInterface cutoffs, final Multimap<Category, UnaryRule> unaryRules,
 			final Collection<Category> rootCategories) {
 		final ChartCell cell = chart[0][chart.length - 1];
 		final Collection<Key> roots = new HashSet<>();

@@ -32,13 +32,10 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
 			return hash(super.id, role.hashCode(), preposition.hashCode(),
-					MorphaStemmer.stemToken(words.get(predicateIndex).word)
-							.hashCode());
+					MorphaStemmer.stemToken(words.get(predicateIndex).word).hashCode());
 
 		}
 
@@ -52,12 +49,9 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id, role.hashCode(),
-					category.getArgument(argumentNumber).hashCode());
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, role.hashCode(), category.getArgument(argumentNumber).hashCode());
 		}
 
 	};
@@ -70,32 +64,26 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id, role.hashCode(), category.hashCode(),
-					argumentNumber);
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, role.hashCode(), category.hashCode(), argumentNumber);
 
 		}
 
 	};
 
 	/**
-	 * Hyphenated predicates don't seem to get PropBank entries, e.g.
-	 * re-entered.
+	 * Hyphenated predicates don't seem to get PropBank entries, e.g. re-entered.
 	 */
 	private static ArgumentSlotFeature hyphenAndRoleFeature = new ArgumentSlotFeature() {
 
 		private static final long serialVersionUID = 4705512175495241740L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id, role.isCoreArgument() ? 13 : 7,
-					words.get(predicateIndex).word.indexOf("-") > -1 ? 13 : 7);
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, role.isCoreArgument() ? 13 : 7, words.get(predicateIndex).word.indexOf("-") > -1 ? 13
+					: 7);
 		}
 
 	};
@@ -105,15 +93,10 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id,
-					MorphaStemmer.stemToken(words.get(predicateIndex).word)
-					.hashCode(),
-					makeKey(preposition, argumentNumber, category).hashCode(),
-							role.hashCode());
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, MorphaStemmer.stemToken(words.get(predicateIndex).word).hashCode(),
+					makeKey(preposition, argumentNumber, category).hashCode(), role.hashCode());
 		}
 
 	};
@@ -126,13 +109,9 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id,
-					MorphaStemmer.stemToken(words.get(predicateIndex).word)
-					.hashCode(), role.hashCode(),
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, MorphaStemmer.stemToken(words.get(predicateIndex).word).hashCode(), role.hashCode(),
 					category.getArgument(argumentNumber).hashCode());
 		}
 
@@ -146,14 +125,10 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id,
-					MorphaStemmer.stemToken(words.get(predicateIndex).word)
-					.hashCode(), role.hashCode(), category.hashCode(),
-					argumentNumber);
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, MorphaStemmer.stemToken(words.get(predicateIndex).word).hashCode(), role.hashCode(),
+					category.hashCode(), argumentNumber);
 		}
 
 	};
@@ -173,18 +148,14 @@ public abstract class ArgumentSlotFeature extends Feature {
 		defaultIndex = 0;
 	}
 
-	double getFeatureScore(final List<InputWord> words, final int wordIndex,
-			final SRLLabel role, final Category category,
-			final int argumentNumber, final Preposition preposition,
+	double getFeatureScore(final List<InputWord> words, final int wordIndex, final SRLLabel role,
+			final Category category, final int argumentNumber, final Preposition preposition,
 			final ObjectDoubleHashMap<FeatureKey> featureToScore) {
-		final FeatureKey featureKey = getFeatureKey(words, wordIndex, role,
-				category, argumentNumber, preposition);
-		final double result = featureToScore.getOrDefault(featureKey,
-				Double.MIN_VALUE);
+		final FeatureKey featureKey = getFeatureKey(words, wordIndex, role, category, argumentNumber, preposition);
+		final double result = featureToScore.getOrDefault(featureKey, Double.MIN_VALUE);
 		if (result == Double.MIN_VALUE) {
 			if (defaultScore == Double.MIN_VALUE) {
-				defaultScore = featureToScore.getOrDefault(defaultKey,
-						Double.MIN_VALUE);
+				defaultScore = featureToScore.getOrDefault(defaultKey, Double.MIN_VALUE);
 			}
 
 			return defaultScore;
@@ -192,13 +163,11 @@ public abstract class ArgumentSlotFeature extends Feature {
 		return result;
 	}
 
-	public Integer getFeatureIndex(final List<InputWord> words,
-			final int wordIndex, final SRLLabel role, final Category category,
-			final int argumentNumber, final Preposition preposition,
+	public Integer getFeatureIndex(final List<InputWord> words, final int wordIndex, final SRLLabel role,
+			final Category category, final int argumentNumber, final Preposition preposition,
 			final Map<FeatureKey, Integer> featureToIndex) {
-		final FeatureKey featureKey = getFeatureKey(words, wordIndex, role,
-				category, argumentNumber, preposition);
-		Integer result = featureToIndex.get(featureKey);
+		final FeatureKey featureKey = getFeatureKey(words, wordIndex, role, category, argumentNumber, preposition);
+		final Integer result = featureToIndex.get(featureKey);
 		if (result == null) {
 			if (defaultIndex == 0) {
 				defaultIndex = featureToIndex.get(defaultKey);
@@ -208,22 +177,18 @@ public abstract class ArgumentSlotFeature extends Feature {
 		return result;
 	}
 
-	public abstract FeatureKey getFeatureKey(List<InputWord> words,
-			int wordIndex, SRLLabel role, Category category,
+	public abstract FeatureKey getFeatureKey(List<InputWord> words, int wordIndex, SRLLabel role, Category category,
 			int argumentNumber, Preposition preposition);
 
 	public boolean isLexicalized() {
 		return true;
 	}
 
-	public static String makeKey(final Preposition preposition,
-			final int argumentNumber, final Category category) {
+	public static String makeKey(final Preposition preposition, final int argumentNumber, final Category category) {
 		String result;
 
-		final boolean passive = category.isFunctionInto(Category
-				.valueOf("S[pss]"));
-		final boolean adjectival = category.isFunctionInto(Category
-				.valueOf("S[adj]"));
+		final boolean passive = category.isFunctionInto(Category.valueOf("S[pss]"));
+		final boolean adjectival = category.isFunctionInto(Category.valueOf("S[adj]"));
 
 		if (preposition != Preposition.NONE) {
 			result = preposition.toString();
@@ -259,8 +224,7 @@ public abstract class ArgumentSlotFeature extends Feature {
 		return result;
 	}
 
-	private static abstract class ArgumentSlotUnlexicalizedFeature extends
-			ArgumentSlotFeature {
+	private static abstract class ArgumentSlotUnlexicalizedFeature extends ArgumentSlotFeature {
 		/**
 		 *
 		 */
@@ -271,13 +235,10 @@ public abstract class ArgumentSlotFeature extends Feature {
 		}
 
 		@Override
-		public Integer getFeatureIndex(final List<InputWord> words,
-				final int wordIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition,
+		public Integer getFeatureIndex(final List<InputWord> words, final int wordIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition,
 				final Map<FeatureKey, Integer> featureToIndex) {
-			return super.getFeatureIndex(words, wordIndex, role, category,
-					argumentNumber, preposition, featureToIndex);
+			return super.getFeatureIndex(words, wordIndex, role, category, argumentNumber, preposition, featureToIndex);
 		}
 
 		@Override
@@ -294,10 +255,8 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -5087443819141589517L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
 			return hash(super.id, role.hashCode());
 
 		}
@@ -312,10 +271,8 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = 2147289965807795425L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
 			return hash(super.id, role.hashCode(), argumentNumber);
 		}
 
@@ -329,12 +286,9 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = 2147289965807795425L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id, role.hashCode(), argumentNumber,
-					category.getNumberOfArguments());
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, role.hashCode(), argumentNumber, category.getNumberOfArguments());
 		}
 
 	};
@@ -347,13 +301,9 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = -1167453701712568542L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int wordIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
-			return hash(super.id,
-					MorphaStemmer.stemToken(words.get(wordIndex).word)
-					.hashCode(), role.hashCode());
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int wordIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
+			return hash(super.id, MorphaStemmer.stemToken(words.get(wordIndex).word).hashCode(), role.hashCode());
 
 		}
 
@@ -367,13 +317,10 @@ public abstract class ArgumentSlotFeature extends Feature {
 		private static final long serialVersionUID = 2147289965807795425L;
 
 		@Override
-		public FeatureKey getFeatureKey(final List<InputWord> words,
-				final int predicateIndex, final SRLLabel role,
-				final Category category, final int argumentNumber,
-				final Preposition preposition) {
+		public FeatureKey getFeatureKey(final List<InputWord> words, final int predicateIndex, final SRLLabel role,
+				final Category category, final int argumentNumber, final Preposition preposition) {
 			return hash(super.id, role.hashCode(), argumentNumber,
-					MorphaStemmer.stemToken(words.get(predicateIndex).word)
-					.hashCode(), category.getNumberOfArguments());
+					MorphaStemmer.stemToken(words.get(predicateIndex).word).hashCode(), category.getNumberOfArguments());
 		}
 
 	};

@@ -1,7 +1,6 @@
 package edu.uw.easysrl.syntax.model;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +31,7 @@ import edu.uw.easysrl.util.Util;
 /**
  * Keeps track of various thresholds used for pruning.
  */
-public class CutoffsDictionary implements Serializable {
+public class CutoffsDictionary implements CutoffsDictionaryInterface {
 
 	/**
 	 *
@@ -49,6 +48,7 @@ public class CutoffsDictionary implements Serializable {
 
 	private final Set<Category> lexicalCategories = new HashSet<>();
 
+	@Override
 	public boolean isFrequent(final Category category, final int argumentNumber, final SRLLabel label) {
 		if (label == SRLFrame.NONE) {
 			return true;
@@ -59,6 +59,7 @@ public class CutoffsDictionary implements Serializable {
 				&& countForCategory.count(label) >= minSlotRole;
 	}
 
+	@Override
 	public boolean isFrequent(final SRLLabel label, final int offset) {
 		final int count = srlToOffset.get(label).count(offset);
 		return count >= minRoleDistance || offset == 0;
@@ -80,19 +81,6 @@ public class CutoffsDictionary implements Serializable {
 			this.lexicalCategories.addAll(lexicalCategories);
 		} catch (final IOException e) {
 			throw new RuntimeException(e);
-		}
-	}
-
-	public Collection<Category> getCategoriesForWord(final String word) {
-		if (wordToCategory == null) {
-			return lexicalCategories;
-		}
-		final Collection<Category> cats = wordToCategory.get(word);
-
-		if (cats != null) {
-			return cats;
-		} else {
-			return lexicalCategories;
 		}
 	}
 
@@ -161,6 +149,7 @@ public class CutoffsDictionary implements Serializable {
 
 	private final Map<String, Set<SRLLabel>> keyToRole = new HashMap<>();
 
+	@Override
 	public Collection<SRLLabel> getRoles(final String word, final Category category, final Preposition preposition,
 			final int argumentNumber) {
 
@@ -173,6 +162,7 @@ public class CutoffsDictionary implements Serializable {
 		}
 	}
 
+	@Override
 	public boolean isFrequentWithAnySRLLabel(final Category category, final int argumentNumber) {
 
 		final Multiset<SRLLabel> countForCategory = categoryToArgumentToSRLs.get(category.withoutAnnotation(),
@@ -188,10 +178,12 @@ public class CutoffsDictionary implements Serializable {
 		return false;
 	}
 
+	@Override
 	public Map<String, Collection<Category>> getTagDict() {
 		return wordToCategory;
 	}
 
+	@Override
 	public Collection<Integer> getOffsetsForLabel(final SRLLabel label) {
 		return srlToOffset.get(label).elementSet();
 	}

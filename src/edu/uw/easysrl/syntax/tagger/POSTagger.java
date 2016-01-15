@@ -2,11 +2,16 @@ package edu.uw.easysrl.syntax.tagger;
 
 import java.io.File;
 import java.util.List;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import edu.stanford.nlp.ling.Word;
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
+import edu.uw.easysrl.main.EasySRL.InputFormat;
+import edu.uw.easysrl.main.InputReader;
+import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
+import edu.uw.easysrl.util.Util;
 
 public abstract class POSTagger {
 
@@ -31,5 +36,32 @@ public abstract class POSTagger {
 
 	public static POSTagger getStanfordTagger(final File file) {
 		return new StanfordPOSTagger(file);
+	}
+
+	public static void main(final String[] args) {
+		final POSTagger postagger = POSTagger.getStanfordTagger(Util.getFile(args[0]));
+		final InputReader reader = InputReader.make(InputFormat.TOKENIZED);
+
+		final Scanner inputLines = new Scanner(System.in, "UTF-8");
+
+		while (inputLines.hasNext()) {
+			final String line = inputLines.nextLine();
+			final List<InputWord> words = postagger.tag(reader.readInput(line).getInputWords());
+			for (int i = 0; i < words.size(); i++) {
+				if (i > 0) {
+					System.out.print(" ");
+				}
+
+				System.out.print(words.get(i).word + "|" + words.get(i).pos);
+			}
+			System.out.println();
+		}
+
+		inputLines.close();
+	}
+
+	public InputToParser tag(final InputToParser input) {
+		final List<InputWord> tagged = tag(input.getInputWords());
+		return new InputToParser(tagged, input.getGoldCategories(), input.getInputSupertags(), input.isAlreadyTagged());
 	}
 }

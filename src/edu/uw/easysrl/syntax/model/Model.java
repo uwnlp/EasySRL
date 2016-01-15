@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -12,9 +13,11 @@ import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 public abstract class Model {
 
 	public static abstract class ModelFactory {
-		public abstract Model make(List<InputWord> sentence);
+		public abstract Model make(InputToParser sentence);
 
 		public abstract Collection<Category> getLexicalCategories();
+
+		public abstract boolean isUsingDependencies();
 	}
 
 	private final int sentenceLength;

@@ -30,11 +30,15 @@ public class DependencyGenerator {
 	private final Multimap<Category, UnaryRule> unaryRules;
 
 	public DependencyGenerator(final File modelFolder) throws IOException {
-		this.unaryRules = AbstractParser.loadUnaryRules(new File(modelFolder, "unaryRules"));
+		this(AbstractParser.loadUnaryRules(new File(modelFolder, "unaryRules")));
 		Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
 	}
 
-	public SyntaxTreeNode generateDependencies(final SyntaxTreeNode raw, final List<UnlabelledDependency> deps) {
+	public DependencyGenerator(final Multimap<Category, UnaryRule> unaryRules) throws IOException {
+		this.unaryRules = unaryRules;
+	}
+
+	public SyntaxTreeNode generateDependencies(final SyntaxTreeNode raw, final Collection<UnlabelledDependency> deps) {
 		final AddDepenendenciesVisitor visitor = new AddDepenendenciesVisitor(deps);
 		raw.accept(visitor);
 		final SyntaxTreeNode result = visitor.stack.pop();
@@ -44,9 +48,9 @@ public class DependencyGenerator {
 
 	private class AddDepenendenciesVisitor implements SyntaxTreeNodeVisitor {
 		private final Stack<SyntaxTreeNode> stack = new Stack<>();
-		private final List<UnlabelledDependency> deps;
+		private final Collection<UnlabelledDependency> deps;
 
-		public AddDepenendenciesVisitor(final List<UnlabelledDependency> deps) {
+		public AddDepenendenciesVisitor(final Collection<UnlabelledDependency> deps) {
 			this.deps = deps;
 		}
 
@@ -105,7 +109,8 @@ public class DependencyGenerator {
 					return;
 				}
 			}
-			throw new IllegalStateException("Didn't find matching binary rule");
+			throw new IllegalStateException("Didn't find matching binary rule: " + left.getCategory() + " + "
+					+ right.getCategory() + " --> " + node.getCategory());
 
 		}
 	};

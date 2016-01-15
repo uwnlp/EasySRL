@@ -10,7 +10,7 @@ public class Results {
 	private final AtomicInteger correctDependencies;
 	private final AtomicInteger goldDependencies;
 
-	Results(final int parseDependencies, final int correctDependencies, final int goldDependencies) {
+	public Results(final int parseDependencies, final int correctDependencies, final int goldDependencies) {
 		this.parseDependencies = new AtomicInteger(parseDependencies);
 		this.correctDependencies = new AtomicInteger(correctDependencies);
 		this.goldDependencies = new AtomicInteger(goldDependencies);
@@ -20,7 +20,7 @@ public class Results {
 		this(0, 0, 0);
 	}
 
-	void add(final Results other) {
+	public void add(final Results other) {
 		parseDependencies.addAndGet(other.parseDependencies.get());
 		correctDependencies.addAndGet(other.correctDependencies.get());
 		goldDependencies.addAndGet(other.goldDependencies.get());

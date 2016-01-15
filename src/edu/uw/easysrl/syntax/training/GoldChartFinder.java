@@ -15,8 +15,9 @@ import edu.uw.easysrl.corpora.ParallelCorpusReader.Sentence;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
+import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.syntax.grammar.Preposition;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.training.CompressedChart.Key;
 import edu.uw.easysrl.syntax.training.CompressedChart.TreeValueBinary;
 import edu.uw.easysrl.syntax.training.CompressedChart.TreeValueUnary;
@@ -30,10 +31,12 @@ import edu.uw.easysrl.syntax.training.CompressedChart.Value;
 public class GoldChartFinder {
 
 	private final CompressedChart completeChart;
+	private final boolean usingCCGbankDepenencies;
 
-	public GoldChartFinder(final CompressedChart completeChart) {
+	public GoldChartFinder(final CompressedChart completeChart, final boolean usingCCGbankDepenencies) {
 		super();
 		this.completeChart = completeChart;
+		this.usingCCGbankDepenencies = usingCCGbankDepenencies;
 	}
 
 	private static class Scored<T> {
@@ -47,7 +50,7 @@ public class GoldChartFinder {
 
 	}
 
-	CompressedChart goldChart(final Sentence sentence, final CutoffsDictionary cutoffs) {
+	CompressedChart goldChart(final Sentence sentence, final CutoffsDictionaryInterface cutoffs) {
 
 		final Set<SRLDependency> goldDeps = getTrainingDependencies(sentence);
 
@@ -57,30 +60,38 @@ public class GoldChartFinder {
 	/**
 	 *
 	 */
-	public static Set<SRLDependency> getTrainingDependencies(final Sentence sentence) {
+	private Set<SRLDependency> getTrainingDependencies(final Sentence sentence) {
 		final Set<SRLDependency> goldDeps = new HashSet<>();
-		for (final SRLDependency srl : sentence.getSrlParse().getDependencies()) {
-			if (srl.getArgumentPositions().size() > 0) {
-				// Ignore PropBank arguments that don't refer to any span in the
-				// sentence.
-				final List<Integer> firstConstituent = new ArrayList<>();
-				for (int i = srl.getFirstArgumentPosition(); i <= srl.getLastArgumentPosition()
-						&& srl.getArgumentPositions().contains(i); i++) {
+		if (usingCCGbankDepenencies) {
+			for (final ResolvedDependency dep : sentence.getCCGBankDependencyParse().getResolvedDependencies()) {
+				goldDeps.add(new SRLDependency(sentence.getWords().get(dep.getHead()), dep.getHead(), Collections
+						.singletonList(dep.getArgumentIndex()), SRLLabel.fromString("ARG" + (dep.getArgNumber() - 1)),
+						dep.getPreposition().toString()));
+			}
+		} else {
+			for (final SRLDependency srl : sentence.getSrlParse().getDependencies()) {
+				if (srl.getArgumentPositions().size() > 0) {
+					// Ignore PropBank arguments that don't refer to any span in the
+					// sentence.
+					final List<Integer> firstConstituent = new ArrayList<>();
+					for (int i = srl.getFirstArgumentPosition(); i <= srl.getLastArgumentPosition()
+							&& srl.getArgumentPositions().contains(i); i++) {
 
-					firstConstituent.add(i);
+						firstConstituent.add(i);
+					}
+
+					final SRLDependency newDep = new SRLDependency(srl.getPredicate(), srl.getPredicateIndex(),
+							firstConstituent, srl.getLabel(), srl.getPreposition());
+
+					goldDeps.add(newDep);
 				}
-
-				final SRLDependency newDep = new SRLDependency(srl.getPredicate(), srl.getPredicateIndex(),
-						firstConstituent, srl.getLabel(), srl.getPreposition());
-
-				goldDeps.add(newDep);
-
 			}
 		}
+
 		return goldDeps;
 	}
 
-	private CompressedChart goldChart(final Set<SRLDependency> goldDeps, final CutoffsDictionary cutoffs) {
+	private CompressedChart goldChart(final Set<SRLDependency> goldDeps, final CutoffsDictionaryInterface cutoffs) {
 		final Table<Key, Set<SRLDependency>, Scored<Key>> cache = HashBasedTable.create();
 
 		int bestScore = -1;
@@ -114,7 +125,7 @@ public class GoldChartFinder {
 	}
 
 	private Scored<Key> bestKey(final Key key, final Set<SRLDependency> goldDeps,
-			final Table<Key, Set<SRLDependency>, Scored<Key>> cache, final CutoffsDictionary cutoffs) {
+			final Table<Key, Set<SRLDependency>, Scored<Key>> cache, final CutoffsDictionaryInterface cutoffs) {
 		Scored<Key> result = cache.get(key, goldDeps);
 		if (result == null) {
 
@@ -170,7 +181,7 @@ public class GoldChartFinder {
 	}
 
 	private Scored<Value> bestValue(final Value value, final Set<SRLDependency> goldDeps,
-			final Table<Key, Set<SRLDependency>, Scored<Key>> cache, final CutoffsDictionary cutoffs) {
+			final Table<Key, Set<SRLDependency>, Scored<Key>> cache, final CutoffsDictionaryInterface cutoffs) {
 
 		final List<Key> children = value.getChildren();
 		if (children.size() == 0) {
@@ -224,7 +235,7 @@ public class GoldChartFinder {
 	 * Finds the set of SRL dependencies that match dependencies resolved at this node
 	 */
 	private Set<SRLDependency> getMatchedDeps(final Set<SRLDependency> goldDeps,
-			final Collection<ResolvedDependency> dependencies, final CutoffsDictionary cutoffs,
+			final Collection<ResolvedDependency> dependencies, final CutoffsDictionaryInterface cutoffs,
 			final Collection<ResolvedDependency> newDeps) {
 		final Set<SRLDependency> matchedDeps = new HashSet<>(dependencies.size());
 		for (final ResolvedDependency dep : dependencies) {
@@ -235,9 +246,9 @@ public class GoldChartFinder {
 			for (final SRLDependency srl : goldDeps) {
 				if (!matchedDeps.contains(srl)
 						&& cutoffs.isFrequent(dep.getCategory(), dep.getArgNumber(), srl.getLabel())
-						&& cutoffs.getRoles(completeChart.getWords().get(dep.getHead()).word,
-								dep.getCategory(), dep.getPreposition(), dep.getArgNumber()).contains(srl.getLabel())
-								&& matches(predicateIndex, argumentIndex, srl, dep.getPreposition())) {
+						&& cutoffs.getRoles(completeChart.getWords().get(dep.getHead()).word, dep.getCategory(),
+								dep.getPreposition(), dep.getArgNumber()).contains(srl.getLabel())
+						&& matches(predicateIndex, argumentIndex, srl, dep.getPreposition())) {
 
 					matchedDeps.add(srl);
 					newDeps.add(dep.overwriteLabel(srl.getLabel()));
@@ -247,7 +258,13 @@ public class GoldChartFinder {
 			}
 
 			if (!isSRL) {
-				newDeps.add(dep.overwriteLabel(SRLFrame.NONE));
+				// Dependencies that aren't in the gold training data.
+				// For SRL, these should get 'NONE', for CCG they should get ARG_n
+				if (usingCCGbankDepenencies) {
+					newDeps.add(dep.overwriteLabel(SRLLabel.fromString("ARG" + (dep.getArgNumber() - 1))));
+				} else {
+					newDeps.add(dep.overwriteLabel(SRLFrame.NONE));
+				}
 			}
 
 		}

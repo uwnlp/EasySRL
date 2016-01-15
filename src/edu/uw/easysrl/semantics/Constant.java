@@ -2,8 +2,6 @@ package edu.uw.easysrl.semantics;
 
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-
 import edu.uw.easysrl.semantics.Variable.VariableNames;
 
 public class Constant extends Logic {
@@ -14,7 +12,7 @@ public class Constant extends Logic {
 
 	public Constant(final String name, final SemanticType type) {
 		super();
-		Preconditions.checkNotNull(name);
+		// TODO Preconditions.checkNotNull(name);
 		this.name = name;
 		this.type = type;
 	}
@@ -22,11 +20,11 @@ public class Constant extends Logic {
 	public String getName() {
 		return name;
 	}
-	
+
 	public SemanticType getSemanticType() {
 		return type;
 	}
-	
+
 	@Override
 	public Logic doSubstitution(final Substitution substitution) {
 		return this;
@@ -41,7 +39,7 @@ public class Constant extends Logic {
 	public SemanticType getType() {
 		return type;
 	}
-	
+
 	@Override
 	protected Logic alphaReduce(final Map<Variable, Variable> update) {
 		return this;

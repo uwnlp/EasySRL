@@ -11,10 +11,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.grammar.Combinator;
-import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.Category.Slash;
+import edu.uw.easysrl.syntax.grammar.Combinator;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
+import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
@@ -36,6 +36,7 @@ public class CCGBankParseReader {
 	public final static String devRegex = "wsj_00.*";
 	public final static String trainRegex = "wsj_((0[2-9])|(1[0-9])|(2[0-1])).*";
 	public final static String testRegex = "wsj_23.*";
+	public final static String tuneRegex = "wsj_01.*";
 
 	public static List<SyntaxTreeNode> loadCorpus(final File folder, final boolean isDev) throws IOException {
 		final String regex = isDev ? devRegex : trainRegex;
@@ -67,16 +68,8 @@ public class CCGBankParseReader {
 					}
 
 					if (!line.startsWith("ID=")) {
-						try {
-
-							final SyntaxTreeNode result = parse(line);
-							return result;
-						} catch (final Exception e) {
-							e.printStackTrace();
-							// TODO! Very occasional errors with unescaped
-							// brackets in words.
-							return next();
-						}
+						final SyntaxTreeNode result = parse(line);
+						return result;
 					} else {
 						return next();
 					}
@@ -148,6 +141,11 @@ public class CCGBankParseReader {
 				final String childString = input.substring(subtermCloseBracket + 2,
 						Util.findClosingBracket(input, subtermCloseBracket + 2) + 1);
 				final SyntaxTreeNode child2 = parse(childString, wordIndex);
+
+				if (child2 == null) {
+					// Bad brackets
+					throw new IllegalArgumentException("Badly bracketed string: " + child2);
+				}
 
 				Combinator combinator = null;
 				for (final Combinator c : Combinator.STANDARD_COMBINATORS) {

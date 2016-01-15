@@ -52,12 +52,13 @@ public class WebDemo extends AbstractHandler {
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
-				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest), Util.deserialize(new File(
-						pipelineFolder, "labelClassifier")), posTagger);
+				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest, 100), Util.deserialize(new File(
+				pipelineFolder, "labelClassifier")), posTagger);
 
-		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(
-				folder, 0.005, ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), nbest), posTagger), pipeline),
-				CompositeLexicon.makeDefault(new File(folder, "lexicon")));
+		final SRLParser jointAstar = new SemanticParser(
+				new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.005, ParsingAlgorithm.ASTAR,
+						20000, true, Optional.empty(), nbest, 100), posTagger), pipeline),
+						CompositeLexicon.makeDefault(new File(folder, "lexicon")));
 
 		return jointAstar;
 	}
@@ -85,6 +86,7 @@ public class WebDemo extends AbstractHandler {
 				+ "\n"
 				+ "<!-- Latest compiled and minified JavaScript -->\n"
 				+ "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js\" integrity=\"sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==\" crossorigin=\"anonymous\"></script>"
+				+ "<style> hr{display:block; height: 1px; border:0; border-top: 1px solid #000000; margin: 1em 50; padding: 0; } </style>"
 				+ "<body style=\"padding:20\">");
 		response.println("<h1><font face=\"arial\">EasySRL Parser Demo</font></h1>");
 		response.println("      <div><a href=https://github.com/mikelewis0/EasySRL>Download here!</a></div>      \n"

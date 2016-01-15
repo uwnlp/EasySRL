@@ -18,7 +18,7 @@ import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
 import edu.uw.easysrl.syntax.grammar.Preposition;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.feature.ArgumentSlotFeature;
 import edu.uw.easysrl.syntax.model.feature.BilexicalFeature;
 import edu.uw.easysrl.syntax.model.feature.Feature.BinaryFeature;
@@ -35,11 +35,11 @@ class FeatureForest {
 	private final Collection<ConjunctiveNode> conjunctiveNodes = new ArrayList<>();
 
 	private final Collection<DisjunctiveNode> roots;
-	private final CutoffsDictionary cutoffsDictionary;
+	private final CutoffsDictionaryInterface cutoffsDictionary;
 	private final List<InputWord> words;
 
 	FeatureForest(final List<InputWord> words, final CompressedChart allParses,
-			final CutoffsDictionary cutoffsDictionary) {
+			final CutoffsDictionaryInterface cutoffsDictionary) {
 		final Collection<DisjunctiveNode> result = new ArrayList<>();
 
 		this.words = words;

@@ -2,6 +2,8 @@ package edu.uw.easysrl.syntax.tagger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,9 +17,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
 
+import edu.uw.easysrl.corpora.CCGBankDependencies;
+import edu.uw.easysrl.corpora.CCGBankDependencies.DependencyParse;
+import edu.uw.easysrl.corpora.CCGBankDependencies.Partition;
+import edu.uw.easysrl.corpora.ParallelCorpusReader;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
+import edu.uw.easysrl.util.Util;
 
 public abstract class Tagger {
 	private static final String ALL_CATEGORIES = "ALL_CATEGORIES";
@@ -35,8 +42,42 @@ public abstract class Tagger {
 	protected final double beta;
 	protected final Map<String, Collection<Integer>> tagDict;
 
+	public static void main(final String[] args) throws IOException {
+		// FIXME
+		for (int b = 6; b <= 6; b++) {
+			final double beam = Math.pow(10.0, -b);
+			final Tagger tagger = Tagger.make(Util.getFile("~/Downloads/cnn/models/model_ccgbank"), beam, 50, null);
+			final DecimalFormat format = new DecimalFormat("#.00");
+			;
+
+			final PrintWriter out = new PrintWriter(new File("/tmp/dev-" + b + ".tags"));
+			// final PrintStream out = System.out;
+			for (final DependencyParse sentence : CCGBankDependencies.loadCorpus(ParallelCorpusReader.CCGREBANK,
+					Partition.DEV)) {
+				final List<List<ScoredCategory>> tags = tagger.tag(sentence.getWords());
+				for (int i = 0; i < sentence.getWords().size(); i++) {
+					if (i > 0) {
+						out.print(" ");
+					}
+
+					out.print(sentence.getWords().get(i).word);
+					for (final ScoredCategory tag : tags.get(i)) {
+						out.print("|");
+						out.print(tag.getCategory());
+						out.print("=");
+						out.print(format.format(tag.getScore()));
+					}
+
+				}
+				out.println();
+			}
+			out.close();
+		}
+
+	}
+
 	public static Tagger make(final File folder, final double beam, final int maxTagsPerWord,
-			final CutoffsDictionary cutoffs) throws IOException {
+			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		if (new File(folder, "lstm").exists()) {
 			return new TaggerLSTM(folder, beam, maxTagsPerWord, cutoffs);
 		} else {
@@ -72,7 +113,7 @@ public abstract class Tagger {
 		return Collections.unmodifiableList(lexicalCategories);
 	}
 
-	public Tagger(final CutoffsDictionary cutoffs, final double beta, final List<Category> categories,
+	public Tagger(final CutoffsDictionaryInterface cutoffs, final double beta, final List<Category> categories,
 			final int maxTagsPerWord) throws IOException {
 		this.lexicalCategories = categories;
 
@@ -88,7 +129,7 @@ public abstract class Tagger {
 
 	}
 
-	private Map<String, Collection<Integer>> loadTagDictionary(final CutoffsDictionary cutoffs) throws IOException {
+	private Map<String, Collection<Integer>> loadTagDictionary(final CutoffsDictionaryInterface cutoffs) throws IOException {
 		final Map<Category, Integer> catToIndex = new HashMap<>();
 
 		final List<Integer> allIndices = new ArrayList<>(lexicalCategories.size());
@@ -123,9 +164,12 @@ public abstract class Tagger {
 	protected String translateBrackets(String word) {
 		if (word.equalsIgnoreCase("-LRB-")) {
 			word = "(";
-		}
-		if (word.equalsIgnoreCase("-RRB-")) {
+		} else if (word.equalsIgnoreCase("-RRB-")) {
 			word = ")";
+		} else if (word.equalsIgnoreCase("-LCB-")) {
+			word = "{";
+		} else if (word.equalsIgnoreCase("-RCB-")) {
+			word = "}";
 		}
 		return word;
 	}

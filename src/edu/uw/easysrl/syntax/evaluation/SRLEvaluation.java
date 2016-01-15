@@ -41,14 +41,14 @@ public class SRLEvaluation {
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.00001,
-				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1), Util.deserialize(new File(pipelineFolder,
-				"labelClassifier")), posTagger);
+				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1, 70), Util.deserialize(new File(
+						pipelineFolder, "labelClassifier")), posTagger);
 
 		for (final double beta : Arrays.asList(0.01)) {
 			// final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
 			// ParsingAlgorithm.ASTAR, 100000, true, Optional.empty(), 1), posTagger), pipeline);
 			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
-					ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), 1), posTagger), pipeline);
+					ParsingAlgorithm.ASTAR, 20000, true, Optional.empty(), 1, 70), posTagger), pipeline);
 
 			// final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
 			// ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
@@ -61,8 +61,8 @@ public class SRLEvaluation {
 			// ParsingAlgorithm.ASTAR, 20000, true), posTagger), pipeline);
 			// CCGBankEvaluation.evaluate(pipeline, false);
 
-			evaluate(// pipeline,
-					jointAstar,
+			evaluate(// jointAstar,
+					pipeline,
 					// // BrownPropbankReader.readCorpus()//
 					ParallelCorpusReader.getPropBank00()
 					// ParallelCorpusReader.getPropBank23()

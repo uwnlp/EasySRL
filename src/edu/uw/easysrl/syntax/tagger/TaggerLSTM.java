@@ -14,12 +14,12 @@ import com.google.common.collect.Ordering;
 import edu.uw.deeptagger.DeepTagger;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 
 public class TaggerLSTM extends Tagger {
 	private final DeepTagger tagger;
 
-	TaggerLSTM(final File modelFolder, final double beta, final int maxTagsPerWord, final CutoffsDictionary cutoffs)
+	TaggerLSTM(final File modelFolder, final double beta, final int maxTagsPerWord, final CutoffsDictionaryInterface cutoffs)
 			throws IOException {
 
 		this(makeDeepTagger(modelFolder), beta, maxTagsPerWord, cutoffs);
@@ -42,7 +42,7 @@ public class TaggerLSTM extends Tagger {
 	private final List<Integer> possibleCategories = new ArrayList<>();
 
 	public TaggerLSTM(final DeepTagger tagger, final double beta, final int maxTagsPerWord,
-			final CutoffsDictionary cutoffs) throws IOException {
+			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		super(cutoffs, beta, tagger.getTags().stream().map(Category::valueOf).collect(Collectors.toList()),
 				maxTagsPerWord);
 		this.tagger = tagger;
@@ -55,7 +55,7 @@ public class TaggerLSTM extends Tagger {
 
 	@Override
 	public List<List<ScoredCategory>> tag(final List<InputWord> words) {
-		final List<String> input = words.stream().map(x -> x.word).collect(Collectors.toList());
+		final List<String> input = words.stream().map(x -> translateBrackets(x.word)).collect(Collectors.toList());
 		final float[][] scores = tagger.tag(input);
 		final List<List<ScoredCategory>> result = new ArrayList<>();
 		for (int i = 0; i < input.size(); i++) {

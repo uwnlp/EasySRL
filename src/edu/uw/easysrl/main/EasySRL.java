@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.util.InputMismatchException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -24,15 +25,17 @@ import com.google.common.base.Stopwatch;
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.semantics.lexicon.CompositeLexicon;
 import edu.uw.easysrl.semantics.lexicon.Lexicon;
-import edu.uw.easysrl.syntax.evaluation.Results;
+import edu.uw.easysrl.syntax.evaluation.CCGBankEvaluation;
 import edu.uw.easysrl.syntax.grammar.Category;
-import edu.uw.easysrl.syntax.model.CutoffsDictionary;
+import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.Model.ModelFactory;
 import edu.uw.easysrl.syntax.model.SRLFactoredModel.SRLFactoredModelFactory;
 import edu.uw.easysrl.syntax.model.SupertagFactoredModel.SupertagFactoredModelFactory;
+import edu.uw.easysrl.syntax.model.feature.Feature.FeatureKey;
 import edu.uw.easysrl.syntax.model.feature.FeatureSet;
 import edu.uw.easysrl.syntax.parser.Parser;
 import edu.uw.easysrl.syntax.parser.ParserAStar;
+import edu.uw.easysrl.syntax.parser.ParserBeamSearch;
 import edu.uw.easysrl.syntax.parser.ParserCKY;
 import edu.uw.easysrl.syntax.parser.SRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.BackoffSRLParser;
@@ -73,11 +76,14 @@ public class EasySRL {
 		@Option(shortName = "n", defaultValue = "1", description = "(Optional) Number of parses to return per sentence. Values >1 are only supported for A* parsing. Defaults to 1.")
 		int getNbest();
 
-		@Option(shortName = "r", defaultValue = { "S[dcl]", "S[wq]", "S[q]", "S[b]\\NP", "NP" }, description = "(Optional) List of valid categories for the root node of the parse. Defaults to: S[dcl] S[wq] S[q] NP S[b]\\NP")
+		@Option(shortName = "r", defaultValue = { "S[dcl]", "S[wq]", "S[q]", "S[b]\\NP", "NP", "NP[nb]" }, description = "(Optional) List of valid categories for the root node of the parse. Defaults to: S[dcl] S[wq] S[q] NP S[b]\\NP")
 		List<Category> getRootCategories();
 
 		@Option(defaultValue = "0.01", description = "(Optional) Prunes lexical categories whose probability is less than this ratio of the best category. Decreasing this value will slightly improve accuracy, and give more varied n-best output, but decrease speed. Defaults to 0.01.")
 		double getSupertaggerbeam();
+
+		@Option(shortName = "w", defaultValue = "1.0", description = "Use a specified supertagger weight, instead of the pretrained value.")
+		double getSupertaggerWeight();
 
 		@Option(helpRequest = true, description = "Display this message", shortName = "h")
 		boolean getHelp();
@@ -93,8 +99,8 @@ public class EasySRL {
 	public enum OutputFormat {
 		CCGBANK(ParsePrinter.CCGBANK_PRINTER), HTML(ParsePrinter.HTML_PRINTER), SUPERTAGS(ParsePrinter.SUPERTAG_PRINTER), PROLOG(
 				ParsePrinter.PROLOG_PRINTER), EXTENDED(ParsePrinter.EXTENDED_CCGBANK_PRINTER), DEPENDENCIES(
-						new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
-				ParsePrinter.LOGIC_PRINTER);
+				new ParsePrinter.DependenciesPrinter()), SRL(ParsePrinter.SRL_PRINTER), LOGIC(
+								ParsePrinter.LOGIC_PRINTER);
 
 		public final ParsePrinter printer;
 
@@ -116,14 +122,31 @@ public class EasySRL {
 
 			final File pipelineFolder = new File(modelFolder, "/pipeline");
 			System.err.println("====Starting loading model====");
-			final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-			final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(
-					pipelineFolder.getAbsolutePath(), 0.0001, ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(),
-					commandLineOptions.getNbest()), Util.deserialize(new File(pipelineFolder, "labelClassifier")),
-					posTagger);
 
-			final SRLParser parser2 = new BackoffSRLParser(new JointSRLParser(makeParser(commandLineOptions, 20000,
-					true, Optional.empty()), posTagger), pipeline);
+			final SRLParser parser2;
+			if (pipelineFolder.exists()) {
+				// Joint model
+				final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
+				final File labelClassifier = new File(pipelineFolder, "labelClassifier");
+				final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(
+						pipelineFolder.getAbsolutePath(), 0.000001, ParsingAlgorithm.ASTAR, 100000, false,
+						Optional.empty(), commandLineOptions.getNbest(), commandLineOptions.getMaxLength()),
+						labelClassifier.exists() ? Util.deserialize(labelClassifier)
+								: CCGBankEvaluation.dummyLabelClassifier, posTagger);
+
+				parser2 = new BackoffSRLParser(new JointSRLParser(makeParser(commandLineOptions, 20000, true,
+						Optional.of(commandLineOptions.getSupertaggerWeight())), posTagger), pipeline);
+			} else {
+				// Pipeline
+				final double supertaggerBeam = commandLineOptions.getSupertaggerbeam();
+				final POSTagger posTagger = POSTagger.getStanfordTagger(new File(modelFolder, "posTagger"));
+				final File labelClassifier = new File(modelFolder, "labelClassifier");
+				parser2 = new PipelineSRLParser(EasySRL.makeParser(modelFolder.getAbsolutePath(), supertaggerBeam,
+						ParsingAlgorithm.ASTAR, 100000, false, Optional.empty(), commandLineOptions.getNbest(),
+						commandLineOptions.getMaxLength()),
+						labelClassifier.exists() ? Util.deserialize(labelClassifier)
+								: CCGBankEvaluation.dummyLabelClassifier, posTagger);
+			}
 
 			final OutputFormat outputFormat = OutputFormat.valueOf(commandLineOptions.getOutputFormat().toUpperCase());
 			final ParsePrinter printer = outputFormat.printer;
@@ -161,7 +184,6 @@ public class EasySRL {
 
 			final Stopwatch timer = Stopwatch.createStarted();
 			final AtomicInteger parsedSentences = new AtomicInteger();
-			final Results dependencyResults = new Results();
 			final ExecutorService executorService = Executors.newFixedThreadPool(1// commandLineOptions.getThreads()
 					);
 
@@ -184,7 +206,7 @@ public class EasySRL {
 							final List<CCGandSRLparse> parses = parser.parseTokens(reader.readInput(line)
 									.getInputWords());
 							final String output = printer.printJointParses(parses, id2);
-
+							parsedSentences.getAndIncrement();
 							synchronized (printer) {
 								try {
 									// It's a bit faster to buffer output than use
@@ -208,10 +230,6 @@ public class EasySRL {
 			sysout.close();
 
 			final DecimalFormat twoDP = new DecimalFormat("#.##");
-
-			if (!dependencyResults.isEmpty()) {
-				System.out.println("F1=" + dependencyResults.getF1());
-			}
 
 			System.err.println("Sentences parsed: " + parsedSentences.get());
 			System.err.println("Speed: "
@@ -245,17 +263,17 @@ public class EasySRL {
 	}
 
 	public enum ParsingAlgorithm {
-		ASTAR, CKY
+		ASTAR, CKY, BEAM
 	}
 
 	public static Parser makeParser(final String modelFolder, final double supertaggerBeam,
 			final ParsingAlgorithm parsingAlgorithm, final int maxChartSize, final boolean joint,
-			final Optional<Double> supertaggerWeight, final int nbest) throws IOException {
+			final Optional<Double> supertaggerWeight, final int nbest, final int maxLength) throws IOException {
 		CommandLineArguments commandLineOptions;
 		try {
 			commandLineOptions = CliFactory.parseArguments(CommandLineArguments.class, new String[] { "-m",
-					modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString(),
-					"--nbest", "" + nbest });
+				modelFolder, "--supertaggerbeam", "" + supertaggerBeam, "-a", parsingAlgorithm.toString(),
+				"--nbest", "" + nbest, "-l", "" + maxLength });
 
 		} catch (final ArgumentValidationException e) {
 			throw new RuntimeException(e);
@@ -269,13 +287,14 @@ public class EasySRL {
 		final File modelFolder = Util.getFile(commandLineOptions.getModel());
 		Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
 		final File cutoffsFile = new File(modelFolder, "cutoffs");
-		final CutoffsDictionary cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
+		final CutoffsDictionaryInterface cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
 
 		ModelFactory modelFactory;
 		final ParsingAlgorithm algorithm = ParsingAlgorithm.valueOf(commandLineOptions.getParsingAlgorithm()
 				.toUpperCase());
 
 		if (joint) {
+			final Map<FeatureKey, Integer> keyToIndex = Util.deserialize(new File(modelFolder, "featureToIndex"));
 			final double[] weights = Util.deserialize(new File(modelFolder, "weights"));
 			if (supertaggerWeight.isPresent()) {
 				weights[0] = supertaggerWeight.get();
@@ -284,29 +303,27 @@ public class EasySRL {
 			modelFactory = new SRLFactoredModelFactory(weights, ((FeatureSet) Util.deserialize(new File(modelFolder,
 					"features"))).setSupertaggingFeature(new File(modelFolder, "/pipeline"),
 							commandLineOptions.getSupertaggerbeam()), TaggerEmbeddings.loadCategories(new File(modelFolder,
-					"categories")), cutoffs, Util.deserialize(new File(modelFolder, "featureToIndex")));
+									"categories")), cutoffs, keyToIndex);
 
 		} else {
 			modelFactory = new SupertagFactoredModelFactory(Tagger.make(modelFolder,
-					commandLineOptions.getSupertaggerbeam(), 50, cutoffs));
+					commandLineOptions.getSupertaggerbeam(), 50, cutoffs), commandLineOptions.getNbest() > 1);
 
 		}
 
 		final Parser parser;
 		final int nBest = commandLineOptions.getNbest();
 		if (algorithm == ParsingAlgorithm.CKY) {
-			parser = new ParserCKY(
-
-					modelFactory, commandLineOptions.getMaxLength(), nBest, InputFormat.valueOf(commandLineOptions
-					.getInputFormat().toUpperCase()), commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+			parser = new ParserCKY(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+		} else if (algorithm == ParsingAlgorithm.BEAM) {
+			parser = new ParserBeamSearch(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
 		} else {
-			parser = new ParserAStar(
-
-					modelFactory, commandLineOptions.getMaxLength(), nBest, InputFormat.valueOf(commandLineOptions
-					.getInputFormat().toUpperCase()), commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+			parser = new ParserAStar(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
 		}
 
 		return parser;
 	}
-
 }

@@ -246,7 +246,7 @@ class CKY {
 
 	}
 
-	static class EquivalenceClassKey implements Serializable {
+	static class EquivalenceClassKey implements Serializable{
 		/**
 		 *
 		 */
@@ -301,7 +301,6 @@ class CKY {
 		public DependencyStructure getDependencyStructure() {
 			return dependencyStructure;
 		}
-
 	}
 
 	public Multimap<Category, UnaryRule> getUnaryRules() {

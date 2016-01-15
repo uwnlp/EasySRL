@@ -30,8 +30,8 @@ public abstract class Combinator {
 	public enum RuleType {
 		FA(RuleClass.OTHER), BA(RuleClass.OTHER), FC(RuleClass.FC), BX(RuleClass.BX), GFC(RuleClass.GFC), GBX(
 				RuleClass.GBX), CONJ(RuleClass.CONJ), RP(RuleClass.RP), LP(RuleClass.LP), NOISE(RuleClass.OTHER), FORWARD_TYPERAISE(
-				RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(
-				RuleClass.OTHER), LEXICON(RuleClass.LEXICON);
+						RuleClass.FORWARD_TYPERAISE), BACKWARD_TYPE_RAISE(RuleClass.BACKWARD_TYPE_RAISE), TYPE_CHANGE(
+								RuleClass.OTHER), LEXICON(RuleClass.LEXICON);
 		private final RuleClass ruleClass;
 
 		RuleType(final RuleClass ruleClass) {
@@ -99,9 +99,10 @@ public abstract class Combinator {
 			new ForwardApplication(), new BackwardApplication(),
 			new ForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD), new BackwardComposition(Slash.FWD, Slash.BWD,
 					Slash.FWD), new GeneralizedForwardComposition(Slash.FWD, Slash.FWD, Slash.FWD),
-			new GeneralizedBackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD), new Conjunction(),
-			new RemovePunctuation(false), new RemovePunctuation(true), new CommaAndVPtoNPmodifier() // TODO
-			, new CommaAndVerbPhrasetoAdverb() // TODO
+					new GeneralizedBackwardComposition(Slash.FWD, Slash.BWD, Slash.FWD), new Conjunction(),
+					new RemovePunctuation(false), new RemovePunctuation(true)// , new CommaAndVPtoNPmodifier() // TODO
+			, new CommaAndVerbPhrasetoAdverb(), new ParentheticalDirectSpeech()
+	// TODO
 			));
 
 	public static Collection<Combinator> loadSpecialCombinators(final File file) throws IOException {
@@ -149,9 +150,12 @@ public abstract class Combinator {
 	/**
 	 * Returns a set of rules that can be applied to a pair of categories.
 	 */
-	public static Collection<RuleProduction> getRules(final Category left, final Category right,
-			final Collection<Combinator> rules) {
-		final Collection<RuleProduction> result = new ArrayList<>(2);
+	public static List<RuleProduction> getRules(Category left, Category right, final Collection<Combinator> rules) {
+		// [nb] feature is not helpful.
+		left = Category.valueOf(left.toString().replace("[nb]", ""));
+		right = Category.valueOf(right.toString().replace("[nb]", ""));
+
+		final List<RuleProduction> result = new ArrayList<>(2);
 		for (final Combinator c : rules) {
 			if (c.canApply(left, right)) {
 				result.add(new RuleProduction(c.ruleType, c.apply(left, right), c.headIsLeft(left, right), c));
@@ -301,11 +305,7 @@ public abstract class Combinator {
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
-			return punctuationIsLeft ? left.isPunctuation() : right.isPunctuation(); // &&
-			// !StandardCategories.N.matches(left);
-			// // Disallow punctuation combining
-			// with nouns, to avoid getting NPs like
-			// "Barack Obama ."
+			return punctuationIsLeft ? left.isPunctuation() : right.isPunctuation();
 		}
 
 		@Override
@@ -397,7 +397,7 @@ public abstract class Combinator {
 
 		@Override
 		public boolean headIsLeft(final Category left, final Category right) {
-			if (left.isModifier() || left.isTypeRaised()) {
+			if (left.isModifier() || left.isTypeRaised() || left == Category.DETERMINER) {
 				return false;
 			}
 			return true;
@@ -421,6 +421,7 @@ public abstract class Combinator {
 		}
 
 		private final Category SemConj = Category.valueOf("S[em]\\S[em]");
+		private final Category sentenceModifier = Category.valueOf("S[dcl]\\S[dcl]");
 
 		@Override
 		public boolean canApply(final Category left, final Category right) {
@@ -447,7 +448,9 @@ public abstract class Combinator {
 
 		@Override
 		public boolean headIsLeft(final Category left, final Category right) {
-			if (right.isModifier() || right.isTypeRaised()) {
+			if ((right.isModifier() || right.isTypeRaised()) && right != sentenceModifier) {// S[dcl]\S[dcl] is normally
+				// a verb like 'said', which
+				// should be the head
 				return true;
 			}
 			return false;
@@ -630,6 +633,50 @@ public abstract class Combinator {
 		@Override
 		public Logic apply(final Logic left, final Logic right) {
 			return right.compose2(left);
+		}
+	}
+
+	/**
+	 * Using for emulating the CCGbank analysis of sentences like "She is, I think, a genius" 
+	 */
+	private static class ParentheticalDirectSpeech extends Combinator {
+
+		private ParentheticalDirectSpeech() {
+			super(RuleType.NOISE);
+		}
+
+		private final Logic semantics = LogicParser.fromString("#p#q#x#e . q(x,e) & p(x,e)",
+				Category.make(Category.ADVERB, Slash.FWD, Category.valueOf("S/S")));
+
+		private final DependencyStructure dependencyStructure = DependencyStructure.makeUnaryRuleTransformation(
+				"(S_3/S_3)_2", "((S_3\\NP_1)_3/(S_3\\NP_1)_3)_2");
+
+		@Override
+		public boolean canApply(final Category left, final Category right) {
+
+			return left == Category.COMMA && (right == Category.valueOf("S[dcl]/S[dcl]"));
+
+		}
+
+		@Override
+		public Category apply(final Category left, final Category right) {
+			return Category.valueOf("(S\\NP)/(S\\NP)");
+		}
+
+		@Override
+		public boolean headIsLeft(final Category left, final Category right) {
+			return false;
+		}
+
+		@Override
+		public DependencyStructure apply(final DependencyStructure left, final DependencyStructure right,
+				final List<UnlabelledDependency> resolvedDependencies) {
+			return dependencyStructure.apply(right, resolvedDependencies);
+		}
+
+		@Override
+		public Logic apply(final Logic left, final Logic right) {
+			return semantics.alphaReduce().apply(right);
 		}
 	}
 

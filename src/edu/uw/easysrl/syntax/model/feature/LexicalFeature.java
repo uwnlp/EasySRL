@@ -15,8 +15,7 @@ public class LexicalFeature implements Serializable {
 	private final int offset;
 
 	public LexicalFeature(final Clustering clustering, final int offset) {
-		this.name = (clustering == null ? "word" : clustering.getName())
-				+ ":o=" + offset;
+		this.name = (clustering == null ? "word" : clustering.getName()) + ":o=" + offset;
 		this.clustering = clustering;
 		this.offset = offset;
 	}
@@ -32,7 +31,7 @@ public class LexicalFeature implements Serializable {
 			return "OutOfRange";
 		}
 
-		final String word = sentence.get(wordIndex).lowerCase;
+		final String word = sentence.get(wordIndex).word.toLowerCase();
 		if (clustering == null) {
 			return word;
 		} else {
