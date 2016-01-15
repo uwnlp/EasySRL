@@ -248,7 +248,6 @@ public abstract class ParsePrinter {
 					result.append(" " + dep.getSemanticRole());
 					int i = 0;
 					final List<SyntaxTreeNodeLeaf> argumentWords = argumentConstituent.getLeaves();
-					final List<Integer> indices = new ArrayList<>();
 					for (final SyntaxTreeNodeLeaf child : argumentWords) {
 						if (i == 0 && dep.getSemanticRole().isCoreArgument()
 								&& child.getCategory().isFunctionInto(Category.PP) && argumentWords.size() > 1) {
@@ -257,12 +256,13 @@ public abstract class ParsePrinter {
 							// Drop trailing punctutation
 						} else {
 							result.append(" " + child.getWord());
-							indices.add(child.getHeadIndex());
+							if (includeWordIndices) {
+								result.append("@" + child.getHeadIndex());
+							}
 						}
 						i++;
 					}
 
-					addIndices(result, indices);
 					result.append("\n");
 				}
 
@@ -297,12 +297,6 @@ public abstract class ParsePrinter {
 				}
 			}
 
-			addIndices(result, indices);
-
-			return result.toString();
-		}
-
-		private void addIndices(final StringBuilder result, final List<Integer> indices) {
 			if (includeWordIndices) {
 				result.append("@");
 				for (int i = 0; i < indices.size(); i++) {
@@ -312,6 +306,7 @@ public abstract class ParsePrinter {
 					result.append(indices.get(i));
 				}
 			}
+			return result.toString();
 		}
 
 		private SyntaxTreeNode getArgumentConstituent(final SyntaxTreeNode node, final ResolvedDependency dep) {
@@ -754,7 +749,7 @@ public abstract class ParsePrinter {
 
 		/*
 		 * ccg(2, ba('S[dcl]', lf(2,1,'NP'), fa('S[dcl]\NP', lf(2,2,'(S[dcl]\NP)/NP'), lex('N','NP', lf(2,3,'N'))))).
-		 * 
+		 *
 		 * w(2, 1, 'I', 'I', 'PRP', 'I-NP', 'O', 'NP'). w(2, 2, 'like', 'like', 'VBP', 'I-VP', 'O', '(S[dcl]\NP)/NP').
 		 * w(2, 3, 'cake', 'cake', 'NN', 'I-NP', 'O', 'N').
 		 */
