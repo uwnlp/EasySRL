@@ -1,7 +1,9 @@
 package edu.uw.easysrl.syntax.tagger;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -34,8 +36,15 @@ public abstract class POSTagger {
 		}
 	}
 
+	private final static Map<File, POSTagger> cache = new HashMap<>();
+
 	public static POSTagger getStanfordTagger(final File file) {
-		return new StanfordPOSTagger(file);
+		POSTagger result = cache.get(file);
+		if (result == null) {
+			result = new StanfordPOSTagger(file);
+			cache.put(file, result);
+		}
+		return result;
 	}
 
 	public static void main(final String[] args) {

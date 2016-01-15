@@ -20,7 +20,6 @@ import com.google.common.collect.Table.Cell;
 
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.DependencyStructure;
-import edu.uw.easysrl.main.EasySRL.InputFormat;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.semantics.LogicParser;
@@ -167,7 +166,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#parseTokens(java.util.List)
 	 */
 	@Override
@@ -190,7 +189,7 @@ public abstract class AbstractParser implements Parser {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override

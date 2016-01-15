@@ -46,6 +46,7 @@ import edu.uw.easysrl.syntax.parser.SRLParser.SemanticParser;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
 import edu.uw.easysrl.syntax.tagger.Tagger;
 import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
+import edu.uw.easysrl.syntax.training.PipelineTrainer.LabelClassifier;
 import edu.uw.easysrl.syntax.training.Training;
 import edu.uw.easysrl.util.Util;
 
@@ -76,10 +77,10 @@ public class EasySRL {
 		@Option(shortName = "n", defaultValue = "1", description = "(Optional) Number of parses to return per sentence. Values >1 are only supported for A* parsing. Defaults to 1.")
 		int getNbest();
 
-		@Option(shortName = "r", defaultValue = { "S[dcl]", "S[wq]", "S[q]", "S[b]\\NP", "NP", "NP[nb]" }, description = "(Optional) List of valid categories for the root node of the parse. Defaults to: S[dcl] S[wq] S[q] NP S[b]\\NP")
+		@Option(shortName = "r", defaultValue = { "S[dcl]", "S[wq]", "S[q]", "S[b]\\NP", "NP" }, description = "(Optional) List of valid categories for the root node of the parse. Defaults to: S[dcl] S[wq] S[q] NP S[b]\\NP")
 		List<Category> getRootCategories();
 
-		@Option(defaultValue = "0.01", description = "(Optional) Prunes lexical categories whose probability is less than this ratio of the best category. Decreasing this value will slightly improve accuracy, and give more varied n-best output, but decrease speed. Defaults to 0.01.")
+		@Option(defaultValue = "0.01", description = "(Optional) Prunes lexical categories whose probability is less than this ratio of the best category. Decreasing this value will slightly improve accuracy, and give more varied n-best output, but decrease speed. Defaults to 0.01 (currently only used for the joint model).")
 		double getSupertaggerbeam();
 
 		@Option(shortName = "w", defaultValue = "1.0", description = "Use a specified supertagger weight, instead of the pretrained value.")
@@ -122,34 +123,21 @@ public class EasySRL {
 
 			final File pipelineFolder = new File(modelFolder, "/pipeline");
 			System.err.println("====Starting loading model====");
+			final OutputFormat outputFormat = OutputFormat.valueOf(commandLineOptions.getOutputFormat().toUpperCase());
+			final ParsePrinter printer = outputFormat.printer;
 
 			final SRLParser parser2;
 			if (pipelineFolder.exists()) {
 				// Joint model
 				final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-				final File labelClassifier = new File(pipelineFolder, "labelClassifier");
-				final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(
-						pipelineFolder.getAbsolutePath(), 0.000001, ParsingAlgorithm.ASTAR, 100000, false,
-						Optional.empty(), commandLineOptions.getNbest(), commandLineOptions.getMaxLength()),
-						labelClassifier.exists() ? Util.deserialize(labelClassifier)
-								: CCGBankEvaluation.dummyLabelClassifier, posTagger);
-
+				final PipelineSRLParser pipeline = makePipelineParser(pipelineFolder, commandLineOptions, 0.000001,
+						printer.outputsDependencies());
 				parser2 = new BackoffSRLParser(new JointSRLParser(makeParser(commandLineOptions, 20000, true,
 						Optional.of(commandLineOptions.getSupertaggerWeight())), posTagger), pipeline);
 			} else {
 				// Pipeline
-				final double supertaggerBeam = commandLineOptions.getSupertaggerbeam();
-				final POSTagger posTagger = POSTagger.getStanfordTagger(new File(modelFolder, "posTagger"));
-				final File labelClassifier = new File(modelFolder, "labelClassifier");
-				parser2 = new PipelineSRLParser(EasySRL.makeParser(modelFolder.getAbsolutePath(), supertaggerBeam,
-						ParsingAlgorithm.ASTAR, 100000, false, Optional.empty(), commandLineOptions.getNbest(),
-						commandLineOptions.getMaxLength()),
-						labelClassifier.exists() ? Util.deserialize(labelClassifier)
-								: CCGBankEvaluation.dummyLabelClassifier, posTagger);
+				parser2 = makePipelineParser(modelFolder, commandLineOptions, 0.000001, printer.outputsDependencies());
 			}
-
-			final OutputFormat outputFormat = OutputFormat.valueOf(commandLineOptions.getOutputFormat().toUpperCase());
-			final ParsePrinter printer = outputFormat.printer;
 
 			final SRLParser parser;
 			if (printer.outputsLogic()) {
@@ -240,6 +228,19 @@ public class EasySRL {
 			System.err.println(e.getMessage());
 			System.err.println(CliFactory.createCli(CommandLineArguments.class).getHelpMessage());
 		}
+	}
+
+	private static PipelineSRLParser makePipelineParser(final File folder,
+			final CommandLineArguments commandLineOptions, final double supertaggerBeam,
+			final boolean outputDependencies) throws IOException {
+		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(folder, "posTagger"));
+		final File labelClassifier = new File(folder, "labelClassifier");
+		final LabelClassifier classifier = labelClassifier.exists() && outputDependencies ? Util
+				.deserialize(labelClassifier) : CCGBankEvaluation.dummyLabelClassifier;
+
+				return new PipelineSRLParser(EasySRL.makeParser(folder.getAbsolutePath(), supertaggerBeam,
+				ParsingAlgorithm.ASTAR, 100000, false, Optional.empty(), commandLineOptions.getNbest(),
+				commandLineOptions.getMaxLength()), classifier, posTagger);
 	}
 
 	public static Parser makeParser(final File modelFolder, final Optional<Double> supertaggerWeight)

@@ -44,7 +44,8 @@ public abstract class SyntaxTreeNode implements Serializable {
 		this.headIndex = headIndex;
 		this.dependencyStructure = dependencyStructure;
 		// Because subList isn't serializable.
-		this.resolvedUnlabelledDependencies = ImmutableList.copyOf(resolvedUnlabelledDependencies);
+		this.resolvedUnlabelledDependencies = resolvedUnlabelledDependencies == null ? null : ImmutableList
+				.copyOf(resolvedUnlabelledDependencies);
 		this.length = length;
 		this.semantics = semantics.orElse(null);
 	}

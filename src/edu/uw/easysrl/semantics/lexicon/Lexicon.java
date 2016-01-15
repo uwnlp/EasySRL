@@ -26,8 +26,8 @@ public abstract class Lexicon {
 	 */
 	public Logic getEntry(final CCGandSRLparse parse, final int wordIndex) {
 		final SyntaxTreeNodeLeaf leaf = parse.getLeaf(wordIndex);
-		return getEntry(leaf.getWord(), leaf.getPos(), leaf.getCategory(), leaf.getDependencyStructure()
-				.getCoindexation(), Optional.of(parse), wordIndex);
+		return getEntry(leaf.getWord(), leaf.getPos(), leaf.getCategory(),
+				Coindexation.fromString(leaf.getCategory().toString(), wordIndex), Optional.of(parse), wordIndex);
 
 	}
 

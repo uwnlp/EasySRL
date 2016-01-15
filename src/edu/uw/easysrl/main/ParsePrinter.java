@@ -207,6 +207,11 @@ public abstract class ParsePrinter {
 		protected boolean outputsLogic() {
 			return false;
 		}
+
+		@Override
+		protected boolean outputsDependencies() {
+			return false;
+		}
 	}
 
 	private static class SRLprinter extends ParsePrinter {
@@ -315,6 +320,11 @@ public abstract class ParsePrinter {
 		@Override
 		protected boolean outputsLogic() {
 			return false;
+		}
+
+		@Override
+		protected boolean outputsDependencies() {
+			return true;
 		}
 	}
 
@@ -606,6 +616,11 @@ public abstract class ParsePrinter {
 		protected boolean outputsLogic() {
 			return true;
 		}
+
+		@Override
+		protected boolean outputsDependencies() {
+			return true;
+		}
 	}
 
 	private static class SupertagPrinter extends ParsePrinter {
@@ -644,6 +659,11 @@ public abstract class ParsePrinter {
 
 		@Override
 		protected boolean outputsLogic() {
+			return false;
+		}
+
+		@Override
+		protected boolean outputsDependencies() {
 			return false;
 		}
 	}
@@ -692,6 +712,11 @@ public abstract class ParsePrinter {
 
 		@Override
 		protected boolean outputsLogic() {
+			return true;
+		}
+
+		@Override
+		protected boolean outputsDependencies() {
 			return true;
 		}
 	}
@@ -831,6 +856,11 @@ public abstract class ParsePrinter {
 			return false;
 		}
 
+		@Override
+		protected boolean outputsDependencies() {
+			return false;
+		}
+
 	}
 
 	private static String getUnaryRuleName(final Category initial, final Category result) {
@@ -937,6 +967,11 @@ public abstract class ParsePrinter {
 			return false;
 		}
 
+		@Override
+		protected boolean outputsDependencies() {
+			return false;
+		}
+
 	}
 
 	public static class DependenciesPrinter extends ParsePrinter {
@@ -989,6 +1024,11 @@ public abstract class ParsePrinter {
 			return false;
 		}
 
+		@Override
+		protected boolean outputsDependencies() {
+			return true;
+		}
+
 	}
 
 	protected abstract boolean outputsLogic();
@@ -997,4 +1037,11 @@ public abstract class ParsePrinter {
 		return print(parses == null ? null : parses.stream().map(x -> x.getCcgParse()).collect(Collectors.toList()), id);
 	}
 
+	/**
+	 * Override this if only printing only syntactic output (which saves pipeline models from having to build
+	 * dependencies).
+	 */
+	protected boolean outputsDependencies() {
+		return true;
+	}
 }
