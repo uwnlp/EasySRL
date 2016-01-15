@@ -11,7 +11,6 @@ import edu.uw.easysrl.semantics.LambdaExpression;
 import edu.uw.easysrl.semantics.Logic;
 import edu.uw.easysrl.semantics.SemanticType;
 import edu.uw.easysrl.semantics.Variable;
-import edu.uw.easysrl.semantics.SemanticType.ComplexSemanticType;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Preposition;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
@@ -57,9 +56,9 @@ public class CopulaLexicon extends Lexicon {
 			} else {
 				// S\NP/NP
 				SemanticType type = SemanticType.T;
-				type = ComplexSemanticType.make(head.getType(), type);
-				type = ComplexSemanticType.make(vars.get(1).getType(), type);
-				type = ComplexSemanticType.make(vars.get(0).getType(), type);
+				type = SemanticType.make(head.getType(), type);
+				type = SemanticType.make(vars.get(1).getType(), type);
+				type = SemanticType.make(vars.get(0).getType(), type);
 				
 				Constant pred = new Constant("eq", type);
 				
