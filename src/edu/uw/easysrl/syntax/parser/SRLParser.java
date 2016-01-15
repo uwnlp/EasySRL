@@ -1,6 +1,7 @@
 package edu.uw.easysrl.syntax.parser;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -123,7 +124,9 @@ public abstract class SRLParser {
 		}
 	}
 
-	public static class CCGandSRLparse {
+	public static class CCGandSRLparse implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final SyntaxTreeNode ccgParse;
 		private final Collection<ResolvedDependency> dependencyParse;
 		private final List<InputWord> words;
