@@ -29,13 +29,150 @@ abstract class ChartCell {
 		return add(entry.getEquivalenceClassKey(), entry);
 	}
 
+	static abstract class ChartCellFactory {
+		public abstract ChartCell make();
+
+		/**
+		 * Reset factory for a new sentence.
+		 */
+		public void newSentence() {
+		}
+	}
+
 	public abstract boolean add(final Object key, final AgendaItem entry);
 
 	public abstract Iterable<AgendaItem> getEntries();
 
 	abstract int size();
 
+	/**
+	 * Chart Cell used for 1-best parsing.
+	 */
+	protected static class Cell1Best extends ChartCell {
+		final Map<Object, AgendaItem> keyToProbability = new HashMap<>();
+
+		@Override
+		public Collection<AgendaItem> getEntries() {
+			return keyToProbability.values();
+		}
+
+		@Override
+		public boolean add(final Object key, final AgendaItem entry) {
+			return keyToProbability.putIfAbsent(key, entry) == null;
+		}
+
+		@Override
+		int size() {
+			return keyToProbability.size();
+		}
+
+		public static ChartCellFactory factory() {
+			return new ChartCellFactory() {
+
+				@Override
+				public ChartCell make() {
+					return new Cell1Best();
+				}
+			};
+		}
+	}
+
+	/**
+	 * ChartCell for A* parsing that uses a custom tree data structure, rather than a hash map. It'll die horribly if
+	 * the keys aren't comparable.
+	 */
+	protected static class Cell1BestTreeBased extends ChartCell {
+		final FastTreeMap<Object, AgendaItem> keyToProbability = new FastTreeMap<>();
+
+		@Override
+		public Iterable<AgendaItem> getEntries() {
+			return keyToProbability.values();
+		}
+
+		@Override
+		public boolean add(final Object key, final AgendaItem entry) {
+			return keyToProbability.putIfAbsent(key, entry);
+		}
+
+		@Override
+		int size() {
+			return keyToProbability.size();
+		}
+
+		public static ChartCellFactory factory() {
+			return new ChartCellFactory() {
+
+				@Override
+				public ChartCell make() {
+					return new Cell1BestTreeBased();
+				}
+			};
+		}
+	}
+
+	/**
+	 * ChartCell for CKY parsing. The main difference with A* is that it needs to check if new entries have a higher
+	 * score than existing entries (which can't happen with A*).
+	 *
+	 */
+	protected static class Cell1BestCKY extends Cell1Best {
+		@Override
+		public Collection<AgendaItem> getEntries() {
+			return keyToProbability.values();
+		}
+
+		@Override
+		public boolean add(final Object key, final AgendaItem entry) {
+			final AgendaItem currentEntry = keyToProbability.get(key);
+			if (currentEntry == null || entry.getInsideScore() > currentEntry.getInsideScore()) {
+				keyToProbability.put(key, entry);
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+	}
+
+	/**
+	 * Allows at most N items in a cell, without dividing them into equivalence classes.
+	 *
+	 * Could also be used in conjunction with dependency hashing?
+	 */
+	static class CellNoDynamicProgram extends ChartCell {
+		private final List<AgendaItem> entries;
+
+		CellNoDynamicProgram() {
+			this(new ArrayList<>());
+		}
+
+		CellNoDynamicProgram(final List<AgendaItem> entries) {
+			this.entries = entries;
+
+		}
+
+		@Override
+		public Collection<AgendaItem> getEntries() {
+			return entries;
+		}
+
+		@Override
+		public boolean add(final Object key, final AgendaItem newEntry) {
+			return entries.add(newEntry);
+		}
+
+		@Override
+		int size() {
+			return entries.size();
+		}
+
+	}
+
+	/**
+	 * Implements dependency hashing for better N-best parsing, as in Ng&Curran 2012
+	 */
 	public static class ChartCellNbestFactory extends ChartCellFactory {
+
 		private final int nbest;
 		private final double nbestBeam;
 
@@ -45,6 +182,8 @@ abstract class ChartCell {
 			this.nbest = nbest;
 			this.nbestBeam = nbestBeam;
 			final Random randomGenerator = new Random();
+
+			// Build a hash for every possible dependency
 			categoryToArgumentToHeadToModifierToHash = HashBasedTable.create();
 			for (final Category c : categories) {
 				for (int i = 1; i <= c.getNumberOfArguments(); i++) {
@@ -59,6 +198,8 @@ abstract class ChartCell {
 			}
 		}
 
+		// A cache of hash scores for nodes, to save recomputing them. I'm not in love with this design, but at least it
+		// keeps all the hashing code in one place.
 		private final Map<SyntaxTreeNode, Integer> nodeToHash = new HashMap<>();
 		private final Table<Category, Integer, int[][]> categoryToArgumentToHeadToModifierToHash;
 
@@ -66,6 +207,8 @@ abstract class ChartCell {
 			Integer result = nodeToHash.get(parse);
 			if (result == null) {
 				result = 0;
+
+				// Add in a hash for each dependency at this node.
 				final List<UnlabelledDependency> resolvedUnlabelledDependencies = parse
 						.getResolvedUnlabelledDependencies();
 				if (resolvedUnlabelledDependencies != null) {
@@ -90,8 +233,8 @@ abstract class ChartCell {
 		}
 
 		/**
-		 * Chart Cell used for N-best parsing. It allows multiple entries with the same category, if they are not
-		 * equivalent.
+		 * Chart Cell used for N-best parsing. It allows multiple entries with the same key, but doesn't check for
+		 * equivalence
 		 */
 		protected class CellNBest extends ChartCell {
 			private final ListMultimap<Object, AgendaItem> keyToEntries = ArrayListMultimap.create();
@@ -108,6 +251,7 @@ abstract class ChartCell {
 						|| (existing.size() > 0 && newEntry.getCost() < nbestBeam * existing.get(0).getCost())) {
 					return false;
 				} else {
+					// Only cache out hashes for nodes that get added to the chart.
 					keyToEntries.put(key, newEntry);
 					return true;
 				}
@@ -121,8 +265,7 @@ abstract class ChartCell {
 		}
 
 		/**
-		 * Chart Cell used for N-best parsing. It allows multiple entries with the same category, if they are not
-		 * equivalent.
+		 * Chart Cell used for N-best parsing. It allows multiple entries with the same key, if they are not equivalent.
 		 */
 		class CellNBestWithHashing extends ChartCell {
 			private final ListMultimap<Object, AgendaItem> keyToEntries = ArrayListMultimap.create();
@@ -174,122 +317,4 @@ abstract class ChartCell {
 		}
 	}
 
-	/**
-	 * Chart Cell used for 1-best parsing.
-	 */
-	protected static class Cell1Best extends ChartCell {
-		final Map<Object, AgendaItem> keyToProbability = new HashMap<>();
-
-		@Override
-		public Collection<AgendaItem> getEntries() {
-			return keyToProbability.values();
-		}
-
-		@Override
-		public boolean add(final Object key, final AgendaItem entry) {
-			return keyToProbability.putIfAbsent(key, entry) == null;
-		}
-
-		@Override
-		int size() {
-			return keyToProbability.size();
-		}
-
-		public static ChartCellFactory factory() {
-			return new ChartCellFactory() {
-
-				@Override
-				public ChartCell make() {
-					return new Cell1Best();
-				}
-			};
-		}
-	}
-
-	protected static class Cell1BestTreeBased extends ChartCell {
-		final FastTreeMap<Object, AgendaItem> keyToProbability = new FastTreeMap<>();
-
-		@Override
-		public Iterable<AgendaItem> getEntries() {
-			return keyToProbability.values();
-		}
-
-		@Override
-		public boolean add(final Object key, final AgendaItem entry) {
-			return keyToProbability.putIfAbsent(key, entry);
-		}
-
-		@Override
-		int size() {
-			return keyToProbability.size();
-		}
-
-		public static ChartCellFactory factory() {
-			return new ChartCellFactory() {
-
-				@Override
-				public ChartCell make() {
-					return new Cell1BestTreeBased();
-				}
-			};
-		}
-	}
-
-	protected static class Cell1BestCKY extends Cell1Best {
-		@Override
-		public Collection<AgendaItem> getEntries() {
-			return keyToProbability.values();
-		}
-
-		@Override
-		public boolean add(final Object key, final AgendaItem entry) {
-			final AgendaItem currentEntry = keyToProbability.get(key);
-			if (currentEntry == null || entry.getInsideScore() > currentEntry.getInsideScore()) {
-				keyToProbability.put(key, entry);
-				return true;
-			} else {
-				return false;
-			}
-		}
-
-	}
-
-	static class CellNoDynamicProgram extends ChartCell {
-		private final List<AgendaItem> entries;
-
-		CellNoDynamicProgram() {
-			this(new ArrayList<>());
-		}
-
-		CellNoDynamicProgram(final List<AgendaItem> entries) {
-			this.entries = entries;
-
-		}
-
-		@Override
-		public Collection<AgendaItem> getEntries() {
-			return entries;
-		}
-
-		@Override
-		public boolean add(final Object key, final AgendaItem newEntry) {
-			return entries.add(newEntry);
-		}
-
-		@Override
-		int size() {
-			return entries.size();
-		}
-
-	}
-
-	static abstract class ChartCellFactory {
-		public abstract ChartCell make();
-
-		/**
-		 * Reset factory for a new sentence.
-		 */
-		public void newSentence() {
-		}
-	}
 }
