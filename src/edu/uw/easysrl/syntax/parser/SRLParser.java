@@ -199,14 +199,15 @@ public abstract class SRLParser {
 		private CCGandSRLparse addDependencies(final List<InputWord> tokens, final CCGandSRLparse parse) {
 			final Collection<UnlabelledDependency> unlabelledDependencies = new ArrayList<>();
 			// Get the dependencies in this parse.
-			dependencyGenerator.generateDependencies(parse.getCcgParse(), unlabelledDependencies);
+			final SyntaxTreeNode annotatedSyntaxTree = dependencyGenerator.generateDependencies(parse.getCcgParse(),
+					unlabelledDependencies);
 			final Collection<ResolvedDependency> result = new ArrayList<>();
 			for (final UnlabelledDependency dep : unlabelledDependencies) {
 				// Add labels to the dependencies using the classifier.
 				result.addAll(dep.setLabel(classifier.classify(dep, tokens)).stream()
 						.filter(x -> x.getHead() != x.getArgument()).collect(Collectors.toList()));
 			}
-			return new CCGandSRLparse(parse.getCcgParse(), result, tokens);
+			return new CCGandSRLparse(annotatedSyntaxTree, result, tokens);
 		}
 	}
 
