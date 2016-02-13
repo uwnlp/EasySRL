@@ -41,6 +41,9 @@
             <zipfileset excludes="META-INF/*.SF" src="lib/mtj-1.0-snapshot.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/hppc-0.7.1.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="lib/stanford-postagger.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/protobuf-java-3.0.0-beta-2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/taggerflow-protos.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="lib/taggerflow.jar"/>
         </jar>
     </target>
 </project>

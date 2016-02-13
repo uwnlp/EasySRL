@@ -108,6 +108,7 @@ public class FastTreeMap<Key, Value> {
 
 		Node<Key, Value> putIfAbsent(final Key k, final Value v, final Node<Key, Value> last,
 				final Node<Key, Value> empty) {
+			@SuppressWarnings("unchecked")
 			final int comparison = ((Comparable<? super Key>) k).compareTo(key);
 			if (comparison > 0) {
 				left = left.putIfAbsent(k, v, last, empty);
@@ -123,6 +124,7 @@ public class FastTreeMap<Key, Value> {
 
 		/** Returns the node for this key, or null. */
 		public Node<Key, Value> getNode(final Key k) {
+			@SuppressWarnings("unchecked")
 			final int comparison = ((Comparable<? super Key>) k).compareTo(key);
 			if (comparison > 0) {
 				return left.getNode(k);
