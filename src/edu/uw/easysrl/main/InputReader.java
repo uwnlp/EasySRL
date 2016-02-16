@@ -386,14 +386,15 @@ public abstract class InputReader {
 	public static class TensorFlowInputReader extends InputReader {
 		private final Taggerflow tagger;
 		private final List<Category> categories;
+		private final int maxBatchSize;
 		private final Stopwatch gpuTime = Stopwatch.createUnstarted();
-		private final Stopwatch otherTime = Stopwatch.createUnstarted();
 
-		public TensorFlowInputReader(final File folder, final List<Category> categories) {
+		public TensorFlowInputReader(final File folder, final List<Category> categories, final int maxBatchSize) {
 			tagger = new Taggerflow(
-					new File(folder, "graph.pb").getAbsolutePath(),
-					new File(folder, "spaces").getAbsolutePath());
+                        new File(folder, "graph.pb").getAbsolutePath(),
+                        folder.getAbsolutePath());
 			this.categories = categories;
+			this.maxBatchSize = maxBatchSize;
 		}
 
 		@Override
@@ -404,19 +405,15 @@ public abstract class InputReader {
 		public long getSupertaggingTime(final TimeUnit timeUnit) {
 			return gpuTime.elapsed(timeUnit);
 		}
-
-		public long getOtherTime(final TimeUnit timeUnit) {
-			return otherTime.elapsed(timeUnit);
-		}
-
+		
 		@Override
 		public Iterable<InputToParser> readFile(final File file) throws IOException {
 			return new Iterable<InputToParser>() {
 				@Override
 				public Iterator<InputToParser> iterator() {
-					final TaggingResult result = tagger
-							.predict(file.getAbsolutePath());
-					
+					gpuTime.start();
+					final TaggingResult result = tagger.predict(file.getAbsolutePath(), maxBatchSize);
+					gpuTime.stop();
 					final int numSentences = result.getSentenceCount();
 
 					return new Iterator<InputToParser>() {
