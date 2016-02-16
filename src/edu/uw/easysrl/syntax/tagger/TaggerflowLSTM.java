@@ -41,62 +41,26 @@ public class TaggerflowLSTM extends Tagger {
 		File taggerflowModelFolder = new File(modelFolder, "taggerflow");
 		return new Taggerflow(new File(taggerflowModelFolder, "graph.pb").getAbsolutePath(), taggerflowModelFolder.getAbsolutePath());
 	}
-	
+
 	private static List<Category> loadCategories(final File modelFolder) throws IOException {
 		return Files.lines(new File(modelFolder, "categories").toPath())
 				.map(Category::valueOf)
 				.collect(Collectors.toList());
 	}
 
-	private final List<Integer> possibleCategories = new ArrayList<>();
-
 	public TaggerflowLSTM(final Taggerflow tagger, final double beta, List<Category> categories, final int maxTagsPerWord,
 			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		super(cutoffs, beta, categories, maxTagsPerWord);
 		this.tagger = tagger;
-
-		for (int i = 0; i < super.lexicalCategories.size(); i++) {
-			possibleCategories.add(i);
-		}
-
 	}
-	
+
 	public static List<List<ScoredCategory>> getScoredCategories(TaggedSentence sentence, List<Category> categories) {
-		final List<List<ScoredCategory>> tagDistribution = new ArrayList<>(sentence.getTokenCount());
-		for (TaggedToken token : sentence.getTokenList()) {
-			final List<ScoredCategory> tagsForWord = new ArrayList<>(
-					token.getProbabilityCount());
-			int maxIndex = -1;
-			double maxScore = -Double.MAX_VALUE;
-
-			for (int k = 0; k < token.getProbabilityCount(); k++) {
-				final SparseValue indexedScore = token.getProbability(k);
-				final double logScore = Math
-						.log(indexedScore.getValue());
-
-				if (logScore > maxScore) {
-					maxIndex = k;
-					maxScore = logScore;
-				}
-
-				tagsForWord.add(new ScoredCategory(
-						categories.get(indexedScore.getIndex()),
-						logScore));
-			}
-
-			if (maxIndex >= 0) {
-				// The parser expects the first supertag in
-				// the list to be the highest scoring one,
-				// so swap them. Pretty hacky...
-				final ScoredCategory first = tagsForWord
-						.get(0);
-				tagsForWord.set(0,
-						tagsForWord.get(maxIndex));
-				tagsForWord.set(maxIndex, first);
-			}
-			tagDistribution.add(tagsForWord);
-		}
-		return tagDistribution;
+        return sentence.getTokenList()
+                 .stream().map(token -> token.getScoreList()
+				   .stream().map(indexedScore -> new ScoredCategory(categories.get(indexedScore.getIndex()), 
+						                                            indexedScore.getValue()))
+				   .collect(Collectors.toList()))
+                 .collect(Collectors.toList());
 	}
 
 	@Override
