@@ -39,18 +39,11 @@ public class TaggerLSTM extends Tagger {
 		return DeepTagger.make(modelFolder);
 	}
 
-	private final List<Integer> possibleCategories = new ArrayList<>();
-
 	public TaggerLSTM(final DeepTagger tagger, final double beta, final int maxTagsPerWord,
 			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		super(cutoffs, beta, tagger.getTags().stream().map(Category::valueOf).collect(Collectors.toList()),
 				maxTagsPerWord);
 		this.tagger = tagger;
-
-		for (int i = 0; i < super.lexicalCategories.size(); i++) {
-			possibleCategories.add(i);
-		}
-
 	}
 
 	@Override
