@@ -161,7 +161,7 @@ public abstract class LogicParser {
 		private Operator getOp(final String opString) {
 			for (final Operator op : OperatorSentence.Operator.values()) {
 				// \not p(x)
-				if (opString.equals(op.toString()) || opString.equals(op.asString())) {
+				if (opString.equalsIgnoreCase("\\" + op.toString()) || opString.equals(op.asString())) {
 					return op;
 				}
 			}
