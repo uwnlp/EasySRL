@@ -46,11 +46,11 @@ public class CopulaLexicon extends Lexicon {
 	private Logic makeCopulaVerb(final List<ResolvedDependency> deps, final List<Variable> vars, final Variable head,
 			final CCGandSRLparse parse) {
 		Logic statement;
-		if (deps.get(1).getPreposition() != Preposition.NONE) {
+		if (deps.get(1) != null && deps.get(1).getPreposition() != Preposition.NONE) {
 			// S\NP/PP_on --> on(x,y,e)
 			statement = new AtomicSentence(getPrepositionPredicate(deps, 1, parse), vars.get(1), vars.get(0), head);
 		} else {
-			if (deps.get(0).getPreposition() != Preposition.NONE) {
+			if (deps.get(0) != null && deps.get(0).getPreposition() != Preposition.NONE) {
 				// Can happen in questions: S[q]/PP/NP Is the ball on the table?
 				statement = new AtomicSentence(getPrepositionPredicate(deps, 0, parse), vars.get(0), vars.get(1), head);
 			} else {
