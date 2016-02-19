@@ -3,6 +3,7 @@ package edu.uw.easysrl.syntax.tagger;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -159,18 +160,12 @@ public class TaggerEmbeddings extends Tagger {
 	}
 
 	public static List<Category> loadCategories(final File catFile) throws IOException {
-		final List<Category> categories = new ArrayList<>();
-		final Iterator<String> lines = Util.readFileLineByLine(catFile);
-		while (lines.hasNext()) {
-			categories.add(Category.valueOf(lines.next()));
-		}
-
-		return categories;
+    return Files.lines(catFile.toPath()).map(Category::valueOf).collect(Collectors.toList());
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see uk.ac.ed.easyccg.syntax.Tagger#tag(java.util.List)
 	 */
 	@Override
