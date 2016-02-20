@@ -1,5 +1,9 @@
 package edu.uw.easysrl.syntax.tagger;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Doubles;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,10 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Doubles;
+import java.util.stream.Stream;
 
 import edu.uw.easysrl.corpora.CCGBankDependencies;
 import edu.uw.easysrl.corpora.CCGBankDependencies.DependencyParse;
@@ -182,6 +183,10 @@ public abstract class Tagger {
 	 * ordered list of ScoredCategory objects representing their category assignment.
 	 */
 	public abstract List<List<ScoredCategory>> tag(List<InputWord> words);
+
+	public Stream<List<List<ScoredCategory>>> tagBatch(Stream<List<InputWord>> sentences) {
+		return sentences.map(this::tag);
+	}
 
 	public abstract Map<Category, Double> getCategoryScores(List<InputWord> sentence, int wordIndex, double weight,
 			Collection<Category> categories);
