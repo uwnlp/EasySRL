@@ -19,8 +19,8 @@ import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 public class TaggerLSTM extends Tagger {
 	private final DeepTagger tagger;
 
-	TaggerLSTM(final File modelFolder, final double beta, final int maxTagsPerWord, final CutoffsDictionaryInterface cutoffs)
-			throws IOException {
+	TaggerLSTM(final File modelFolder, final double beta, final int maxTagsPerWord,
+			final CutoffsDictionaryInterface cutoffs) throws IOException {
 
 		this(makeDeepTagger(modelFolder), beta, maxTagsPerWord, cutoffs);
 	}
