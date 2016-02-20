@@ -1,18 +1,18 @@
 package edu.uw.easysrl.syntax.parser;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.syntax.grammar.Category;
@@ -33,9 +33,10 @@ abstract class ChartCell {
 		public abstract ChartCell make();
 
 		/**
-		 * Reset factory for a new sentence.
+		 * Get factory for a new sentence.
 		 */
-		public void newSentence() {
+		public ChartCellFactory forNewSentence() {
+			return this;
 		}
 	}
 
@@ -198,6 +199,12 @@ abstract class ChartCell {
 			}
 		}
 
+		public ChartCellNbestFactory(ChartCellNbestFactory other) {
+			this.nbest = other.nbest;
+			this.nbestBeam = other.nbestBeam;
+			this.categoryToArgumentToHeadToModifierToHash = other.categoryToArgumentToHeadToModifierToHash;
+		}
+
 		// A cache of hash scores for nodes, to save recomputing them. I'm not in love with this design, but at least it
 		// keeps all the hashing code in one place.
 		private final Map<SyntaxTreeNode, Integer> nodeToHash = new HashMap<>();
@@ -312,8 +319,8 @@ abstract class ChartCell {
 		}
 
 		@Override
-		public void newSentence() {
-			nodeToHash.clear();
+		public ChartCellFactory forNewSentence() {
+			return new ChartCellNbestFactory(this);
 		}
 	}
 
