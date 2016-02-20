@@ -1,5 +1,7 @@
 package edu.uw.easysrl.syntax.model;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -68,24 +70,33 @@ public class SupertagFactoredModel extends Model {
 	}
 
 	public static class SupertagFactoredModelFactory extends ModelFactory {
-		private final Tagger tagger;
-		private final boolean includeDependencies;
+    private final Tagger tagger;
+    private final Collection<Category> lexicalCategories;
+    private final boolean includeDependencies;
 
-		public SupertagFactoredModelFactory(final Tagger tagger, final boolean includeDependencies) {
+    public SupertagFactoredModelFactory(final Tagger tagger,
+                                        final Collection<Category> lexicalCategories,
+                                        final boolean includeDependencies) {
 			super();
 			this.tagger = tagger;
+      this.lexicalCategories = lexicalCategories;
 			this.includeDependencies = includeDependencies;
 		}
 
 		@Override
 		public SupertagFactoredModel make(final InputToParser input) {
-			return new SupertagFactoredModel(input.isAlreadyTagged() ? input.getInputSupertags() : tagger.tag(input
-					.getInputWords()), includeDependencies);
+      if (input.isAlreadyTagged()) {
+        return new SupertagFactoredModel(input.getInputSupertags(), includeDependencies);
+      } else {
+        Preconditions.checkNotNull(tagger, "Inputs should be already tagged if no tagger is given.");
+        return new SupertagFactoredModel(tagger.tag(input.getInputWords()),
+                                         includeDependencies);
+      }
 		}
 
 		@Override
 		public Collection<Category> getLexicalCategories() {
-			return tagger.getLexicalCategories();
+			return lexicalCategories;
 		}
 
 		@Override
