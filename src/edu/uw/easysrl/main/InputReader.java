@@ -224,8 +224,8 @@ public abstract class InputReader {
 		@Override
 		public InputToParser readInput(final String line) {
 			// TODO quotes
-			return InputToParser.fromTokens(Arrays.asList(line.replaceAll("\"", "").replaceAll("  +", " ").trim()
-					.split(" ")));
+			return InputToParser
+					.fromTokens(Arrays.asList(line.replaceAll("\"", "").replaceAll("  +", " ").trim().split(" ")));
 		}
 	}
 
@@ -353,11 +353,8 @@ public abstract class InputReader {
 					continue; // TODO quotes
 				}
 				if (taggedFields.length < 3) {
-					throw new InputMismatchException(
-							"Invalid input: expected \"word|POS|NER\" but was: "
-									+ entry
-									+ "\n"
-									+ "The C&C can produce this format using: \"bin/pos -model models/pos | bin/ner -model models/ner -ofmt \"%w|%p|%n \\n\"\"");
+					throw new InputMismatchException("Invalid input: expected \"word|POS|NER\" but was: " + entry + "\n"
+							+ "The C&C can produce this format using: \"bin/pos -model models/pos | bin/ner -model models/ner -ofmt \"%w|%p|%n \\n\"\"");
 				}
 				inputWords.add(new InputWord(taggedFields[0], taggedFields[1], taggedFields[2]));
 			}
@@ -390,9 +387,7 @@ public abstract class InputReader {
 		private final Stopwatch gpuTime = Stopwatch.createUnstarted();
 
 		public TensorFlowInputReader(final File folder, final List<Category> categories, final int maxBatchSize) {
-			tagger = new Taggerflow(
-                        new File(folder, "graph.pb").getAbsolutePath(),
-                        folder.getAbsolutePath());
+			tagger = new Taggerflow(new File(folder, "graph.pb").getAbsolutePath(), folder.getAbsolutePath());
 			this.categories = categories;
 			this.maxBatchSize = maxBatchSize;
 		}
@@ -405,7 +400,7 @@ public abstract class InputReader {
 		public long getSupertaggingTime(final TimeUnit timeUnit) {
 			return gpuTime.elapsed(timeUnit);
 		}
-		
+
 		@Override
 		public Iterable<InputToParser> readFile(final File file) throws IOException {
 			return new Iterable<InputToParser>() {
@@ -427,11 +422,10 @@ public abstract class InputReader {
 						@Override
 						public InputToParser next() {
 							TaggedSentence sentence = result.getSentence(i);
-							final List<List<ScoredCategory>> tagDist = TaggerflowLSTM.getScoredCategories(sentence, categories);
-							final List<InputWord> words = sentence.getTokenList().stream()
-									.map(TaggedToken::getWord)
-									.map(InputWord::new)
-									.collect(Collectors.toList());
+							final List<List<ScoredCategory>> tagDist = TaggerflowLSTM.getScoredCategories(sentence,
+									categories);
+							final List<InputWord> words = sentence.getTokenList().stream().map(TaggedToken::getWord)
+									.map(InputWord::new).collect(Collectors.toList());
 
 							i++;
 							if (words.size() == 0) {

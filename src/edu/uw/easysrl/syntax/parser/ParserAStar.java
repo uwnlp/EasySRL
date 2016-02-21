@@ -50,8 +50,7 @@ public class ParserAStar extends AbstractParser {
 
 	@Override
 	List<Scored<SyntaxTreeNode>> parseAstar(final InputToParser input) {
-
-		cellFactory.newSentence();
+		ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
 		final Model model = modelFactory.make(input);
 		final int sentenceLength = sentence.size();
@@ -72,7 +71,7 @@ public class ParserAStar extends AbstractParser {
 		}
 
 		// Dummy final cell that the complete parses are stored in.
-		final ChartCell finalCell = cellFactory.make();
+		final ChartCell finalCell = sentenceCellFactory.make();
 
 		while (chartSize < maxChartSize
 				&& (result.isEmpty() || (result.size() < nbest && !agenda.isEmpty() && agenda.peek().getCost() > nbestBeam
@@ -87,7 +86,7 @@ public class ParserAStar extends AbstractParser {
 			// Try to put an entry in the chart.
 			ChartCell cell = chart[agendaItem.getStartOfSpan()][agendaItem.getSpanLength() - 1];
 			if (cell == null) {
-				cell = cellFactory.make();
+				cell = sentenceCellFactory.make();
 				chart[agendaItem.getStartOfSpan()][agendaItem.getSpanLength() - 1] = cell;
 				cellsStartingAt.get(agendaItem.getStartOfSpan()).add(cell);
 				cellsEndingAt.get(agendaItem.getStartOfSpan() + agendaItem.getSpanLength()).add(cell);

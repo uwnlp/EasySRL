@@ -41,18 +41,18 @@ public class SRLEvaluation {
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.00001,
-				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1, 70), Util.deserialize(new File(
-				pipelineFolder, "labelClassifier")), posTagger);
+				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1, 70),
+				Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
 
 		for (final double beta : Arrays.asList(0.01, 0.005, 0.001)) {
 			// for (final Double supertaggerWeight : Arrays.asList(null)) {
 			final Double supertaggerWeight = null;
 			// final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
 			// ParsingAlgorithm.ASTAR, 100000, true, Optional.empty(), 1), posTagger), pipeline);
-			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
-					ParsingAlgorithm.ASTAR, 20000, true,
-					supertaggerWeight == null ? Optional.empty() : Optional.of(supertaggerWeight), 1, 70), posTagger),
-					pipeline);
+			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(
+					EasySRL.makeParser(folder, beta, ParsingAlgorithm.ASTAR, 20000, true,
+							supertaggerWeight == null ? Optional.empty() : Optional.of(supertaggerWeight), 1, 70),
+					posTagger), pipeline);
 
 			// final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
 			// ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
@@ -146,8 +146,8 @@ public class SRLEvaluation {
 		while (depsIt.hasNext()) {
 			final ResolvedDependency dep = depsIt.next();
 			if (((dep.getSemanticRole() == SRLFrame.NONE)) || dep.getOffset() == 0 // Unrealized
-					// arguments
-					) {
+			// arguments
+			) {
 				depsIt.remove();
 			}
 		}
@@ -194,7 +194,7 @@ public class SRLEvaluation {
 			// }
 		}
 		// for (final ResolvedDependency wrong : predictedDeps) {
-		// System.err.println("wrong:  " + wrong.toString(gold.getWords()));
+		// System.err.println("wrong: " + wrong.toString(gold.getWords()));
 		// }
 
 		return new Results(predictedCount, correctCount, goldCount);

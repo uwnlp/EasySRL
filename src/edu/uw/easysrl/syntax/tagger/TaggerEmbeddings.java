@@ -160,7 +160,7 @@ public class TaggerEmbeddings extends Tagger {
 	}
 
 	public static List<Category> loadCategories(final File catFile) throws IOException {
-    return Files.lines(catFile.toPath()).map(Category::valueOf).collect(Collectors.toList());
+		return Files.lines(catFile.toPath()).map(Category::valueOf).collect(Collectors.toList());
 	}
 
 	/*
@@ -183,7 +183,8 @@ public class TaggerEmbeddings extends Tagger {
 		final double[] vector = new double[totalFeatures];
 
 		int vectorIndex = 0;
-		for (int sentencePosition = wordIndex - contextWindow; sentencePosition <= wordIndex + contextWindow; sentencePosition++) {
+		for (int sentencePosition = wordIndex - contextWindow; sentencePosition <= wordIndex
+				+ contextWindow; sentencePosition++) {
 			vectorIndex = addToFeatureVector(vectorIndex, vector, sentencePosition, words);
 
 			// If using lexical features, update the vector.
@@ -443,8 +444,8 @@ public class TaggerEmbeddings extends Tagger {
 	public Map<Category, Double> getCategoryScores(final List<InputWord> sentence, final int wordIndex,
 			final double weight, final Collection<Category> categories) {
 
-		final List<ScoredCategory> scoredCats = getTagsForWord(getVectorForWord(sentence, wordIndex), categories
-				.stream().map(x -> categoryToIndex.get(x)).collect(Collectors.toList()));
+		final List<ScoredCategory> scoredCats = getTagsForWord(getVectorForWord(sentence, wordIndex),
+				categories.stream().map(x -> categoryToIndex.get(x)).collect(Collectors.toList()));
 		return scoredCats.stream().collect(Collectors.toMap(ScoredCategory::getCategory, x -> x.getScore() * weight));
 	}
 
