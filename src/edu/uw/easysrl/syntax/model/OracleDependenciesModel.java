@@ -1,5 +1,8 @@
 package edu.uw.easysrl.syntax.model;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -10,9 +13,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multiset;
 
 import edu.uw.easysrl.corpora.CCGBankDependencies;
 import edu.uw.easysrl.corpora.CCGBankDependencies.CCGBankDependency;
@@ -182,7 +182,7 @@ public class OracleDependenciesModel extends Model {
 	}
 
 	@Override
-	double getUpperBoundForWord(final int index) {
+	public double getUpperBoundForWord(final int index) {
 		final Collection<CCGBankDependency> deps = goldDeps.getDependencies(index);
 		return catScore + (deps == null ? 0 : deps.size());
 	}

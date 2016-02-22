@@ -65,7 +65,7 @@ public class SupertagFactoredModel extends Model {
 	}
 
 	@Override
-	double getUpperBoundForWord(final int index) {
+	public double getUpperBoundForWord(final int index) {
 		return tagsForWords.get(index).get(0).getScore();
 	}
 

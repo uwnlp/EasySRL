@@ -294,7 +294,31 @@ public class EasySRL {
 
 	}
 
-	private static Parser makeParser(final CommandLineArguments commandLineOptions, final int maxChartSize,
+	public static Parser makeParser(final CommandLineArguments commandLineOptions, final int maxChartSize,
+									final ModelFactory modelFactory) throws IOException {
+		final File modelFolder = Util.getFile(commandLineOptions.getModel());
+		Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
+
+		final ParsingAlgorithm algorithm = ParsingAlgorithm
+				.valueOf(commandLineOptions.getParsingAlgorithm().toUpperCase());
+
+		final Parser parser;
+		final int nBest = commandLineOptions.getNbest();
+		if (algorithm == ParsingAlgorithm.CKY) {
+			parser = new ParserCKY(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+		} else if (algorithm == ParsingAlgorithm.BEAM) {
+			parser = new ParserBeamSearch(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+		} else {
+			parser = new ParserAStar(modelFactory, commandLineOptions.getMaxLength(), nBest,
+					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
+		}
+
+		return parser;
+	}
+
+	public static Parser makeParser(final CommandLineArguments commandLineOptions, final int maxChartSize,
 			final boolean joint, final Optional<Double> supertaggerWeight, boolean loadSupertagger) throws IOException {
 		final File modelFolder = Util.getFile(commandLineOptions.getModel());
 		Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
@@ -302,8 +326,6 @@ public class EasySRL {
 		final CutoffsDictionaryInterface cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
 
 		ModelFactory modelFactory;
-		final ParsingAlgorithm algorithm = ParsingAlgorithm
-				.valueOf(commandLineOptions.getParsingAlgorithm().toUpperCase());
 
 		Collection<Category> lexicalCategories = TaggerEmbeddings.loadCategories(new File(modelFolder, "categories"));
 
@@ -328,19 +350,6 @@ public class EasySRL {
 
 		}
 
-		final Parser parser;
-		final int nBest = commandLineOptions.getNbest();
-		if (algorithm == ParsingAlgorithm.CKY) {
-			parser = new ParserCKY(modelFactory, commandLineOptions.getMaxLength(), nBest,
-					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
-		} else if (algorithm == ParsingAlgorithm.BEAM) {
-			parser = new ParserBeamSearch(modelFactory, commandLineOptions.getMaxLength(), nBest,
-					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
-		} else {
-			parser = new ParserAStar(modelFactory, commandLineOptions.getMaxLength(), nBest,
-					commandLineOptions.getRootCategories(), modelFolder, maxChartSize);
-		}
-
-		return parser;
+		return makeParser(commandLineOptions, maxChartSize, modelFactory);
 	}
 }

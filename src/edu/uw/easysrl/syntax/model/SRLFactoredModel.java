@@ -83,7 +83,7 @@ public class SRLFactoredModel extends Model {
 	}
 
 	@Override
-	double getUpperBoundForWord(final int index) {
+	public double getUpperBoundForWord(final int index) {
 		return forests.get(index).getLogUnnormalizedViterbiScore();
 	}
 

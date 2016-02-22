@@ -22,6 +22,7 @@ import edu.uw.easysrl.syntax.model.Model;
 import edu.uw.easysrl.syntax.model.Model.ModelFactory;
 import edu.uw.easysrl.syntax.parser.ChartCell.Cell1Best;
 import edu.uw.easysrl.syntax.parser.ChartCell.Cell1BestTreeBased;
+import edu.uw.easysrl.syntax.parser.ChartCell.CellNoDynamicProgram;
 import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellFactory;
 import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellNbestFactory;
 import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
@@ -37,15 +38,21 @@ public class ParserAStar extends AbstractParser {
 
 	public ParserAStar(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
 			final List<Category> validRootCategories, final File modelFolder, final int maxChartSize)
-			throws IOException {
+					throws IOException {
 		super(TaggerEmbeddings.loadCategories(new File(modelFolder, "categories")), maxSentenceLength, nbest,
 				validRootCategories, modelFolder);
 		this.modelFactory = modelFactory;
 		this.maxChartSize = maxChartSize;
 		this.usingDependencies = modelFactory.isUsingDependencies();
-		this.cellFactory = nbest > 1 ? new ChartCellNbestFactory(nbest, nbestBeam, maxSentenceLength,
-				super.lexicalCategories) : modelFactory.isUsingDependencies() ? Cell1Best.factory()
-						: Cell1BestTreeBased.factory();
+		if (!modelFactory.isUsingDynamicProgram()) {
+			this.cellFactory = CellNoDynamicProgram.factory();
+		} else if (nbest > 1) {
+			this.cellFactory = new ChartCellNbestFactory(nbest, nbestBeam, maxSentenceLength, super.lexicalCategories);
+		} else if (modelFactory.isUsingDependencies()) {
+			this.cellFactory = Cell1Best.factory();
+		} else {
+			this.cellFactory = Cell1BestTreeBased.factory();
+		}
 	}
 
 	@Override
@@ -102,7 +109,7 @@ public class ParserAStar extends AbstractParser {
 						&& (possibleRootCategories.isEmpty() || possibleRootCategories.contains(agendaItem.getParse()
 								.getCategory())) &&
 						// For N-best parsing, the final cell checks if that the final parse is unique. e.g. if it's
-								// dependencies are unique, ignoring the category
+						// dependencies are unique, ignoring the category
 						finalCell.add("", agendaItem)) {
 					result.add(new Scored<>(agendaItem.getParse(), agendaItem.getInsideScore()));
 				}
