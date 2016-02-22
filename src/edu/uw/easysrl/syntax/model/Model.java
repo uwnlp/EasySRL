@@ -18,6 +18,10 @@ public abstract class Model {
 		public abstract Collection<Category> getLexicalCategories();
 
 		public abstract boolean isUsingDependencies();
+
+		public boolean isUsingDynamicProgram() {
+			return true;
+		}
 	}
 
 	private final int sentenceLength;
@@ -28,7 +32,7 @@ public abstract class Model {
 		this.outsideScoresUpperBound = new double[sentenceLength + 1][sentenceLength + 1];
 	}
 
-	abstract double getUpperBoundForWord(int index);
+	public abstract double getUpperBoundForWord(int index);
 
 	public abstract void buildAgenda(PriorityQueue<AgendaItem> queue, List<InputWord> words);
 

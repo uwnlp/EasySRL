@@ -167,6 +167,15 @@ abstract class ChartCell {
 			return entries.size();
 		}
 
+		public static ChartCellFactory factory() {
+			return new ChartCellFactory() {
+
+				@Override
+				public ChartCell make() {
+					return new CellNoDynamicProgram();
+				}
+			};
+		}
 	}
 
 	/**
