@@ -81,9 +81,12 @@ public abstract class Tagger {
 	public static Tagger make(final File folder, final double beam, final int maxTagsPerWord,
 			final CutoffsDictionaryInterface cutoffs) throws IOException {
 		if (new File(folder, "taggerflow").exists()) {
-			return new TaggerflowLSTM(folder, beam, maxTagsPerWord, cutoffs);
-		}
-		else if (new File(folder, "lstm").exists()) {
+			if (new File(new File(folder, "taggerflow"), "graph.pb").exists()) {
+				return new TaggerflowLSTM(folder, beam, maxTagsPerWord, cutoffs);
+			} else {
+				return new TaggerflowRemoteLSTM(folder);
+			}
+		} else if (new File(folder, "lstm").exists()) {
 			return new TaggerLSTM(folder, beam, maxTagsPerWord, cutoffs);
 		} else {
 			return new TaggerEmbeddings(folder, beam, maxTagsPerWord, cutoffs);

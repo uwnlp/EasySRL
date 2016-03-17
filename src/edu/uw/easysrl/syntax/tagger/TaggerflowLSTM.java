@@ -2,7 +2,6 @@ package edu.uw.easysrl.syntax.tagger;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +15,7 @@ import edu.uw.TaggerflowProtos.TaggingInputSentence;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
+import edu.uw.easysrl.util.LibraryUtil;
 
 public class TaggerflowLSTM extends Tagger {
 	private final Taggerflow tagger;
@@ -27,16 +27,7 @@ public class TaggerflowLSTM extends Tagger {
 	}
 
 	private static Taggerflow makeTaggerflow(final File modelFolder) {
-		// Apparently this is the easiest way to set the library path in code...
-		System.setProperty("java.library.path", "lib");
-		Field fieldSysPath;
-		try {
-			fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
-			fieldSysPath.setAccessible(true);
-			fieldSysPath.set(null, null);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
+		LibraryUtil.setLibraryPath("lib");
 		File taggerflowModelFolder = new File(modelFolder, "taggerflow");
 		return new Taggerflow(new File(taggerflowModelFolder, "graph.pb").getAbsolutePath(),
 				taggerflowModelFolder.getAbsolutePath());
