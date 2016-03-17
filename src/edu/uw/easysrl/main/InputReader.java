@@ -1,5 +1,8 @@
 package edu.uw.easysrl.main;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -13,9 +16,6 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Preconditions;
-import com.google.common.base.Stopwatch;
 
 import edu.uw.Taggerflow;
 import edu.uw.TaggerflowProtos.TaggedSentence;
@@ -157,7 +157,9 @@ public abstract class InputReader {
 
 	public abstract InputToParser readInput(String line);
 
-	public static class InputToParser {
+	public static class InputToParser implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final List<InputWord> words;
 		private final boolean isAlreadyTagged;
 
