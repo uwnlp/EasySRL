@@ -20,7 +20,7 @@ import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.model.AgendaItem;
 import edu.uw.easysrl.util.FastTreeMap;
 
-abstract class ChartCell {
+public abstract class ChartCell {
 	/**
 	 * Possibly adds a @AgendaItem to this chart cell. Returns true if the parse was added, and false if the cell was
 	 * unchanged.
@@ -29,7 +29,7 @@ abstract class ChartCell {
 		return add(entry.getEquivalenceClassKey(), entry);
 	}
 
-	static abstract class ChartCellFactory {
+	public static abstract class ChartCellFactory {
 		public abstract ChartCell make();
 
 		/**
@@ -44,7 +44,7 @@ abstract class ChartCell {
 
 	public abstract Iterable<AgendaItem> getEntries();
 
-	abstract int size();
+	public abstract int size();
 
 	/**
 	 * Chart Cell used for 1-best parsing.
@@ -63,7 +63,7 @@ abstract class ChartCell {
 		}
 
 		@Override
-		int size() {
+		public int size() {
 			return keyToProbability.size();
 		}
 
@@ -96,7 +96,7 @@ abstract class ChartCell {
 		}
 
 		@Override
-		int size() {
+		public int size() {
 			return keyToProbability.size();
 		}
 
@@ -163,7 +163,7 @@ abstract class ChartCell {
 		}
 
 		@Override
-		int size() {
+		public int size() {
 			return entries.size();
 		}
 
@@ -275,7 +275,7 @@ abstract class ChartCell {
 			}
 
 			@Override
-			int size() {
+			public int size() {
 				return keyToEntries.size();
 			}
 		}
@@ -316,7 +316,7 @@ abstract class ChartCell {
 			}
 
 			@Override
-			int size() {
+			public int size() {
 				return keyToEntries.size();
 			}
 		}

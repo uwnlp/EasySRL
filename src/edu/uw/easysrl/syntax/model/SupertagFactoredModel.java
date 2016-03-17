@@ -70,28 +70,28 @@ public class SupertagFactoredModel extends Model {
 	}
 
 	public static class SupertagFactoredModelFactory extends ModelFactory {
-    private final Tagger tagger;
-    private final Collection<Category> lexicalCategories;
-    private final boolean includeDependencies;
+    	private final Tagger tagger;
+    	private final Collection<Category> lexicalCategories;
+    	private final boolean includeDependencies;
 
-    public SupertagFactoredModelFactory(final Tagger tagger,
-                                        final Collection<Category> lexicalCategories,
-                                        final boolean includeDependencies) {
+		public SupertagFactoredModelFactory(final Tagger tagger,
+                                        	final Collection<Category> lexicalCategories,
+                                        	final boolean includeDependencies) {
 			super();
 			this.tagger = tagger;
-      this.lexicalCategories = lexicalCategories;
+			this.lexicalCategories = lexicalCategories;
 			this.includeDependencies = includeDependencies;
 		}
 
 		@Override
 		public SupertagFactoredModel make(final InputToParser input) {
-      if (input.isAlreadyTagged()) {
-        return new SupertagFactoredModel(input.getInputSupertags(), includeDependencies);
-      } else {
-        Preconditions.checkNotNull(tagger, "Inputs should be already tagged if no tagger is given.");
-        return new SupertagFactoredModel(tagger.tag(input.getInputWords()),
+      		if (input.isAlreadyTagged()) {
+        		return new SupertagFactoredModel(input.getInputSupertags(), includeDependencies);
+      		} else {
+        		Preconditions.checkNotNull(tagger, "Inputs should be already tagged if no tagger is given.");
+        		return new SupertagFactoredModel(tagger.tag(input.getInputWords()),
                                          includeDependencies);
-      }
+      		}
 		}
 
 		@Override

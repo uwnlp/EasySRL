@@ -56,7 +56,7 @@ public class ParserAStar extends AbstractParser {
 	}
 
 	@Override
-	List<Scored<SyntaxTreeNode>> parseAstar(final InputToParser input) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
 		ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
 		final Model model = modelFactory.make(input);

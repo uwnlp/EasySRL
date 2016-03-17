@@ -1,5 +1,13 @@
 package edu.uw.easysrl.syntax.parser;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table.Cell;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -9,14 +17,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Table.Cell;
 
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.DependencyStructure;
@@ -199,7 +199,7 @@ public abstract class AbstractParser implements Parser {
 			return null;
 		}
 
-		return parseAstar(input);
+		return parse(input);
 	}
 
 	/**
@@ -207,7 +207,7 @@ public abstract class AbstractParser implements Parser {
 	 *
 	 * Returns null if the parse fails.
 	 */
-	abstract List<Scored<SyntaxTreeNode>> parseAstar(InputToParser sentence);
+	protected abstract List<Scored<SyntaxTreeNode>> parse(InputToParser sentence);
 
 	private final Map<Category, Map<Category, List<RuleProduction>>> ruleCache = new IdentityHashMap<>();
 

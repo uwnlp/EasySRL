@@ -7,6 +7,7 @@ import com.google.common.primitives.Doubles;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -89,7 +90,9 @@ public abstract class Tagger {
 		}
 	}
 
-	public static class ScoredCategory implements Comparable<ScoredCategory> {
+	public static class ScoredCategory implements Comparable<ScoredCategory>, Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final Category category;
 		private final double score;
 
