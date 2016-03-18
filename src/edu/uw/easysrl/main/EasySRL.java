@@ -66,7 +66,7 @@ public class EasySRL {
 		@Option(shortName = "i", defaultValue = "tokenized", description = "(Optional) Input Format: one of \"tokenized\", \"POStagged\" (word|pos), or \"POSandNERtagged\" (word|pos|ner)")
 		String getInputFormat();
 
-		@Option(shortName = "o", description = "Output Format: one of \"logic\", \"srl\", \"srl_indices\", \"ccgbank\", \"html\", \"dependencies\" or \"supertagged\"", defaultValue = "logic")
+		@Option(shortName = "o", description = "Output Format: one of \"logic\", \"srl\", \"srl_indices\", \"ccgbank\", \"html\", \"dependencies\" or \"supertags\"", defaultValue = "logic")
 		String getOutputFormat();
 
 		@Option(shortName = "a", description = "(Optional) Parsing algorithm: one of \"astar\" or \"cky\"", defaultValue = "astar")
