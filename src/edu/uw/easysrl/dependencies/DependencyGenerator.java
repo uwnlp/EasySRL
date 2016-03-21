@@ -41,25 +41,24 @@ public class DependencyGenerator implements Serializable {
 	}
 
 	public SyntaxTreeNode generateDependencies(final SyntaxTreeNode raw, final Collection<UnlabelledDependency> deps) {
-		final AddDepenendenciesVisitor visitor = new AddDepenendenciesVisitor(deps);
+		final AddDependenciesVisitor visitor = new AddDependenciesVisitor(deps);
 		raw.accept(visitor);
 		final SyntaxTreeNode result = visitor.stack.pop();
 		Preconditions.checkState(visitor.stack.size() == 0);
 		return result;
 	}
 
-	private class AddDepenendenciesVisitor implements SyntaxTreeNodeVisitor {
+	private class AddDependenciesVisitor implements SyntaxTreeNodeVisitor {
 		private final Stack<SyntaxTreeNode> stack = new Stack<>();
 		private final Collection<UnlabelledDependency> deps;
 
-		public AddDepenendenciesVisitor(final Collection<UnlabelledDependency> deps) {
+		public AddDependenciesVisitor(final Collection<UnlabelledDependency> deps) {
 			this.deps = deps;
 		}
 
 		@Override
 		public void visit(final SyntaxTreeNodeLabelling node) {
 			node.getChild(0).accept(this);
-			;
 			stack.push(new SyntaxTreeNodeLabelling(stack.pop(), node.getAllLabelledDependencies(), node
 					.getResolvedUnlabelledDependencies()));
 		}
