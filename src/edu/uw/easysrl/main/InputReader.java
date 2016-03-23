@@ -219,6 +219,9 @@ public abstract class InputReader {
 			return new InputToParser(inputWords, null, null, false);
 		}
 
+		public boolean isPOStagged() {
+			return words.size() == 0 || words.get(0).pos != null;
+		}
 	}
 
 	private static class RawInputReader extends InputReader {
