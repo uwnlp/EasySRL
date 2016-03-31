@@ -22,11 +22,11 @@ public class TaggerflowLSTM extends Tagger {
 
 	TaggerflowLSTM(final File modelFolder, final double beta, final int maxTagsPerWord,
 			final CutoffsDictionaryInterface cutoffs) throws IOException {
-      this(makeTaggerflow(modelFolder, beta), beta, TaggerEmbeddings.loadCategories(new File(modelFolder, "categories")),
+		this(makeTaggerflow(modelFolder, beta), beta, TaggerEmbeddings.loadCategories(new File(modelFolder, "categories")),
 				maxTagsPerWord, cutoffs);
 	}
 
-    private static Taggerflow makeTaggerflow(final File modelFolder, final double beta) {
+	private static Taggerflow makeTaggerflow(final File modelFolder, final double beta) {
 		LibraryUtil.setLibraryPath("lib");
         return new Taggerflow(new File(modelFolder, "taggerflow"), beta);
 	}
