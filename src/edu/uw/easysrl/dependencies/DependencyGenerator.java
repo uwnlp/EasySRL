@@ -1,14 +1,15 @@
 package edu.uw.easysrl.dependencies;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Stack;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Multimap;
 
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator;
@@ -26,7 +27,8 @@ import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
  * Takes parses that don't have explicit dependency information, and adds it.
  *
  */
-public class DependencyGenerator {
+public class DependencyGenerator implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private final Multimap<Category, UnaryRule> unaryRules;
 
 	public DependencyGenerator(final File modelFolder) throws IOException {
@@ -39,25 +41,24 @@ public class DependencyGenerator {
 	}
 
 	public SyntaxTreeNode generateDependencies(final SyntaxTreeNode raw, final Collection<UnlabelledDependency> deps) {
-		final AddDepenendenciesVisitor visitor = new AddDepenendenciesVisitor(deps);
+		final AddDependenciesVisitor visitor = new AddDependenciesVisitor(deps);
 		raw.accept(visitor);
 		final SyntaxTreeNode result = visitor.stack.pop();
 		Preconditions.checkState(visitor.stack.size() == 0);
 		return result;
 	}
 
-	private class AddDepenendenciesVisitor implements SyntaxTreeNodeVisitor {
+	private class AddDependenciesVisitor implements SyntaxTreeNodeVisitor {
 		private final Stack<SyntaxTreeNode> stack = new Stack<>();
 		private final Collection<UnlabelledDependency> deps;
 
-		public AddDepenendenciesVisitor(final Collection<UnlabelledDependency> deps) {
+		public AddDependenciesVisitor(final Collection<UnlabelledDependency> deps) {
 			this.deps = deps;
 		}
 
 		@Override
 		public void visit(final SyntaxTreeNodeLabelling node) {
 			node.getChild(0).accept(this);
-			;
 			stack.push(new SyntaxTreeNodeLabelling(stack.pop(), node.getAllLabelledDependencies(), node
 					.getResolvedUnlabelledDependencies()));
 		}

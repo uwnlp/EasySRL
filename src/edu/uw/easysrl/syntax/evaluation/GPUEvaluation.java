@@ -41,6 +41,7 @@ public class GPUEvaluation {
 				TaggerEmbeddings.loadCategories(new File(pipelineFolder, "categories")), Integer.parseInt(args[2]));
 
 		parseFile(astar, reader, Stopwatch.createUnstarted(), new File(args[3]), wrBuf);
+		reader.resetSupertaggingTime();
 
 		System.out.println("Starting timing");
 		final Stopwatch timer = Stopwatch.createStarted();

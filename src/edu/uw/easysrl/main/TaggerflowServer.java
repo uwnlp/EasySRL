@@ -25,16 +25,16 @@ public class TaggerflowServer {
 
 		@Option(shortName = "m", description = "Path to the parser model") String getModel();
 
+		@Option(shortName = "b", defaultValue = "1e-5", description = "Supertagger beam") double getBeam();
+
 		@Option(helpRequest = true, description = "Display this message", shortName = "h") boolean getHelp();
 	}
 
 	public TaggerflowServer(String[] args) {
 		try {
 			final CommandLineArguments cmd = CliFactory.parseArguments(CommandLineArguments.class, args);
-			final File taggerflowFolder = new File(cmd.getModel(), "taggerflow");
 			LibraryUtil.setLibraryPath("lib");
-			this.taggerflow = new Taggerflow(new File(taggerflowFolder, "graph.pb").getAbsolutePath(),
-					taggerflowFolder.getAbsolutePath());
+			this.taggerflow = new Taggerflow(new File(cmd.getModel(), "taggerflow"), cmd.getBeam());
 			this.port = cmd.getPort();
 		} catch (ArgumentValidationException e) {
 			throw new RuntimeException(e);
