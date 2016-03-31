@@ -32,7 +32,7 @@ public abstract class SRLParser {
 	}
 
 	public final List<CCGandSRLparse> parseTokens(final InputToParser tokens) {
-		return parseTokens2(tagger.tag(tokens));
+		return parseTokens2(tokens.isPOStagged() ? tokens : tagger.tag(tokens));
 	}
 
 	protected abstract List<CCGandSRLparse> parseTokens2(InputToParser tokens);
