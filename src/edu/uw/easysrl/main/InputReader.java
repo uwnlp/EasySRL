@@ -392,7 +392,7 @@ public abstract class InputReader {
 		private final Stopwatch gpuTime = Stopwatch.createUnstarted();
 
 		public TensorFlowInputReader(final File folder, final List<Category> categories, final int maxBatchSize) {
-			tagger = new Taggerflow(new File(folder, "graph.pb").getAbsolutePath(), folder.getAbsolutePath());
+        tagger = new Taggerflow(folder, 1e-5);
 			this.categories = categories;
 			this.maxBatchSize = maxBatchSize;
 		}
@@ -406,33 +406,33 @@ public abstract class InputReader {
 			return gpuTime.elapsed(timeUnit);
 		}
 
+      public void resetSupertaggingTime() {
+          gpuTime.reset();
+      }
+
 		@Override
 		public Iterable<InputToParser> readFile(final File file) throws IOException {
-			return new Iterable<InputToParser>() {
-				@Override
-				public Iterator<InputToParser> iterator() {
+        return () -> {
 					gpuTime.start();
-					final TaggingResult result = tagger.predict(file.getAbsolutePath(), maxBatchSize);
+          final Iterator<TaggedSentence> taggedSentenceIterator = tagger.predict(file.getAbsolutePath(), maxBatchSize);
 					gpuTime.stop();
-					final int numSentences = result.getSentenceCount();
 
 					return new Iterator<InputToParser>() {
-						int i = 0;
-
 						@Override
 						public boolean hasNext() {
-							return i < numSentences;
+                return taggedSentenceIterator.hasNext();
 						}
 
 						@Override
 						public InputToParser next() {
-							TaggedSentence sentence = result.getSentence(i);
+                gpuTime.start();
+                final TaggedSentence sentence = taggedSentenceIterator.next();
+                    gpuTime.stop();
 							final List<List<ScoredCategory>> tagDist = TaggerflowLSTM.getScoredCategories(sentence,
 									categories);
 							final List<InputWord> words = sentence.getTokenList().stream().map(TaggedToken::getWord)
 									.map(InputWord::new).collect(Collectors.toList());
 
-							i++;
 							if (words.size() == 0) {
 								return next();// FIXME sentences not parsed by TensorFlow
 							}
@@ -441,8 +441,7 @@ public abstract class InputReader {
 							return new InputToParser(words, null, tagDist, true);
 						}
 					};
-				}
-			};
+				};
 		}
 	}
 
