@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.PriorityQueue;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.UnlabelledDependency;
@@ -56,12 +55,12 @@ public class ParserAStar extends AbstractParser {
 	}
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, boolean isEval) {
 		ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
 		final Model model = modelFactory.make(input);
 		final int sentenceLength = sentence.size();
-		final PriorityQueue<AgendaItem> agenda = new PriorityQueue<>(1000);
+		final Agenda agenda = model.makeAgenda();
 		model.buildAgenda(agenda, sentence);
 		final ChartCell[][] chart = new ChartCell[sentenceLength][sentenceLength];
 
@@ -147,7 +146,7 @@ public class ParserAStar extends AbstractParser {
 	/**
 	 * Updates the agenda with of any unary rules that can be applied.
 	 */
-	private void updateAgendaUnary(final Model model, final AgendaItem newItem, final PriorityQueue<AgendaItem> agenda) {
+	private void updateAgendaUnary(final Model model, final AgendaItem newItem, final Agenda agenda) {
 		final SyntaxTreeNode parse = newItem.getParse();
 		final List<UnaryRule> ruleProductions = unaryRules.get(parse.getCategory());
 		final int size = ruleProductions.size();
@@ -184,7 +183,7 @@ public class ParserAStar extends AbstractParser {
 	/**
 	 * Updates the agenda with the result of all combinators that can be applied to leftChild and rightChild.
 	 */
-	private void updateAgenda(final PriorityQueue<AgendaItem> agenda, final AgendaItem left, final AgendaItem right,
+	private void updateAgenda(final Agenda agenda, final AgendaItem left, final AgendaItem right,
 			final Model model) {
 
 		final SyntaxTreeNode leftChild = left.getParse();

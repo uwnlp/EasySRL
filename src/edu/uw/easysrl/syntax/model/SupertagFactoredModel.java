@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.PriorityQueue;
 
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
@@ -12,6 +11,7 @@ import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
+import edu.uw.easysrl.syntax.parser.Agenda;
 import edu.uw.easysrl.syntax.tagger.Tagger;
 import edu.uw.easysrl.syntax.tagger.Tagger.ScoredCategory;
 
@@ -28,7 +28,7 @@ public class SupertagFactoredModel extends Model {
 	}
 
 	@Override
-	public void buildAgenda(final PriorityQueue<AgendaItem> agenda, final List<InputWord> words) {
+	public void buildAgenda(final Agenda agenda, final List<InputWord> words) {
 		for (int i = 0; i < words.size(); i++) {
 			final InputWord word = words.get(i);
 			for (final ScoredCategory cat : tagsForWords.get(i)) {
