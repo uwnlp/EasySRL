@@ -19,7 +19,7 @@ public class AgendaItem implements Comparable<AgendaItem> {
 	final int startOfSpan;
 	final int spanLength;
 
-	private final boolean includeDeps;
+	protected final boolean includeDeps;
 
 	public AgendaItem(final SyntaxTreeNode node, final double insideScore, final double outsideScoreUpperbound,
 			final int startIndex, final int length, final boolean includeDeps) {

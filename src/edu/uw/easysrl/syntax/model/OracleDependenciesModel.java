@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,6 +29,7 @@ import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
+import edu.uw.easysrl.syntax.parser.Agenda;
 import edu.uw.easysrl.syntax.parser.ParserAStar;
 import edu.uw.easysrl.syntax.tagger.Tagger;
 import edu.uw.easysrl.syntax.tagger.Tagger.ScoredCategory;
@@ -188,7 +188,7 @@ public class OracleDependenciesModel extends Model {
 	}
 
 	@Override
-	public void buildAgenda(final PriorityQueue<AgendaItem> queue, final List<InputWord> words) {
+	public void buildAgenda(final Agenda queue, final List<InputWord> words) {
 		int i = 0;
 		for (final InputWord w : words) {
 

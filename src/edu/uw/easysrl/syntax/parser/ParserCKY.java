@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
@@ -40,7 +39,7 @@ public class ParserCKY extends AbstractParser {
 	private final ModelFactory modelFactory;
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, boolean isEval) {
 
 		final int numWords = input.length();
 		if (input.length() > maxLength) {
@@ -51,9 +50,9 @@ public class ParserCKY extends AbstractParser {
 		final Model model = modelFactory.make(input);
 
 		// Add lexical categories
-		final PriorityQueue<AgendaItem> queue = new PriorityQueue<>();
-		model.buildAgenda(queue, input.getInputWords());
-		for (final AgendaItem item : queue) {
+		final Agenda agenda = model.makeAgenda();
+		model.buildAgenda(agenda, input.getInputWords());
+		for (final AgendaItem item : agenda) {
 			ChartCell cell = chart[item.getStartOfSpan()][item.getSpanLength() - 1];
 			if (cell == null) {
 				cell = new Cell1BestCKY();

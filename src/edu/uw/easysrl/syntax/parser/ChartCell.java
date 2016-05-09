@@ -49,7 +49,7 @@ public abstract class ChartCell {
 	/**
 	 * Chart Cell used for 1-best parsing.
 	 */
-	protected static class Cell1Best extends ChartCell {
+	public static class Cell1Best extends ChartCell {
 		final Map<Object, AgendaItem> keyToProbability = new HashMap<>();
 
 		@Override
@@ -82,7 +82,7 @@ public abstract class ChartCell {
 	 * ChartCell for A* parsing that uses a custom tree data structure, rather than a hash map. It'll die horribly if
 	 * the keys aren't comparable.
 	 */
-	protected static class Cell1BestTreeBased extends ChartCell {
+	public static class Cell1BestTreeBased extends ChartCell {
 		final FastTreeMap<Object, AgendaItem> keyToProbability = new FastTreeMap<>();
 
 		@Override
@@ -116,7 +116,7 @@ public abstract class ChartCell {
 	 * score than existing entries (which can't happen with A*).
 	 *
 	 */
-	protected static class Cell1BestCKY extends Cell1Best {
+	public static class Cell1BestCKY extends Cell1Best {
 		@Override
 		public Collection<AgendaItem> getEntries() {
 			return keyToProbability.values();
@@ -140,7 +140,7 @@ public abstract class ChartCell {
 	 *
 	 * Could also be used in conjunction with dependency hashing?
 	 */
-	static class CellNoDynamicProgram extends ChartCell {
+	public static class CellNoDynamicProgram extends ChartCell {
 		private final List<AgendaItem> entries;
 
 		CellNoDynamicProgram() {
