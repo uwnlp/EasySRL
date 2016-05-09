@@ -10,6 +10,10 @@ import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
 import edu.uw.easysrl.syntax.parser.Agenda;
+import edu.uw.easysrl.syntax.parser.ChartCell.Cell1Best;
+import edu.uw.easysrl.syntax.parser.ChartCell.Cell1BestTreeBased;
+import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellFactory;
+import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellNbestFactory;
 import edu.uw.easysrl.syntax.parser.PriorityQueueAgenda;
 
 public abstract class Model {
@@ -21,8 +25,14 @@ public abstract class Model {
 
 		public abstract boolean isUsingDependencies();
 
-		public boolean isUsingDynamicProgram() {
-			return true;
+		public ChartCellFactory makeCellFactory(int nbest, double nbestBeam, int maxSentenceLength) {
+			if (nbest > 1) {
+				return new ChartCellNbestFactory(nbest, nbestBeam, maxSentenceLength, getLexicalCategories());
+			} else if (isUsingDependencies()) {
+				return Cell1Best.factory();
+			} else {
+				return Cell1BestTreeBased.factory();
+			}
 		}
 	}
 

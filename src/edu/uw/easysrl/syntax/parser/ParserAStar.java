@@ -19,11 +19,7 @@ import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
 import edu.uw.easysrl.syntax.model.AgendaItem;
 import edu.uw.easysrl.syntax.model.Model;
 import edu.uw.easysrl.syntax.model.Model.ModelFactory;
-import edu.uw.easysrl.syntax.parser.ChartCell.Cell1Best;
-import edu.uw.easysrl.syntax.parser.ChartCell.Cell1BestTreeBased;
-import edu.uw.easysrl.syntax.parser.ChartCell.CellNoDynamicProgram;
 import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellFactory;
-import edu.uw.easysrl.syntax.parser.ChartCell.ChartCellNbestFactory;
 import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
 import edu.uw.easysrl.util.Util.Scored;
 
@@ -43,15 +39,7 @@ public class ParserAStar extends AbstractParser {
 		this.modelFactory = modelFactory;
 		this.maxChartSize = maxChartSize;
 		this.usingDependencies = modelFactory.isUsingDependencies();
-		if (!modelFactory.isUsingDynamicProgram()) {
-			this.cellFactory = CellNoDynamicProgram.factory();
-		} else if (nbest > 1) {
-			this.cellFactory = new ChartCellNbestFactory(nbest, nbestBeam, maxSentenceLength, super.lexicalCategories);
-		} else if (modelFactory.isUsingDependencies()) {
-			this.cellFactory = Cell1Best.factory();
-		} else {
-			this.cellFactory = Cell1BestTreeBased.factory();
-		}
+		this.cellFactory = modelFactory.makeCellFactory(nbest, nbestBeam, maxSentenceLength);
 	}
 
 	@Override
