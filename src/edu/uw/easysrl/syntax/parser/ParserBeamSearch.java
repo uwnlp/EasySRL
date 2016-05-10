@@ -1,11 +1,11 @@
 package edu.uw.easysrl.syntax.parser;
 
+import com.google.common.collect.Ordering;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
-
-import com.google.common.collect.Ordering;
 
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.AgendaItem;
@@ -21,13 +21,8 @@ public class ParserBeamSearch extends ParserCKY {
 		super(modelFactory, maxSentenceLength, nbest, validRootCategories, modelFolder, maxChartSize);
 	}
 
-	private final Comparator<AgendaItem> orderByInsideScore = new Comparator<AgendaItem>() {
-
-		@Override
-		public int compare(final AgendaItem o1, final AgendaItem o2) {
-			return Double.compare(o1.getInsideScore(), o2.getInsideScore());
-		}
-	};
+	private final Comparator<AgendaItem> orderByInsideScore =
+			(o1, o2) -> Double.compare(o1.getInsideScore(), o2.getInsideScore());
 
 	@Override
 	ChartCell makeChartCell(final ChartCell[][] chart, final int startOfSpan, final int spanLength, final Model model) {
