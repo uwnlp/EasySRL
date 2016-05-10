@@ -193,13 +193,13 @@ public abstract class AbstractParser implements Parser {
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override
-	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input) {
+	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input, boolean isEval) {
 		if (input.length() > maxLength) {
 			System.err.println("Skipping sentence of length " + input.length());
 			return null;
 		}
 
-		return parse(input);
+		return parse(input, isEval);
 	}
 
 	/**
@@ -207,7 +207,7 @@ public abstract class AbstractParser implements Parser {
 	 *
 	 * Returns null if the parse fails.
 	 */
-	protected abstract List<Scored<SyntaxTreeNode>> parse(InputToParser sentence);
+	protected abstract List<Scored<SyntaxTreeNode>> parse(InputToParser sentence, boolean isEval);
 
 	private final Map<Category, Map<Category, List<RuleProduction>>> ruleCache = new IdentityHashMap<>();
 

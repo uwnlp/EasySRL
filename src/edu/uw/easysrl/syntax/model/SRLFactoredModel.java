@@ -1,12 +1,11 @@
 package edu.uw.easysrl.syntax.model;
 
+import com.carrotsearch.hppc.ObjectDoubleHashMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-
-import com.carrotsearch.hppc.ObjectDoubleHashMap;
 
 import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.dependencies.UnlabelledDependency;
@@ -26,6 +25,7 @@ import edu.uw.easysrl.syntax.model.feature.FeatureCache;
 import edu.uw.easysrl.syntax.model.feature.FeatureCache.SlotFeatureCache;
 import edu.uw.easysrl.syntax.model.feature.FeatureSet;
 import edu.uw.easysrl.syntax.parser.AbstractParser.UnaryRule;
+import edu.uw.easysrl.syntax.parser.Agenda;
 import edu.uw.easysrl.util.Util.Scored;
 
 public class SRLFactoredModel extends Model {
@@ -62,7 +62,7 @@ public class SRLFactoredModel extends Model {
 	}
 
 	@Override
-	public void buildAgenda(final PriorityQueue<AgendaItem> queue, final List<InputWord> words) {
+	public void buildAgenda(final Agenda queue, final List<InputWord> words) {
 
 		for (int i = 0; i < words.size(); i++) {
 			final InputWord word = words.get(i);
