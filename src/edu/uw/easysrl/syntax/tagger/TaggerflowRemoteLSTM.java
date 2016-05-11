@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import edu.uw.TaggerflowProtos.TaggedSentence;
 import edu.uw.TaggerflowProtos.TaggingInput;
 import edu.uw.TaggerflowProtos.TaggingInputSentence;
-import edu.uw.TaggerflowProtos.TaggingResult;
 import edu.uw.easysrl.main.InputReader;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
@@ -37,10 +37,15 @@ public class TaggerflowRemoteLSTM extends Tagger {
 	@Override
 	public Stream<List<List<ScoredCategory>>> tagBatch(Stream<List<InputWord>> sentences) {
 		try {
-			TaggingInput.newBuilder().addAllSentence(() -> sentences.map(this::toSentence).iterator()).build()
-					.writeDelimitedTo(socket.getOutputStream());
-			return TaggingResult.parseDelimitedFrom(socket.getInputStream()).getSentenceList().stream()
-					.map(taggedSentence -> TaggerflowLSTM.getScoredCategories(taggedSentence, lexicalCategories));
+			final TaggingInput input = TaggingInput.newBuilder().addAllSentence(() -> sentences.map(this::toSentence).iterator()).build();
+			input.writeDelimitedTo(socket.getOutputStream());
+			return input.getSentenceList().stream().map(s -> {
+				try {
+					return TaggedSentence.parseDelimitedFrom(socket.getInputStream());
+				} catch (final IOException e) {
+					throw new RuntimeException(e);
+				}
+			}).map(taggedSentence -> TaggerflowLSTM.getScoredCategories(taggedSentence, lexicalCategories));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

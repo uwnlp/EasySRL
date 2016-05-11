@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import edu.uw.Taggerflow;
 import edu.uw.TaggerflowProtos.TaggedSentence;
 import edu.uw.TaggerflowProtos.TaggedToken;
-import edu.uw.TaggerflowProtos.TaggingResult;
 import edu.uw.easysrl.main.EasySRL.InputFormat;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeLeaf;
@@ -405,7 +404,7 @@ public abstract class InputReader {
 			return () -> {
 				gpuTime.start();
 				final Iterator<TaggedSentence> taggedSentenceIterator = tagger
-						.predict(file.getAbsolutePath(), maxBatchSize);
+						.predict(file.getAbsolutePath(), maxBatchSize).iterator();
 				gpuTime.stop();
 
 				return new Iterator<InputToParser>() {

@@ -13,7 +13,6 @@ import java.net.Socket;
 
 import edu.uw.Taggerflow;
 import edu.uw.TaggerflowProtos.TaggingInput;
-import edu.uw.TaggerflowProtos.TaggingResult;
 import edu.uw.easysrl.util.LibraryUtil;
 
 public class TaggerflowServer {
@@ -79,8 +78,13 @@ public class TaggerflowServer {
 				while (!socket.isClosed()) {
 					TaggingInput input = TaggingInput.parseDelimitedFrom(in);
 					if (input != null) {
-						TaggingResult result = taggerflow.predict(input);
-						result.writeDelimitedTo(out);
+						taggerflow.predict(input).forEach(sentence -> {
+							try {
+								sentence.writeDelimitedTo(out);
+							} catch (final IOException e) {
+								throw new RuntimeException(e);
+							}
+						});
 						out.flush();
 					} else {
 						break;
