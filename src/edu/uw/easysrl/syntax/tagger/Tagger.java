@@ -171,7 +171,7 @@ public abstract class Tagger {
 		return tagDict;
 	}
 
-	protected String translateBrackets(String word) {
+	protected static String translateBrackets(String word) {
 		if (word.equalsIgnoreCase("-LRB-")) {
 			word = "(";
 		} else if (word.equalsIgnoreCase("-RRB-")) {

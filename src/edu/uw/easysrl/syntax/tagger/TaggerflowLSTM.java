@@ -74,12 +74,10 @@ public class TaggerflowLSTM extends Tagger {
 
 	@Override
 	public List<List<ScoredCategory>> tag(final List<InputWord> words) {
-		TaggingInput.Builder input = TaggingInput.newBuilder();
-		input.addSentence(toSentence(words));
-		return getScoredCategories(tagger.predict(input.build()).findFirst().get(), lexicalCategories);
+		return tagBatch(Stream.of(words)).findFirst().get();
 	}
 
-	private TaggingInputSentence toSentence(List<InputWord> words) {
+	public static TaggingInputSentence wordsToSentence(List<InputWord> words) {
 		return TaggingInputSentence.newBuilder()
 				.addAllWord(() -> words.stream().map(w -> translateBrackets(w.word)).iterator()).build();
 	}
@@ -87,7 +85,7 @@ public class TaggerflowLSTM extends Tagger {
 	@Override
 	public Stream<List<List<ScoredCategory>>> tagBatch(Stream<List<InputWord>> sentences) {
 		TaggingInput.Builder input = TaggingInput.newBuilder();
-		input.addAllSentence(() -> sentences.map(this::toSentence).iterator());
+		input.addAllSentence(() -> sentences.map(TaggerflowLSTM::wordsToSentence).iterator());
 		return tagger.predict(input.build())
 				.map(taggedSentence -> getScoredCategories(taggedSentence, lexicalCategories));
 	}
