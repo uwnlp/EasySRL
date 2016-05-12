@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import edu.uw.TaggerflowProtos.TaggedSentence;
 import edu.uw.TaggerflowProtos.TaggingInput;
-import edu.uw.TaggerflowProtos.TaggingInputSentence;
 import edu.uw.easysrl.main.InputReader;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
@@ -37,7 +36,8 @@ public class TaggerflowRemoteLSTM extends Tagger {
 	@Override
 	public Stream<List<List<ScoredCategory>>> tagBatch(Stream<List<InputWord>> sentences) {
 		try {
-			final TaggingInput input = TaggingInput.newBuilder().addAllSentence(() -> sentences.map(this::toSentence).iterator()).build();
+			final TaggingInput input = TaggingInput.newBuilder()
+					.addAllSentence(() -> sentences.map(TaggerflowLSTM::wordsToSentence).iterator()).build();
 			input.writeDelimitedTo(socket.getOutputStream());
 			return input.getSentenceList().stream().map(s -> {
 				try {
@@ -61,11 +61,6 @@ public class TaggerflowRemoteLSTM extends Tagger {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	protected TaggingInputSentence toSentence(List<InputWord> words) {
-		return TaggingInputSentence.newBuilder()
-				.addAllWord(() -> words.stream().map(w -> translateBrackets(w.word)).iterator()).build();
 	}
 
 	@Override
