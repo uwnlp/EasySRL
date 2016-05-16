@@ -1,13 +1,5 @@
 package edu.uw.easysrl.syntax.parser;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Table.Cell;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -17,6 +9,14 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table.Cell;
 
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.DependencyStructure;
@@ -38,6 +38,7 @@ public abstract class AbstractParser implements Parser {
 
 	final Collection<Category> lexicalCategories;
 
+	@Deprecated
 	public AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
 			final List<Category> validRootCategories, final File modelFolder) throws IOException {
 		this(lexicalCategories, maxSentenceLength, nbest, validRootCategories, new File(modelFolder, "unaryRules"),
@@ -45,14 +46,14 @@ public abstract class AbstractParser implements Parser {
 						"seenRules"));
 	}
 
+	@Deprecated
 	private AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
 			final List<Category> validRootCategories, final File unaryRulesFile, final File extraCombinatorsFile,
 			final File markedupFile, final File seenRulesFile) throws IOException {
 		this.maxLength = maxSentenceLength;
 		this.nbest = nbest;
-		this.unaryRules = loadUnaryRules(unaryRulesFile);
-		this.seenRules = new SeenRules(seenRulesFile, lexicalCategories);
 		this.lexicalCategories = lexicalCategories;
+		this.unaryRules = loadUnaryRules(unaryRulesFile);
 		Coindexation.parseMarkedUpFile(markedupFile);
 
 		final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
@@ -63,6 +64,21 @@ public abstract class AbstractParser implements Parser {
 		this.binaryRules = ImmutableList.copyOf(combinators);
 
 		possibleRootCategories = ImmutableSet.copyOf(validRootCategories);
+		this.seenRules = new SeenRules(seenRulesFile, lexicalCategories);
+		for (final Cell<Category, Category, List<RuleProduction>> entry : seenRules.ruleTable().cellSet()) {
+			// Cache out all the rules in advance.
+			getRules(entry.getRowKey(), entry.getColumnKey());
+		}
+	}
+
+	public AbstractParser(final ParserBuilder<?> builder) {
+		this.unaryRules = builder.getUnaryRules();
+		this.seenRules = builder.getSeenRules();
+		this.lexicalCategories = builder.getLexicalCategories();
+		this.possibleRootCategories = ImmutableSet.copyOf(builder.getValidRootCategories());
+		this.nbest = builder.getNbest();
+		this.maxLength = builder.getMaxSentenceLength();
+		this.binaryRules = builder.getCombinators();
 
 		for (final Cell<Category, Category, List<RuleProduction>> entry : seenRules.ruleTable().cellSet()) {
 			// Cache out all the rules in advance.
@@ -193,7 +209,7 @@ public abstract class AbstractParser implements Parser {
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override
-	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input, boolean isEval) {
+	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input, final boolean isEval) {
 		if (input.length() > maxLength) {
 			System.err.println("Skipping sentence of length " + input.length());
 			return null;

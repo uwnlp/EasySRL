@@ -35,28 +35,44 @@ public class ParserAStar extends AbstractParser {
 	private final ChartCellFactory cellFactory;
 	private final boolean usingDependencies;
 
+	@Deprecated
 	public ParserAStar(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
 			final List<Category> validRootCategories, final File modelFolder, final int maxChartSize)
-					throws IOException {
+			throws IOException {
 		super(TaggerEmbeddings.loadCategories(new File(modelFolder, "categories")), maxSentenceLength, nbest,
 				validRootCategories, modelFolder);
 		this.modelFactory = modelFactory;
 		this.maxChartSize = maxChartSize;
 		this.usingDependencies = modelFactory.isUsingDependencies();
-		if (!modelFactory.isUsingDynamicProgram()) {
-			this.cellFactory = CellNoDynamicProgram.factory();
+		this.cellFactory = chooseCellFactory(modelFactory, nbest);
+	}
+
+	ChartCellFactory chooseCellFactory(final ModelFactory modelFactory, final int nbest) {
+		final ChartCellFactory cellFactory;
+		if (!this.modelFactory.isUsingDynamicProgram()) {
+			cellFactory = CellNoDynamicProgram.factory();
 		} else if (nbest > 1) {
-			this.cellFactory = new ChartCellNbestFactory(nbest, nbestBeam, maxSentenceLength, super.lexicalCategories);
+			cellFactory = new ChartCellNbestFactory(this.nbest, this.nbestBeam, super.maxLength,
+					super.lexicalCategories);
 		} else if (modelFactory.isUsingDependencies()) {
-			this.cellFactory = Cell1Best.factory();
+			cellFactory = Cell1Best.factory();
 		} else {
-			this.cellFactory = Cell1BestTreeBased.factory();
+			cellFactory = Cell1BestTreeBased.factory();
 		}
+		return cellFactory;
+	}
+
+	protected ParserAStar(final Builder builder) {
+		super(builder);
+		this.modelFactory = builder.getModelFactory();
+		this.maxChartSize = builder.getMaxChartSize();
+		this.usingDependencies = builder.getModelFactory().isUsingDependencies();
+		this.cellFactory = chooseCellFactory(modelFactory, nbest);
 	}
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, boolean isEval) {
-		ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, final boolean isEval) {
+		final ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
 		final Model model = modelFactory.make(input);
 		final int sentenceLength = sentence.size();
@@ -107,9 +123,9 @@ public class ParserAStar extends AbstractParser {
 						&& agendaItem.getInsideScore() > Double.NEGATIVE_INFINITY
 						&& (possibleRootCategories.isEmpty() || possibleRootCategories.contains(agendaItem.getParse()
 								.getCategory())) &&
-						// For N-best parsing, the final cell checks if that the final parse is unique. e.g. if it's
-						// dependencies are unique, ignoring the category
-						finalCell.add("", agendaItem)) {
+								// For N-best parsing, the final cell checks if that the final parse is unique. e.g. if it's
+								// dependencies are unique, ignoring the category
+								finalCell.add("", agendaItem)) {
 					result.add(new Scored<>(agendaItem.getParse(), agendaItem.getInsideScore()));
 				}
 
@@ -183,8 +199,7 @@ public class ParserAStar extends AbstractParser {
 	/**
 	 * Updates the agenda with the result of all combinators that can be applied to leftChild and rightChild.
 	 */
-	private void updateAgenda(final Agenda agenda, final AgendaItem left, final AgendaItem right,
-			final Model model) {
+	private void updateAgenda(final Agenda agenda, final AgendaItem left, final AgendaItem right, final Model model) {
 
 		final SyntaxTreeNode leftChild = left.getParse();
 		final SyntaxTreeNode rightChild = right.getParse();
@@ -225,5 +240,23 @@ public class ParserAStar extends AbstractParser {
 				agenda.add(model.combineNodes(left, right, newNode));
 			}
 		}
+	}
+
+	public Parser make(final File modelFolder) {
+		return new Builder(modelFolder).build();
+	}
+
+	public static class Builder extends ParserBuilder<Builder> {
+
+		public Builder(final File modelFolder) {
+			super(modelFolder);
+			super.maxChartSize(20000);
+		}
+
+		@Override
+		protected ParserAStar build2() {
+			return new ParserAStar(this);
+		}
+
 	}
 }

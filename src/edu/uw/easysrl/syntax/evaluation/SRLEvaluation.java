@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,10 +20,9 @@ import edu.uw.easysrl.corpora.SRLParse;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
 import edu.uw.easysrl.dependencies.SRLDependency;
 import edu.uw.easysrl.dependencies.SRLFrame;
-import edu.uw.easysrl.main.EasySRL;
-import edu.uw.easysrl.main.EasySRL.ParsingAlgorithm;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.main.ParsePrinter;
+import edu.uw.easysrl.syntax.parser.ParserAStar;
 import edu.uw.easysrl.syntax.parser.SRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.BackoffSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
@@ -40,34 +38,22 @@ public class SRLEvaluation {
 		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/model";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.00001,
-				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), 1, 70),
-				Util.deserialize(new File(pipelineFolder, "labelClassifier")), posTagger);
+		final PipelineSRLParser pipeline = new PipelineSRLParser(new ParserAStar.Builder(new File(pipelineFolder))
+				.supertaggerBeam(0.00001).build(), Util.deserialize(new File(pipelineFolder, "labelClassifier")),
+				posTagger);
 
 		for (final double beta : Arrays.asList(0.01, 0.005, 0.001)) {
 			// for (final Double supertaggerWeight : Arrays.asList(null)) {
 			final Double supertaggerWeight = null;
-			// final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, beta,
-			// ParsingAlgorithm.ASTAR, 100000, true, Optional.empty(), 1), posTagger), pipeline);
-			final SRLParser jointAstar = new BackoffSRLParser(new JointSRLParser(
-					EasySRL.makeParser(folder, beta, ParsingAlgorithm.ASTAR, 20000, true,
-							supertaggerWeight == null ? Optional.empty() : Optional.of(supertaggerWeight), 1, 70),
-					posTagger), pipeline);
 
-			// final SRLParser jointCKY = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-			// ParsingAlgorithm.CKY, 400000, true, Optional.empty(), 0), posTagger), pipeline);
-			//
-			// final SRLParser jointAST = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.1,
-			// ParsingAlgorithm.CKY, 400000, true), posTagger), new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-			// ParsingAlgorithm.CKY, 400000, true), posTagger), pipeline);
-			//
-			// final SRLParser parser = new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.01,
-			// ParsingAlgorithm.ASTAR, 20000, true), posTagger), pipeline);
-			// CCGBankEvaluation.evaluate(pipeline, false);
+			final SRLParser jointAstar = new BackoffSRLParser(
+
+			new JointSRLParser(new ParserAStar.Builder(new File(folder)).maxChartSize(20000).supertaggerBeam(beta)
+							.supertaggerWeight(supertaggerWeight).build(), posTagger), pipeline);
 
 			evaluate(jointAstar,
-					// pipeline,
-					// // BrownPropbankReader.readCorpus()//
+			// pipeline,
+			// // BrownPropbankReader.readCorpus()//
 					ParallelCorpusReader.getPropBank00()
 					// ParallelCorpusReader.getPropBank23()
 					, 70);
@@ -143,19 +129,7 @@ public class SRLEvaluation {
 		final Set<SRLDependency> goldDeps = new HashSet<>(gold.getDependencies());
 		final Iterator<ResolvedDependency> depsIt = predictedDeps.iterator();
 		// Remove non-SRL dependencies.
-		while (depsIt.hasNext()) {
-			final ResolvedDependency dep = depsIt.next();
-			if (((dep.getSemanticRole() == SRLFrame.NONE)) || dep.getOffset() == 0 // Unrealized
-			// arguments
-			) {
-				depsIt.remove();
-			}
-		}
-
-		// for (final SyntaxTreeNodeLeaf leaf : parse.getCcgParse().getLeaves()) {
-		// System.err.print(leaf.getWord() + "|" + leaf.getCategory() + " ");
-		// }
-		// System.err.println();
+		predictedDeps.removeIf(dep -> (dep.getSemanticRole() == SRLFrame.NONE) || dep.getOffset() == 0);
 
 		int correctCount = 0;
 		final int predictedCount = predictedDeps.size();
@@ -188,16 +162,8 @@ public class SRLEvaluation {
 					break;
 				}
 			}
-
-			// if (!found) {
-			// System.err.println("missing:" + goldDep.toString(gold.getWords()));
-			// }
 		}
-		// for (final ResolvedDependency wrong : predictedDeps) {
-		// System.err.println("wrong: " + wrong.toString(gold.getWords()));
-		// }
 
 		return new Results(predictedCount, correctCount, goldCount);
 	}
-
 }

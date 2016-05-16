@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Optional;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -14,9 +13,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-import edu.uw.easysrl.main.EasySRL.ParsingAlgorithm;
 import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.semantics.lexicon.CompositeLexicon;
+import edu.uw.easysrl.syntax.parser.ParserAStar;
 import edu.uw.easysrl.syntax.parser.SRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.BackoffSRLParser;
 import edu.uw.easysrl.syntax.parser.SRLParser.CCGandSRLparse;
@@ -51,14 +50,14 @@ public class WebDemo extends AbstractHandler {
 		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/model_questions";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
-		final PipelineSRLParser pipeline = new PipelineSRLParser(EasySRL.makeParser(pipelineFolder, 0.0001,
-				ParsingAlgorithm.ASTAR, 200000, false, Optional.empty(), nbest, 100), Util.deserialize(new File(
+		final PipelineSRLParser pipeline = new PipelineSRLParser(new ParserAStar.Builder(new File(pipelineFolder))
+		.supertaggerBeam(0.0001).nBest(nbest).maximumSentenceLength(100).build(), Util.deserialize(new File(
 				pipelineFolder, "labelClassifier")), posTagger);
 
-		final SRLParser jointAstar = new SemanticParser(
-				new BackoffSRLParser(new JointSRLParser(EasySRL.makeParser(folder, 0.005, ParsingAlgorithm.ASTAR,
-						20000, true, Optional.empty(), nbest, 100), posTagger), pipeline),
-						CompositeLexicon.makeDefault(new File(folder, "lexicon")));
+		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(
+				new ParserAStar.Builder(new File(pipelineFolder)).supertaggerBeam(0.005).nBest(nbest)
+						.maximumSentenceLength(100).build(), posTagger), pipeline),
+				CompositeLexicon.makeDefault(new File(folder, "lexicon")));
 
 		return jointAstar;
 	}

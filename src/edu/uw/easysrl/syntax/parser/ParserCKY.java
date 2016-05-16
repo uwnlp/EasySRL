@@ -27,19 +27,26 @@ import edu.uw.easysrl.util.Util.Scored;
 
 public class ParserCKY extends AbstractParser {
 
+	@Deprecated
 	public ParserCKY(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
 			final List<Category> validRootCategories, final File modelFolder, final int maxChartSize)
-					throws IOException {
+			throws IOException {
 		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, validRootCategories, modelFolder);
 		this.maxChartSize = maxChartSize;
 		this.modelFactory = modelFactory;
+	}
+
+	protected ParserCKY(final Builder builder) {
+		super(builder);
+		this.maxChartSize = builder.getMaxChartSize();
+		this.modelFactory = builder.getModelFactory();
 	}
 
 	private final int maxChartSize;
 	private final ModelFactory modelFactory;
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, boolean isEval) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, final boolean isEval) {
 
 		final int numWords = input.length();
 		if (input.length() > maxLength) {
@@ -174,4 +181,16 @@ public class ParserCKY extends AbstractParser {
 		}
 	}
 
+	public static class Builder extends ParserBuilder<Builder> {
+
+		public Builder(final File modelFolder) {
+			super(modelFolder);
+			super.maxChartSize(300000);
+		}
+
+		@Override
+		protected ParserCKY build2() {
+			return new ParserCKY(this);
+		}
+	}
 }

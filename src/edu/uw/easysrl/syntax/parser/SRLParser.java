@@ -2,6 +2,7 @@ package edu.uw.easysrl.syntax.parser;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -13,6 +14,8 @@ import com.google.common.collect.Table;
 
 import edu.uw.easysrl.dependencies.DependencyGenerator;
 import edu.uw.easysrl.dependencies.ResolvedDependency;
+import edu.uw.easysrl.dependencies.SRLFrame;
+import edu.uw.easysrl.dependencies.SRLFrame.SRLLabel;
 import edu.uw.easysrl.dependencies.UnlabelledDependency;
 import edu.uw.easysrl.main.InputReader.InputToParser;
 import edu.uw.easysrl.main.InputReader.InputWord;
@@ -213,5 +216,31 @@ public abstract class SRLParser {
 
 	public List<CCGandSRLparse> parseTokens(final List<InputWord> words) {
 		return parseTokens(new InputToParser(words, null, null, false));
+	}
+
+	/**
+	 * Provides a wrapper around a syntactic parser that assigned default semantic roles.
+	 */
+	public static SRLParser wrapperOf(final Parser parser) {
+		try {
+			final LabelClassifier dummyLabelClassifier = new LabelClassifier(null) {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public SRLLabel classify(final UnlabelledDependency dep, final List<InputWord> sentence) {
+					return SRLFrame.NONE;
+				}
+			};
+			final POSTagger dummyPostagger = new POSTagger() {
+
+				@Override
+				public List<InputWord> tag(final List<InputWord> words) {
+					return words;
+				}
+			};
+			return new PipelineSRLParser(parser, dummyLabelClassifier, dummyPostagger);
+		} catch (final IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
