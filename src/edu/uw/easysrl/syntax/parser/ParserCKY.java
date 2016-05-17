@@ -45,7 +45,7 @@ public class ParserCKY extends AbstractParser {
 	private final ModelFactory modelFactory;
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, final boolean isEval) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
 
 		final int numWords = input.length();
 		if (input.length() > maxLength) {

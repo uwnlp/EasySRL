@@ -87,6 +87,7 @@ public abstract class AbstractParser implements Parser {
 		this.binaryRules = builder.getCombinators();
 		this.allowUnseenRules = builder.getAllowUnseenRules();
 		this.normalForm = builder.getNormalForm();
+		this.nbestBeam = builder.getNBestBeam();
 
 		for (final Cell<Category, Category, List<RuleProduction>> entry : seenRules.ruleTable().cellSet()) {
 			// Cache out all the rules in advance.
@@ -217,13 +218,13 @@ public abstract class AbstractParser implements Parser {
 	 * @see uk.ac.ed.easyccg.syntax.ParserInterface#doParsing(uk.ac.ed.easyccg.syntax .InputReader.InputToParser)
 	 */
 	@Override
-	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input, final boolean isEval) {
+	public List<Scored<SyntaxTreeNode>> doParsing(final InputToParser input) {
 		if (input.length() > maxLength) {
 			System.err.println("Skipping sentence of length " + input.length());
 			return null;
 		}
 
-		return parse(input, isEval);
+		return parse(input);
 	}
 
 	/**
@@ -231,7 +232,7 @@ public abstract class AbstractParser implements Parser {
 	 *
 	 * Returns null if the parse fails.
 	 */
-	protected abstract List<Scored<SyntaxTreeNode>> parse(InputToParser sentence, boolean isEval);
+	protected abstract List<Scored<SyntaxTreeNode>> parse(InputToParser sentence);
 
 	private final Map<Category, Map<Category, List<RuleProduction>>> ruleCache = new IdentityHashMap<>();
 

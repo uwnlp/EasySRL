@@ -70,7 +70,7 @@ public class ParserAStar extends AbstractParser {
 	}
 
 	@Override
-	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input, final boolean isEval) {
+	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
 		final ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
 		final Model model = modelFactory.make(input);
@@ -95,8 +95,8 @@ public class ParserAStar extends AbstractParser {
 		final ChartCell finalCell = sentenceCellFactory.make();
 
 		while (chartSize < maxChartSize
-				&& (result.isEmpty() || (result.size() < nbest && !agenda.isEmpty() && agenda.peek().getCost() > nbestBeam
-						* result.get(0).getScore()))) {
+				&& (result.isEmpty() || (result.size() < nbest && !agenda.isEmpty() &&
+					agenda.peek().getCost() > result.get(0).getScore() - Math.log(nbestBeam)))) {
 			// Add items from the agenda, until we have enough parses.
 
 			final AgendaItem agendaItem = agenda.poll();

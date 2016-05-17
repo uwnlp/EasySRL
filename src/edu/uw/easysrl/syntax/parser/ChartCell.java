@@ -264,7 +264,7 @@ public abstract class ChartCell {
 			public boolean add(final Object key, final AgendaItem newEntry) {
 				final List<AgendaItem> existing = keyToEntries.get(key);
 				if (existing.size() > nbest
-						|| (existing.size() > 0 && newEntry.getCost() < nbestBeam * existing.get(0).getCost())) {
+						|| (existing.size() > 0 && newEntry.getCost() < existing.get(0).getCost() - Math.log(nbestBeam))) {
 					return false;
 				} else {
 					// Only cache out hashes for nodes that get added to the chart.
