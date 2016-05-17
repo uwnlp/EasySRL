@@ -125,6 +125,10 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return normalForm;
 	}
 
+	public double getNBestBeam() {
+		return nBestBeam;
+	}
+
 	private Collection<Category> lexicalCategories;
 	private int maxSentenceLength = 70;
 	private int nbest = 1;
@@ -143,6 +147,7 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 	private final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
 	private int maxChartSize;
 	private NormalForm normalForm = new NormalForm();
+	private double nBestBeam = 0.001;
 
 	public T nBest(final int nBest) {
 		this.nbest = nBest;
@@ -196,6 +201,11 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 
 	public T modelFactory(final ModelFactory modelFactory) {
 		this.modelFactory = modelFactory;
+		return getThis();
+	}
+
+	public T nBestBeam(final double nBestBeam) {
+		this.nBestBeam = nBestBeam;
 		return getThis();
 	}
 

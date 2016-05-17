@@ -17,9 +17,7 @@ public interface Parser {
 	 */
 	List<Scored<SyntaxTreeNode>> parseTokens(List<String> words);
 
-	List<Scored<SyntaxTreeNode>> doParsing(InputToParser input, boolean isEval);
-
-	default List<Scored<SyntaxTreeNode>> doParsing(InputToParser input) { return doParsing(input, true); }
+	List<Scored<SyntaxTreeNode>> doParsing(InputToParser input);
 
 	int getMaxSentenceLength();
 
