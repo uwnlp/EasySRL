@@ -1,5 +1,13 @@
 package edu.uw.easysrl.syntax.parser;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table.Cell;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -9,14 +17,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Table.Cell;
 
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.dependencies.DependencyStructure;
@@ -29,6 +29,7 @@ import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Category.Slash;
 import edu.uw.easysrl.syntax.grammar.Combinator;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
+import edu.uw.easysrl.syntax.grammar.NormalForm;
 import edu.uw.easysrl.syntax.grammar.SeenRules;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.util.Util;
@@ -36,7 +37,9 @@ import edu.uw.easysrl.util.Util.Scored;
 
 public abstract class AbstractParser implements Parser {
 
-	final Collection<Category> lexicalCategories;
+	protected final Collection<Category> lexicalCategories;
+	protected final boolean allowUnseenRules;
+	protected final NormalForm normalForm;
 
 	@Deprecated
 	public AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
@@ -69,6 +72,9 @@ public abstract class AbstractParser implements Parser {
 			// Cache out all the rules in advance.
 			getRules(entry.getRowKey(), entry.getColumnKey());
 		}
+
+		this.allowUnseenRules = false;
+		this.normalForm = new NormalForm();
 	}
 
 	public AbstractParser(final ParserBuilder<?> builder) {
@@ -79,6 +85,8 @@ public abstract class AbstractParser implements Parser {
 		this.nbest = builder.getNbest();
 		this.maxLength = builder.getMaxSentenceLength();
 		this.binaryRules = builder.getCombinators();
+		this.allowUnseenRules = builder.getAllowUnseenRules();
+		this.normalForm = builder.getNormalForm();
 
 		for (final Cell<Category, Category, List<RuleProduction>> entry : seenRules.ruleTable().cellSet()) {
 			// Cache out all the rules in advance.

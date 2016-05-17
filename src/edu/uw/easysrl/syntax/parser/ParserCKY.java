@@ -15,7 +15,6 @@ import edu.uw.easysrl.syntax.grammar.Combinator;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleClass;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
-import edu.uw.easysrl.syntax.grammar.NormalForm;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
@@ -117,7 +116,7 @@ public class ParserCKY extends AbstractParser {
 		for (final AgendaItem l : left.getEntries()) {
 			for (final AgendaItem r : right.getEntries()) {
 
-				if (!seenRules.isSeen(l.getParse().getCategory(), r.getParse().getCategory())) {
+				if (!allowUnseenRules && !seenRules.isSeen(l.getParse().getCategory(), r.getParse().getCategory())) {
 					continue;
 				}
 
@@ -128,7 +127,7 @@ public class ParserCKY extends AbstractParser {
 					final RuleType ruleType = rule.getRuleType();
 					final RuleClass rightRuleClass = r.getParse().getRuleType().getNormalFormClassForRule();
 
-					if (!NormalForm.isOk(leftRuleClass, rightRuleClass, ruleType, l.getParse().getCategory(), r
+					if (!normalForm.isOk(leftRuleClass, rightRuleClass, ruleType, l.getParse().getCategory(), r
 							.getParse().getCategory(), rule.getCategory(), l.getStartOfSpan() == 0)) {
 						continue;
 					}
