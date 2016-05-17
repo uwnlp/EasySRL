@@ -1,5 +1,7 @@
 package edu.uw.easysrl.syntax.parser;
 
+import com.google.common.collect.ListMultimap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -8,11 +10,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ListMultimap;
-
 import edu.uw.easysrl.dependencies.Coindexation;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator;
+import edu.uw.easysrl.syntax.grammar.NormalForm;
 import edu.uw.easysrl.syntax.grammar.SeenRules;
 import edu.uw.easysrl.syntax.model.CutoffsDictionaryInterface;
 import edu.uw.easysrl.syntax.model.Model.ModelFactory;
@@ -80,6 +81,10 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return seenRules;
 	}
 
+	public boolean getAllowUnseenRules() {
+		return allowUnseenRules;
+	}
+
 	public double getSupertaggerBeam() {
 		return supertaggerBeam;
 	}
@@ -116,6 +121,10 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return maxChartSize;
 	}
 
+	public NormalForm getNormalForm() {
+		return normalForm;
+	}
+
 	private Collection<Category> lexicalCategories;
 	private int maxSentenceLength = 70;
 	private int nbest = 1;
@@ -123,6 +132,7 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 	private ListMultimap<Category, UnaryRule> unaryRules;
 	private File markedupFile;
 	private SeenRules seenRules;
+	private boolean allowUnseenRules = false;
 	private double supertaggerBeam = 0.00001;
 	private Boolean jointModel;
 	private Double supertaggerWeight;
@@ -132,6 +142,7 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 	private boolean useSupertaggedInput = false;
 	private final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
 	private int maxChartSize;
+	private NormalForm normalForm = new NormalForm();
 
 	public T nBest(final int nBest) {
 		this.nbest = nBest;
@@ -150,6 +161,11 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 
 	public T seenRules(final SeenRules seenRules) {
 		this.seenRules = seenRules;
+		return getThis();
+	}
+
+	public T allowUnseenRules(final boolean allowUnseenRules) {
+		this.allowUnseenRules = allowUnseenRules;
 		return getThis();
 	}
 
@@ -173,6 +189,16 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return getThis();
 	}
 
+	public T normalForm(final NormalForm normalForm) {
+		this.normalForm = normalForm;
+		return getThis();
+	}
+
+	public T modelFactory(final ModelFactory modelFactory) {
+		this.modelFactory = modelFactory;
+		return getThis();
+	}
+
 	@SuppressWarnings("unchecked")
 	T getThis() {
 		return (T) this;
@@ -180,25 +206,28 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 
 	public AbstractParser build() {
 		try {
-			if (jointModel) {
-				final Map<FeatureKey, Integer> keyToIndex = Util.deserialize(new File(modelFolder, "featureToIndex"));
-				final double[] weights = Util.deserialize(new File(modelFolder, "weights"));
-				if (supertaggerWeight != null) {
-					weights[0] = supertaggerWeight;
+			if (modelFactory == null) {
+				if (jointModel) {
+					final Map<FeatureKey, Integer> keyToIndex = Util.deserialize(new File(modelFolder, "featureToIndex"));
+					final double[] weights = Util.deserialize(new File(modelFolder, "weights"));
+					if (supertaggerWeight != null) {
+						weights[0] = supertaggerWeight;
+					}
+
+					modelFactory = new SRLFactoredModelFactory(weights,
+							Util.<FeatureSet>deserialize(new File(modelFolder, "features"))
+									.setSupertaggingFeature(new File(modelFolder, "/pipeline"), supertaggerBeam),
+							lexicalCategories, cutoffs, keyToIndex);
+
+				} else {
+					final Tagger tagger = !useSupertaggedInput ?
+							Tagger.make(modelFolder, supertaggerBeam, 50, cutoffs) :
+							null;
+
+					modelFactory = new SupertagFactoredModelFactory(tagger, lexicalCategories, nbest > 1);
+
 				}
-
-				modelFactory = new SRLFactoredModelFactory(weights, Util.<FeatureSet> deserialize(
-						new File(modelFolder, "features")).setSupertaggingFeature(new File(modelFolder, "/pipeline"),
-								supertaggerBeam), lexicalCategories, cutoffs, keyToIndex);
-
-			} else {
-				final Tagger tagger = !useSupertaggedInput ? Tagger.make(modelFolder, supertaggerBeam, 50, cutoffs)
-						: null;
-
-				modelFactory = new SupertagFactoredModelFactory(tagger, lexicalCategories, nbest > 1);
-
 			}
-
 			return build2();
 		} catch (final IOException e) {
 			throw new UncheckedIOException(e);

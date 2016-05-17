@@ -12,7 +12,6 @@ import edu.uw.easysrl.main.InputReader.InputWord;
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleProduction;
 import edu.uw.easysrl.syntax.grammar.Combinator.RuleType;
-import edu.uw.easysrl.syntax.grammar.NormalForm;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeBinary;
 import edu.uw.easysrl.syntax.grammar.SyntaxTreeNode.SyntaxTreeNodeUnary;
@@ -29,11 +28,11 @@ import edu.uw.easysrl.util.Util.Scored;
 
 public class ParserAStar extends AbstractParser {
 
-	private final ModelFactory modelFactory;
+	protected final ModelFactory modelFactory;
 
-	private final int maxChartSize;
-	private final ChartCellFactory cellFactory;
-	private final boolean usingDependencies;
+	protected final int maxChartSize;
+	protected final ChartCellFactory cellFactory;
+	protected final boolean usingDependencies;
 
 	@Deprecated
 	public ParserAStar(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
@@ -47,7 +46,7 @@ public class ParserAStar extends AbstractParser {
 		this.cellFactory = chooseCellFactory(modelFactory, nbest);
 	}
 
-	ChartCellFactory chooseCellFactory(final ModelFactory modelFactory, final int nbest) {
+	protected ChartCellFactory chooseCellFactory(final ModelFactory modelFactory, final int nbest) {
 		final ChartCellFactory cellFactory;
 		if (!this.modelFactory.isUsingDynamicProgram()) {
 			cellFactory = CellNoDynamicProgram.factory();
@@ -162,7 +161,7 @@ public class ParserAStar extends AbstractParser {
 	/**
 	 * Updates the agenda with of any unary rules that can be applied.
 	 */
-	private void updateAgendaUnary(final Model model, final AgendaItem newItem, final Agenda agenda) {
+	protected void updateAgendaUnary(final Model model, final AgendaItem newItem, final Agenda agenda) {
 		final SyntaxTreeNode parse = newItem.getParse();
 		final List<UnaryRule> ruleProductions = unaryRules.get(parse.getCategory());
 		final int size = ruleProductions.size();
@@ -199,12 +198,12 @@ public class ParserAStar extends AbstractParser {
 	/**
 	 * Updates the agenda with the result of all combinators that can be applied to leftChild and rightChild.
 	 */
-	private void updateAgenda(final Agenda agenda, final AgendaItem left, final AgendaItem right, final Model model) {
+	protected void updateAgenda(final Agenda agenda, final AgendaItem left, final AgendaItem right, final Model model) {
 
 		final SyntaxTreeNode leftChild = left.getParse();
 		final SyntaxTreeNode rightChild = right.getParse();
 
-		if (!seenRules.isSeen(leftChild.getCategory(), rightChild.getCategory())) {
+		if (!allowUnseenRules && !seenRules.isSeen(leftChild.getCategory(), rightChild.getCategory())) {
 			return;
 		}
 		final List<RuleProduction> rules = getRules(leftChild.getCategory(), rightChild.getCategory());
@@ -213,7 +212,7 @@ public class ParserAStar extends AbstractParser {
 		for (int i = 0; i < size; i++) {
 			final RuleProduction production = rules.get(i);
 			// Check if normal-form constraints let us add this rule.
-			if (NormalForm.isOk(leftChild.getRuleClass(), rightChild.getRuleClass(), production.getRuleType(),
+			if (normalForm.isOk(leftChild.getRuleClass(), rightChild.getRuleClass(), production.getRuleType(),
 					leftChild.getCategory(), rightChild.getCategory(), production.getCategory(),
 					left.getStartOfSpan() == 0)) {
 
@@ -225,11 +224,8 @@ public class ParserAStar extends AbstractParser {
 							leftChild.getDependencyStructure(), rightChild.getDependencyStructure(),
 							resolvedDependencies);
 
-					final boolean headIsLeft = newDependencies.getArbitraryHead() == leftChild.getDependencyStructure()
-							.getArbitraryHead();
-
 					newNode = new SyntaxTreeNodeBinary(production.getCategory(), leftChild, rightChild,
-							production.getRuleType(), headIsLeft, newDependencies, resolvedDependencies);
+							production.getRuleType(), production.isHeadIsLeft(), newDependencies, resolvedDependencies);
 
 				} else {
 					// If we're not modeling dependencies, we can save a lot of work.

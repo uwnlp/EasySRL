@@ -1,5 +1,10 @@
 package edu.uw.easysrl.syntax.training;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -9,11 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
 
 import edu.uw.easysrl.dependencies.DependencyStructure;
 import edu.uw.easysrl.dependencies.UnlabelledDependency;
@@ -35,6 +35,7 @@ import edu.uw.easysrl.syntax.tagger.TaggerEmbeddings;
 class CKY {
 	private final Multimap<Category, UnaryRule> unaryRules;
 	private final SeenRules seenRules;
+	private final NormalForm normalForm;
 	private final int maxLength;
 
 	private final int maxChartSize;
@@ -45,7 +46,7 @@ class CKY {
 		this.seenRules = new SeenRules(new File(modelFolder, "seenRules"), TaggerEmbeddings.loadCategories(new File(
 				modelFolder, "categories")));
 		this.maxChartSize = maxChartSize;
-
+		this.normalForm = new NormalForm();
 	}
 
 	ChartCell[][] parse(final List<String> words, final List<Collection<Category>> input) {
@@ -114,7 +115,7 @@ class CKY {
 					final RuleType ruleType = rule.getRuleType();
 					final RuleType rightRuleClass = r.getRuleType();
 
-					if (!NormalForm.isOk(leftRuleClass.getNormalFormClassForRule(),
+					if (!normalForm.isOk(leftRuleClass.getNormalFormClassForRule(),
 							rightRuleClass.getNormalFormClassForRule(), ruleType, l.getCategory(), r.getCategory(),
 							rule.getCategory(), startOfSpan == 0)) {
 						continue;
