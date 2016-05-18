@@ -31,8 +31,10 @@ public class ParserAStar extends AbstractParser {
 	protected final ModelFactory modelFactory;
 
 	protected final int maxChartSize;
+	protected final int maxAgendaSize;
 	protected final ChartCellFactory cellFactory;
 	protected final boolean usingDependencies;
+	protected final List<ParserListener> listeners;
 
 	@Deprecated
 	public ParserAStar(final ModelFactory modelFactory, final int maxSentenceLength, final int nbest,
@@ -44,6 +46,11 @@ public class ParserAStar extends AbstractParser {
 		this.maxChartSize = maxChartSize;
 		this.usingDependencies = modelFactory.isUsingDependencies();
 		this.cellFactory = chooseCellFactory(modelFactory, nbest);
+
+		// Get default arguments for newer parameters.
+		final ParserBuilder builder = new Builder(modelFolder);
+		this.maxAgendaSize = builder.getMaxAgendaSize();
+		this.listeners = builder.getListeners();
 	}
 
 	protected ChartCellFactory chooseCellFactory(final ModelFactory modelFactory, final int nbest) {
@@ -65,7 +72,9 @@ public class ParserAStar extends AbstractParser {
 		super(builder);
 		this.modelFactory = builder.getModelFactory();
 		this.maxChartSize = builder.getMaxChartSize();
-		this.usingDependencies = builder.getModelFactory().isUsingDependencies();
+		this.maxAgendaSize = builder.getMaxAgendaSize();
+		this.listeners = builder.getListeners();
+		this.usingDependencies = modelFactory.isUsingDependencies();
 		this.cellFactory = chooseCellFactory(modelFactory, nbest);
 	}
 
@@ -73,6 +82,9 @@ public class ParserAStar extends AbstractParser {
 	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
 		final ChartCellFactory sentenceCellFactory = cellFactory.forNewSentence();
 		final List<InputWord> sentence = input.getInputWords();
+		for (final ParserListener listener : listeners) {
+			listener.handleNewSentence(sentence);
+		}
 		final Model model = modelFactory.make(input);
 		final int sentenceLength = sentence.size();
 		final Agenda agenda = model.makeAgenda();
@@ -95,12 +107,13 @@ public class ParserAStar extends AbstractParser {
 		final ChartCell finalCell = sentenceCellFactory.make();
 
 		while (chartSize < maxChartSize
+				&& !agenda.isEmpty()
+				&& agenda.size() < maxAgendaSize
 				&& (result.isEmpty() || (result.size() < nbest && !agenda.isEmpty() &&
 					agenda.peek().getCost() > result.get(0).getScore() + Math.log(nbestBeam)))) {
 			// Add items from the agenda, until we have enough parses.
-
-			final AgendaItem agendaItem = agenda.poll();
-			if (agendaItem == null) {
+			final AgendaItem agendaItem = agenda.peek();
+			if (agendaItem.getInsideScore() <= Double.NEGATIVE_INFINITY) {
 				break;
 			}
 
@@ -114,12 +127,20 @@ public class ParserAStar extends AbstractParser {
 			}
 
 			if (cell.add(agendaItem)) {
+				boolean keepParsing = true;
+				for (final ParserListener listener : listeners) {
+					keepParsing = keepParsing && listener.handleChartInsertion(agenda);
+				}
+				if (!keepParsing) {
+					break;
+				}
+
 				chartSize++;
+				agenda.poll();
 				// If a new entry was added, update the agenda.
 
 				// Is the new entry an acceptable complete parse?
 				if (agendaItem.getSpanLength() == sentenceLength
-						&& agendaItem.getInsideScore() > Double.NEGATIVE_INFINITY
 						&& (possibleRootCategories.isEmpty() || possibleRootCategories.contains(agendaItem.getParse()
 								.getCategory())) &&
 								// For N-best parsing, the final cell checks if that the final parse is unique. e.g. if it's
@@ -146,7 +167,13 @@ public class ParserAStar extends AbstractParser {
 						updateAgenda(agenda, leftEntry, agendaItem, model);
 					}
 				}
+			} else {
+				agenda.poll();
 			}
+		}
+
+		for (final ParserListener listener : listeners) {
+			listener.handleSearchCompletion(result, agenda, chartSize);
 		}
 
 		if (result.size() == 0) {

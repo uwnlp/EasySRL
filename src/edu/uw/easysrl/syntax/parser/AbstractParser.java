@@ -40,6 +40,7 @@ public abstract class AbstractParser implements Parser {
 	protected final Collection<Category> lexicalCategories;
 	protected final boolean allowUnseenRules;
 	protected final NormalForm normalForm;
+	protected final double nbestBeam;
 
 	@Deprecated
 	public AbstractParser(final Collection<Category> lexicalCategories, final int maxSentenceLength, final int nbest,
@@ -73,8 +74,14 @@ public abstract class AbstractParser implements Parser {
 			getRules(entry.getRowKey(), entry.getColumnKey());
 		}
 
-		this.allowUnseenRules = false;
-		this.normalForm = new NormalForm();
+		// Get default arguments for newer parameters.
+		final ParserBuilder builder = new ParserBuilder() {
+			@Override
+			public AbstractParser build2() { return null; }
+		};
+		this.nbestBeam = builder.getNbestBeam();
+		this.allowUnseenRules = builder.getAllowUnseenRules();
+		this.normalForm = builder.getNormalForm();
 	}
 
 	public AbstractParser(final ParserBuilder<?> builder) {
@@ -87,7 +94,7 @@ public abstract class AbstractParser implements Parser {
 		this.binaryRules = builder.getCombinators();
 		this.allowUnseenRules = builder.getAllowUnseenRules();
 		this.normalForm = builder.getNormalForm();
-		this.nbestBeam = builder.getNBestBeam();
+		this.nbestBeam = builder.getNbestBeam();
 
 		for (final Cell<Category, Category, List<RuleProduction>> entry : seenRules.ruleTable().cellSet()) {
 			// Cache out all the rules in advance.
@@ -97,7 +104,6 @@ public abstract class AbstractParser implements Parser {
 
 	protected final int maxLength;
 
-	protected double nbestBeam = 0.001;
 	protected final Collection<Combinator> binaryRules;
 	protected final ListMultimap<Category, UnaryRule> unaryRules;
 	protected final int nbest;
