@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -142,10 +143,10 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 	private boolean useSupertaggedInput = false;
 	private final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
 	private int maxChartSize = 300000;
-	private int maxAgendaSize = 99999999;
+	private int maxAgendaSize = Integer.MAX_VALUE;
 	private NormalForm normalForm = new NormalForm();
 	private double nbestBeam = 0.001;
-	private List<ParserListener> listeners = new ArrayList<>();
+	private List<ParserListener> listeners = Collections.emptyList();
 
 	public T nBest(final int nBest) {
 		this.nbest = nBest;
