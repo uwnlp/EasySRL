@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,24 +31,12 @@ import edu.uw.easysrl.util.Util;
 public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 
 	ParserBuilder(final File modelFolder) {
-		this.modelFolder = modelFolder;
-		this.jointModel = new File(modelFolder, "weights").exists();
-		try {
-			this.unaryRules = AbstractParser.loadUnaryRules(new File(modelFolder, "unaryRules"));
-			this.lexicalCategories = TaggerEmbeddings.loadCategories(new File(modelFolder, "categories"));
-			this.seenRules = new SeenRules(new File(modelFolder, "seenRules"), lexicalCategories);
-			final File cutoffsFile = new File(modelFolder, "cutoffs");
-			cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
-			if (new File(modelFolder, "markedup").exists()) {
-				Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
-			}
-		} catch (final IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
+		modelFolder(modelFolder);
 	}
 
-	final File modelFolder;
+	ParserBuilder() { }
+
+	private File modelFolder;
 
 	public File getModelFolder() {
 		return modelFolder;
@@ -121,12 +110,20 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return maxChartSize;
 	}
 
+	public int getMaxAgendaSize() {
+		return maxAgendaSize;
+	}
+
 	public NormalForm getNormalForm() {
 		return normalForm;
 	}
 
-	public double getNBestBeam() {
-		return nBestBeam;
+	public double getNbestBeam() {
+		return nbestBeam;
+	}
+
+	public List<ParserListener> getListeners() {
+		return listeners;
 	}
 
 	private Collection<Category> lexicalCategories;
@@ -145,9 +142,11 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 	private CutoffsDictionaryInterface cutoffs;
 	private boolean useSupertaggedInput = false;
 	private final List<Combinator> combinators = new ArrayList<>(Combinator.STANDARD_COMBINATORS);
-	private int maxChartSize;
+	private int maxChartSize = 300000;
+	private int maxAgendaSize = Integer.MAX_VALUE;
 	private NormalForm normalForm = new NormalForm();
-	private double nBestBeam = 0.001;
+	private double nbestBeam = 0.001;
+	private List<ParserListener> listeners = Collections.emptyList();
 
 	public T nBest(final int nBest) {
 		this.nbest = nBest;
@@ -204,8 +203,31 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 		return getThis();
 	}
 
-	public T nBestBeam(final double nBestBeam) {
-		this.nBestBeam = nBestBeam;
+	public T nbestBeam(final double nbestBeam) {
+		this.nbestBeam = nbestBeam;
+		return getThis();
+	}
+
+	public T modelFolder(final File modelFolder) {
+		this.modelFolder = modelFolder;
+		this.jointModel = new File(modelFolder, "weights").exists();
+		try {
+			this.unaryRules = AbstractParser.loadUnaryRules(new File(modelFolder, "unaryRules"));
+			this.lexicalCategories = TaggerEmbeddings.loadCategories(new File(modelFolder, "categories"));
+			this.seenRules = new SeenRules(new File(modelFolder, "seenRules"), lexicalCategories);
+			final File cutoffsFile = new File(modelFolder, "cutoffs");
+			cutoffs = cutoffsFile.exists() ? Util.deserialize(cutoffsFile) : null;
+			if (new File(modelFolder, "markedup").exists()) {
+				Coindexation.parseMarkedUpFile(new File(modelFolder, "markedup"));
+			}
+		} catch (final IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return getThis();
+	}
+
+	public T listeners(final List<ParserListener> listeners) {
+		this.listeners = listeners;
 		return getThis();
 	}
 
@@ -251,6 +273,11 @@ public abstract class ParserBuilder<T extends ParserBuilder<T>> {
 
 	public T maxChartSize(final int maxChartSize) {
 		this.maxChartSize = maxChartSize;
+		return getThis();
+	}
+
+	public T maxAgendaSize(final int maxAgendaSize) {
+		this.maxAgendaSize = maxAgendaSize;
 		return getThis();
 	}
 
