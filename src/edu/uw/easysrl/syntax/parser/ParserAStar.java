@@ -96,7 +96,7 @@ public class ParserAStar extends AbstractParser {
 
 		while (chartSize < maxChartSize
 				&& (result.isEmpty() || (result.size() < nbest && !agenda.isEmpty() &&
-					agenda.peek().getCost() > result.get(0).getScore() - Math.log(nbestBeam)))) {
+					agenda.peek().getCost() > result.get(0).getScore() + Math.log(nbestBeam)))) {
 			// Add items from the agenda, until we have enough parses.
 
 			final AgendaItem agendaItem = agenda.poll();
