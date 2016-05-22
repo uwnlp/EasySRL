@@ -1,5 +1,11 @@
 package edu.uw.easysrl.util;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
+import com.google.common.collect.Table;
+import com.google.common.primitives.Doubles;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
@@ -29,13 +35,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Multisets;
-import com.google.common.collect.Table;
-import com.google.common.primitives.Doubles;
 
 public class Util {
 	public static int indexOfAny(final String haystack, final String needles) {
@@ -473,5 +476,26 @@ public class Util {
 
 	public static String maybeBracket(final String input, final boolean bracket) {
 		return bracket ? "(" + input + ")" : input;
+	}
+
+	// zip(Stream.of("a", "b", "c"), Stream.of("1", "2", "3"), (x,y) -> x + y)
+	// returns
+	// Stream.of("a1", "b2", "c3")
+	public static <A, B, C> Stream<C> zip(Stream<? extends A> a, Stream<? extends B> b,
+			BiFunction<? super A, ? super B, ? extends C> zipper) {
+		final Iterator<? extends A> iteratorA = a.iterator();
+		final Iterator<? extends B> iteratorB = b.iterator();
+		final Iterable<C> iterable = () -> new Iterator<C>() {
+			@Override
+			public boolean hasNext() {
+				return iteratorA.hasNext() && iteratorB.hasNext();
+			}
+
+			@Override
+			public C next() {
+				return zipper.apply(iteratorA.next(), iteratorB.next());
+			}
+		};
+		return StreamSupport.stream(iterable.spliterator(), a.isParallel() || b.isParallel());
 	}
 }

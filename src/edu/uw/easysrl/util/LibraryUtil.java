@@ -7,7 +7,7 @@ public class LibraryUtil {
 	}
 
 	public static void setLibraryPath(String libraryPath) {
-		System.setProperty("java.library.path", "lib");
+		System.setProperty("java.library.path", libraryPath);
 		try {
 			final Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
 			fieldSysPath.setAccessible(true);

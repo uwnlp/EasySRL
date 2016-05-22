@@ -78,7 +78,7 @@ public class AgendaItem implements Comparable<AgendaItem> {
 
 		// Same category
 		// Same unused SRL labels
-		// Same depenency structure
+		// Same dependency structure
 		// Same rule
 		final RuleClass ruleClass = parse.getRuleClass();
 

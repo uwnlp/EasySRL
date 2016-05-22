@@ -176,7 +176,7 @@ public class ParserAStar extends AbstractParser {
 			listener.handleSearchCompletion(result, agenda, chartSize);
 		}
 
-		if (result.size() == 0) {
+		if (result.isEmpty()) {
 			// Parse failure.
 			return null;
 		}
@@ -191,18 +191,15 @@ public class ParserAStar extends AbstractParser {
 	protected void updateAgendaUnary(final Model model, final AgendaItem newItem, final Agenda agenda) {
 		final SyntaxTreeNode parse = newItem.getParse();
 		final List<UnaryRule> ruleProductions = unaryRules.get(parse.getCategory());
-		final int size = ruleProductions.size();
-		if (size == 0) {
+		if (ruleProductions.isEmpty()) {
 			return;
 		}
-
 		final boolean isNotPunctuationNode = parse.getRuleType() != RuleType.LP && parse.getRuleType() != RuleType.RP;
-		for (int i = 0; i < size; i++) {
-			final UnaryRule unaryRule = ruleProductions.get(i);
+		for (final UnaryRule unaryRule : ruleProductions) {
 			if (isNotPunctuationNode || unaryRule.isTypeRaising()) {
 				// Don't allow unary rules to apply to the output of non-type-raising rules.
 				// i.e. don't allow both (NP (N ,))
-				// The reason for allowing type-raising is to simplify Eisner Normal Form contraints (a
+				// The reason for allowing type-raising is to simplify Eisner Normal Form constraints (a
 				// punctuation rule would mask the fact that a rule is the output of type-raising).
 				// TODO should probably refactor the constraint into NormalForm.
 
@@ -217,7 +214,9 @@ public class ParserAStar extends AbstractParser {
 					newNode = new SyntaxTreeNodeUnary(unaryRule.getResult(), parse, null, unaryRule, null);
 				}
 
-				agenda.add(model.unary(newItem, newNode, unaryRule));
+				if (isValidStep(newNode)) {
+					agenda.add(model.unary(newItem, newNode, unaryRule));
+				}
 			}
 		}
 	}
@@ -260,9 +259,15 @@ public class ParserAStar extends AbstractParser {
 							production.getRuleType(), production.isHeadIsLeft(), null, null);
 				}
 
-				agenda.add(model.combineNodes(left, right, newNode));
+				if (isValidStep(newNode)) {
+					agenda.add(model.combineNodes(left, right, newNode));
+				}
 			}
 		}
+	}
+
+	protected boolean isValidStep(final SyntaxTreeNode node) {
+		return true;
 	}
 
 	public Parser make(final File modelFolder) {
