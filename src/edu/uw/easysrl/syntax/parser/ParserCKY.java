@@ -33,16 +33,22 @@ public class ParserCKY extends AbstractParser {
 		super(modelFactory.getLexicalCategories(), maxSentenceLength, nbest, validRootCategories, modelFolder);
 		this.maxChartSize = maxChartSize;
 		this.modelFactory = modelFactory;
+
+		// Get default arguments for newer parameters.
+		final ParserBuilder builder = new Builder(modelFolder);
+		this.listeners = builder.getListeners();
 	}
 
 	protected ParserCKY(final Builder builder) {
 		super(builder);
 		this.maxChartSize = builder.getMaxChartSize();
 		this.modelFactory = builder.getModelFactory();
+		this.listeners = builder.getListeners();
 	}
 
 	private final int maxChartSize;
 	private final ModelFactory modelFactory;
+	private final List<ParserListener> listeners;
 
 	@Override
 	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
@@ -50,6 +56,9 @@ public class ParserCKY extends AbstractParser {
 		final int numWords = input.length();
 		if (input.length() > maxLength) {
 			return null;
+		}
+		for (final ParserListener listener : listeners) {
+			listener.handleNewSentence(input.getInputWords());
 		}
 
 		final ChartCell[][] chart = new ChartCell[numWords][numWords];
@@ -65,6 +74,9 @@ public class ParserCKY extends AbstractParser {
 				chart[item.getStartOfSpan()][item.getSpanLength() - 1] = cell;
 			}
 
+			for (final ParserListener listener : listeners) {
+				listener.handleChartInsertion(null);
+			}
 			addEntry(cell, item, model);
 		}
 
@@ -77,7 +89,9 @@ public class ParserCKY extends AbstractParser {
 				size += newCell.size();
 
 				if (size > maxChartSize) {
-
+					for (final ParserListener listener : listeners) {
+						listener.handleSearchCompletion(null, null, size);
+					}
 					return null;
 				}
 			}
@@ -92,6 +106,9 @@ public class ParserCKY extends AbstractParser {
 		final List<Scored<SyntaxTreeNode>> result = parses.stream()
 				.filter(a -> super.possibleRootCategories.contains(a.getParse().getCategory()))
 				.map(a -> new Scored<>(a.getParse(), a.getInsideScore())).collect(Collectors.toList());
+		for (final ParserListener listener : listeners) {
+			listener.handleSearchCompletion(result.subList(0, 1), null, size);
+		}
 		return result.size() == 0 ? null : result.subList(0, 1);
 	}
 
