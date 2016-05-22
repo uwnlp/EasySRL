@@ -74,6 +74,9 @@ public class ParserCKY extends AbstractParser {
 				chart[item.getStartOfSpan()][item.getSpanLength() - 1] = cell;
 			}
 
+			for (final ParserListener listener : listeners) {
+				listener.handleChartInsertion(null);
+			}
 			addEntry(cell, item, model);
 		}
 
