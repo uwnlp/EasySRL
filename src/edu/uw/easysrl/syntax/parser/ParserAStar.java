@@ -172,17 +172,13 @@ public class ParserAStar extends AbstractParser {
 			}
 		}
 
+		final List<Scored<SyntaxTreeNode>> finalResult = result.isEmpty() ? null : result;
+
 		for (final ParserListener listener : listeners) {
-			listener.handleSearchCompletion(result, agenda, chartSize);
+			listener.handleSearchCompletion(finalResult, agenda, chartSize);
 		}
 
-		if (result.isEmpty()) {
-			// Parse failure.
-			return null;
-		}
-
-		return result;
-
+		return finalResult;
 	}
 
 	/**
