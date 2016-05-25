@@ -67,21 +67,24 @@ public class ParserCKY extends AbstractParser {
 		// Add lexical categories
 		final Agenda agenda = model.makeAgenda();
 		model.buildAgenda(agenda, input.getInputWords());
+		int size = 0;
 		for (final AgendaItem item : agenda) {
 			ChartCell cell = chart[item.getStartOfSpan()][item.getSpanLength() - 1];
 			if (cell == null) {
 				cell = createCell();
 				chart[item.getStartOfSpan()][item.getSpanLength() - 1] = cell;
 			}
-			if (!addEntry(cell, item, model)) {
+			final int previousCellSize = cell.size();
+			boolean keepParsing = addEntry(cell, item, model);
+			size += cell.size() - previousCellSize;
+			if (!keepParsing) {
 				for (final ParserListener listener : listeners) {
-					listener.handleSearchCompletion(null, null, 0);
+					listener.handleSearchCompletion(null, null, size);
 				}
 				return null;
 			}
 		}
 
-		int size = 0;
 		for (int spanLength = 2; spanLength <= numWords; spanLength++) {
 			for (int startOfSpan = 0; startOfSpan <= numWords - spanLength; startOfSpan++) {
 				final ChartCell newCell = makeChartCell(chart, startOfSpan, spanLength, model);
