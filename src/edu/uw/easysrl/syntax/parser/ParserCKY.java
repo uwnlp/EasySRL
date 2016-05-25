@@ -67,28 +67,32 @@ public class ParserCKY extends AbstractParser {
 		// Add lexical categories
 		final Agenda agenda = model.makeAgenda();
 		model.buildAgenda(agenda, input.getInputWords());
+		int size = 0;
 		for (final AgendaItem item : agenda) {
 			ChartCell cell = chart[item.getStartOfSpan()][item.getSpanLength() - 1];
 			if (cell == null) {
-				cell = new Cell1BestCKY();
+				cell = createCell();
 				chart[item.getStartOfSpan()][item.getSpanLength() - 1] = cell;
 			}
-
-			for (final ParserListener listener : listeners) {
-				listener.handleChartInsertion(null);
+			final int previousCellSize = cell.size();
+			boolean keepParsing = addEntry(cell, item, model);
+			size += cell.size() - previousCellSize;
+			if (!keepParsing) {
+				for (final ParserListener listener : listeners) {
+					listener.handleSearchCompletion(null, null, size);
+				}
+				return null;
 			}
-			addEntry(cell, item, model);
 		}
 
-		int size = 0;
 		for (int spanLength = 2; spanLength <= numWords; spanLength++) {
 			for (int startOfSpan = 0; startOfSpan <= numWords - spanLength; startOfSpan++) {
 				final ChartCell newCell = makeChartCell(chart, startOfSpan, spanLength, model);
 
 				chart[startOfSpan][spanLength - 1] = newCell;
-				size += newCell.size();
+				size += newCell == null ? 0 : newCell.size();
 
-				if (size > maxChartSize) {
+				if (newCell == null || size > maxChartSize) {
 					for (final ParserListener listener : listeners) {
 						listener.handleSearchCompletion(null, null, size);
 					}
@@ -104,12 +108,17 @@ public class ParserCKY extends AbstractParser {
 		Collections.sort(parses);
 
 		final List<Scored<SyntaxTreeNode>> result = parses.stream()
-				.filter(a -> super.possibleRootCategories.contains(a.getParse().getCategory()))
-				.map(a -> new Scored<>(a.getParse(), a.getInsideScore())).collect(Collectors.toList());
+				.filter(a -> possibleRootCategories.contains(a.getParse().getCategory()))
+				.map(a -> new Scored<>(a.getParse(), a.getInsideScore()))
+				.limit(1)
+				.collect(Collectors.toList());
+
+		final List<Scored<SyntaxTreeNode>> finalResult = result.isEmpty() ? null : result;
+
 		for (final ParserListener listener : listeners) {
-			listener.handleSearchCompletion(result.subList(0, 1), null, size);
+			listener.handleSearchCompletion(finalResult, null, size);
 		}
-		return result.size() == 0 ? null : result.subList(0, 1);
+		return finalResult;
 	}
 
 	ChartCell makeChartCell(final ChartCell[][] chart, final int startOfSpan, final int spanLength, final Model model) {
@@ -119,7 +128,9 @@ public class ParserCKY extends AbstractParser {
 			final ChartCell left = chart[startOfSpan][spanSplit - 1];
 			final ChartCell right = chart[startOfSpan + spanSplit][spanLength - spanSplit - 1];
 
-			makeChartCell(newCell, left, right, model);
+			if (!makeChartCell(newCell, left, right, model)) {
+				return null;
+			}
 		}
 		return newCell;
 	}
@@ -128,7 +139,7 @@ public class ParserCKY extends AbstractParser {
 		return new Cell1BestCKY();
 	}
 
-	private void makeChartCell(final ChartCell result, final ChartCell left, final ChartCell right, final Model model) {
+	private boolean makeChartCell(final ChartCell result, final ChartCell left, final ChartCell right, final Model model) {
 
 		for (final AgendaItem l : left.getEntries()) {
 			for (final AgendaItem r : right.getEntries()) {
@@ -165,18 +176,26 @@ public class ParserCKY extends AbstractParser {
 
 					final AgendaItem newItem = model.combineNodes(l, r, newNode);
 
-					addEntry(result, newItem, model);
+					if (!addEntry(result, newItem, model)) {
+						return false;
+					}
 				}
 			}
 		}
+		return true;
 
 	}
 
-	private void addEntry(final ChartCell result, final AgendaItem newItem, final Model model) {
+	private boolean addEntry(final ChartCell result, final AgendaItem newItem, final Model model) {
 
 		final Category category = newItem.getParse().getCategory();
 
 		if (result.add(newItem)) {
+			for (final ParserListener listener : listeners) {
+				if (!listener.handleChartInsertion(null)) {
+					return false;
+				}
+			}
 			for (final UnaryRule unary : unaryRules.get(category)) {
 				final SyntaxTreeNode unaryNode;
 				if (newItem.getParse().hasDependencies()) {
@@ -192,9 +211,13 @@ public class ParserCKY extends AbstractParser {
 				}
 				final AgendaItem newUnary = model.unary(newItem, unaryNode, unary);
 
-				addEntry(result, newUnary, model);
+				if (!addEntry(result, newUnary, model)) {
+					return false;
+				}
 			}
 		}
+
+		return true;
 	}
 
 	public static class Builder extends ParserBuilder<Builder> {

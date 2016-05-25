@@ -4,6 +4,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.MinMaxPriorityQueue;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 
@@ -136,20 +137,19 @@ public abstract class ChartCell {
 	}
 
 	/**
-	 * Allows at most N items in a cell, without dividing them into equivalence classes.
+	 * Allows a limited or unbounded number of items in a cell, without dividing them into equivalence classes.
 	 *
 	 * Could also be used in conjunction with dependency hashing?
 	 */
 	static class CellNoDynamicProgram extends ChartCell {
-		private final List<AgendaItem> entries;
+		private final Collection<AgendaItem> entries;
 
 		CellNoDynamicProgram() {
-			this(new ArrayList<>());
+			this.entries = new ArrayList<>();
 		}
 
-		CellNoDynamicProgram(final List<AgendaItem> entries) {
-			this.entries = entries;
-
+		CellNoDynamicProgram(int nbest) {
+			this.entries = MinMaxPriorityQueue.maximumSize(nbest).create();
 		}
 
 		@Override
@@ -173,6 +173,16 @@ public abstract class ChartCell {
 				@Override
 				public ChartCell make() {
 					return new CellNoDynamicProgram();
+				}
+			};
+		}
+
+		public static ChartCellFactory factory(final int nbest) {
+			return new ChartCellFactory() {
+
+				@Override
+				public ChartCell make() {
+					return new CellNoDynamicProgram(nbest);
 				}
 			};
 		}
@@ -297,7 +307,7 @@ public abstract class ChartCell {
 
 				final List<AgendaItem> existing = keyToEntries.get(key);
 				if (existing.size() > nbest
-						|| (existing.size() > 0 && newEntry.getCost() < nbestBeam * existing.get(0).getCost())) {
+						|| (existing.size() > 0 && newEntry.getCost() < existing.get(0).getCost() + Math.log(nbestBeam))) {
 					return false;
 				} else {
 					final Integer hash = getHash(newEntry.getParse());
