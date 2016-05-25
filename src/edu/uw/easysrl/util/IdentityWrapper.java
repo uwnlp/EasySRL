@@ -3,6 +3,9 @@ package edu.uw.easysrl.util;
 import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 
+/*
+ * Uses provided equality and hashing functions to redefine the equivalence of an object with modifying it.
+ */
 public class IdentityWrapper<T> {
 	private final T object;
 	private int hash;

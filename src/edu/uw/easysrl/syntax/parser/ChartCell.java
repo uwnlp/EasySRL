@@ -137,15 +137,19 @@ public abstract class ChartCell {
 	}
 
 	/**
-	 * Allows an unbounded number of items in a cell, without dividing them into equivalence classes.
+	 * Allows a limited or unbounded number of items in a cell, without dividing them into equivalence classes.
 	 *
 	 * Could also be used in conjunction with dependency hashing?
 	 */
 	static class CellNoDynamicProgram extends ChartCell {
-		private final List<AgendaItem> entries;
+		private final Collection<AgendaItem> entries;
 
 		CellNoDynamicProgram() {
 			this.entries = new ArrayList<>();
+		}
+
+		CellNoDynamicProgram(int nbest) {
+			this.entries = MinMaxPriorityQueue.maximumSize(nbest).create();
 		}
 
 		@Override
@@ -172,41 +176,13 @@ public abstract class ChartCell {
 				}
 			};
 		}
-	}
-
-	/**
-	 * Allows at most N items in a cell, without dividing them into equivalence classes.
-	 *
-	 * Could also be used in conjunction with dependency hashing?
-	 */
-	static class CellBeamSearch extends ChartCell {
-		private final MinMaxPriorityQueue<AgendaItem> entries;
-
-		CellBeamSearch(final int nbest) {
-			this.entries = MinMaxPriorityQueue.maximumSize(nbest).create();
-		}
-
-		@Override
-		public Collection<AgendaItem> getEntries() {
-			return entries;
-		}
-
-		@Override
-		public boolean add(final Object key, final AgendaItem newEntry) {
-			return entries.add(newEntry);
-		}
-
-		@Override
-		public int size() {
-			return entries.size();
-		}
 
 		public static ChartCellFactory factory(final int nbest) {
 			return new ChartCellFactory() {
 
 				@Override
 				public ChartCell make() {
-					return new CellBeamSearch(nbest);
+					return new CellNoDynamicProgram(nbest);
 				}
 			};
 		}

@@ -6,7 +6,7 @@ import java.util.List;
 
 import edu.uw.easysrl.syntax.grammar.Category;
 import edu.uw.easysrl.syntax.model.Model.ModelFactory;
-import edu.uw.easysrl.syntax.parser.ChartCell.CellBeamSearch;
+import edu.uw.easysrl.syntax.parser.ChartCell.CellNoDynamicProgram;
 
 public class ParserBeamSearch extends ParserCKY {
 
@@ -23,7 +23,7 @@ public class ParserBeamSearch extends ParserCKY {
 
 	@Override
 	ChartCell createCell() {
-		return new CellBeamSearch(nbest);
+		return new CellNoDynamicProgram(nbest);
 	}
 
 	public static class Builder extends ParserCKY.Builder {

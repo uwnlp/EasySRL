@@ -11,6 +11,10 @@ import edu.uw.easysrl.util.IdentityWrapper;
 import edu.uw.easysrl.util.SyntaxUtil;
 import edu.uw.easysrl.util.Util.Scored;
 
+/*
+ * Performs reranking by getting an n-best list from a base parser and reparsing with the reranking model while
+ * constraining the search to the candidates in the n-best list.
+ */
 public class ParserReranking extends ParserAStar {
 	protected final Parser baseParser;
 	private final Set<IdentityWrapper<SyntaxTreeNode>> candidateSteps;
@@ -22,26 +26,37 @@ public class ParserReranking extends ParserAStar {
 	}
 
 	private static IdentityWrapper<SyntaxTreeNode> wrapParse(final SyntaxTreeNode node) {
+		// Maps parses to a wrapper where the parse structure is used to test equality.
 		return new IdentityWrapper<>(node, SyntaxUtil::parsesEqual, SyntaxUtil::parseHash);
 	}
 
 	@Override
 	protected boolean isValidStep(final SyntaxTreeNode node) {
+		// Only take a step if the explored node belongs to one of the n-best parses.
 		return candidateSteps.contains(wrapParse(node));
 	}
 
 	@Override
 	protected List<Scored<SyntaxTreeNode>> parse(final InputToParser input) {
 		final List<Scored<SyntaxTreeNode>> candidates = baseParser.doParsing(input);
+
 		if (candidates == null) {
+			// Base parser failed. Fail here too.
 			return null;
+		} else if (candidates.size() == 1) {
+			// Base parser only provided a single parse. Nothing to rerank.
+			return candidates;
 		}
+
+		// Add all partial parses to a set which constrains the search.
 		candidateSteps.clear();
 		candidates.stream()
 				.map(Scored::getObject)
 				.flatMap(SyntaxUtil::subtreeStream)
 				.map(ParserReranking::wrapParse)
 				.forEach(candidateSteps::add);
+
+		// Do standard A* parsing with the constraints from the n-best list.
 		return super.parse(input);
 	}
 
