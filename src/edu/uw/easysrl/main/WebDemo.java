@@ -55,8 +55,8 @@ public class WebDemo extends AbstractHandler {
 				pipelineFolder, "labelClassifier")), posTagger);
 
 		final SRLParser jointAstar = new SemanticParser(new BackoffSRLParser(new JointSRLParser(
-				new ParserAStar.Builder(new File(pipelineFolder)).supertaggerBeam(0.005).nBest(nbest)
-						.maximumSentenceLength(100).build(), posTagger), pipeline),
+				new ParserAStar.Builder(new File(folder)).supertaggerBeam(0.005).nBest(nbest)
+					.maximumSentenceLength(100).build(), posTagger), pipeline),
 				CompositeLexicon.makeDefault(new File(folder, "lexicon")));
 
 		return jointAstar;

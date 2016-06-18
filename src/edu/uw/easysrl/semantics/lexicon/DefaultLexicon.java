@@ -52,8 +52,8 @@ public class DefaultLexicon extends Lexicon {
 			SRLFrame.NONE, SRLFrame.NONE, SRLFrame.NONE);
 
 	@Override
-	public Logic getEntry(final String word, final String pos, final Category category, final Coindexation coindexation,
-			final Optional<CCGandSRLparse> parse, final int wordIndex) {
+	public Logic getEntry(final String word, final String pos, final Category category,
+			final Coindexation coindexation, final Optional<CCGandSRLparse> parse, final int wordIndex) {
 		final String lemma = getLemma(word, pos, parse, wordIndex);
 
 		if (Category.valueOf("conj|conj").matches(category)) {
@@ -169,8 +169,13 @@ public class DefaultLexicon extends Lexicon {
 				} else if (label == SRLFrame.NEG) {
 					// Special case negation
 					return ConnectiveSentence.make(Connective.AND, new OperatorSentence(Operator.NOT, px), resultSoFar);
+				} else if (label.isCoreArgument()) {
+					// Core Semantic role: "raging bull" --> #x . bull(x) & \exists e[rage(e) & AO(x,e)]
+					final Variable event = new Variable(SemanticType.Ev);
+					modifier = new QuantifierSentence(Quantifier.EXISTS, event, ConnectiveSentence.make(Connective.AND,
+							new AtomicSentence(word, event), new AtomicSentence(argumentLabel, head, event)));
 				} else {
-					// Semantic role: TMP(yesterday, e)
+					// Adjunct Semantic role: TMP(yesterday, e)
 					modifier = new AtomicSentence(argumentLabel, new Constant(word, SemanticType.E), head);
 				}
 
