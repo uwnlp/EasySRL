@@ -25,29 +25,10 @@ import edu.uw.easysrl.syntax.parser.SRLParser.SemanticParser;
 import edu.uw.easysrl.syntax.tagger.POSTagger;
 import edu.uw.easysrl.util.Util;
 
-public class WebDemo extends AbstractHandler {
+public class WebDemo {
 
-	private final ParsePrinter printer = ParsePrinter.HTML_PRINTER;
-	private final SRLParser parser;
-
-	private WebDemo() throws IOException {
-
-		parser = makeParser();
-	}
-
-	@Override
-	public void handle(final String target, final Request baseRequest, final HttpServletRequest request,
-			final HttpServletResponse response) throws IOException, ServletException {
-		final String sentence = baseRequest.getParameter("sentence");
-		response.setContentType("text/html; charset=utf-8");
-		response.setStatus(HttpServletResponse.SC_OK);
-		doParse(sentence, response.getWriter());
-		baseRequest.setHandled(true);
-	}
-
-	private SRLParser makeParser() throws IOException {
+	private static SRLParser makeParser(final String folder) throws IOException {
 		final int nbest = 10;
-		final String folder = Util.getHomeFolder() + "/Downloads/lstm_models/model_questions";
 		final String pipelineFolder = folder + "/pipeline";
 		final POSTagger posTagger = POSTagger.getStanfordTagger(new File(pipelineFolder, "posTagger"));
 		final PipelineSRLParser pipeline = new PipelineSRLParser(new ParserAStar.Builder(new File(pipelineFolder))
@@ -63,15 +44,27 @@ public class WebDemo extends AbstractHandler {
 	}
 
 	public static void main(final String[] args) throws Exception {
-		final Server server = new Server(Integer.valueOf(args[0]));
-		server.setHandler(new WebDemo());
-		server.start();
-		server.join();
+               final Server server = new Server(Integer.valueOf(args[0]));
+               final SRLParser parser = makeParser(args[1]);
+
+               server.setHandler(new AbstractHandler() {
+                       @Override
+                       public void handle(final String target, final Request baseRequest, final HttpServletRequest request,
+                                          final HttpServletResponse response) throws IOException, ServletException {
+                               final String sentence = baseRequest.getParameter("sentence");
+                               response.setContentType("text/html; charset=utf-8");
+                               response.setStatus(HttpServletResponse.SC_OK);
+                               doParse(parser, sentence, response.getWriter());
+                               baseRequest.setHandled(true);
+                       }
+               });
+               server.start();
+               server.join();
 	}
 
 	// @formatter:off
 
-	private void doParse(String sentence, final PrintWriter response) {
+       private static void doParse(final SRLParser parser, String sentence, final PrintWriter response) {
 
 		if (sentence == null) {
 			sentence = "";
@@ -115,7 +108,7 @@ public class WebDemo extends AbstractHandler {
 			}
 			final List<CCGandSRLparse> parses = parser.parseTokens(words);
 
-			response.println(printer.printJointParses(parses, 0));
+			response.println(ParsePrinter.HTML_PRINTER.printJointParses(parses, 0));
 		}
 
 	}
